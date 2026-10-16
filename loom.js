@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=40c919f5e828";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=40c919f5e828";
-import { shrinkPicture } from "./backend/pictures.js?v=40c919f5e828";
+import { Backend } from "./backend/backend.js?v=29c330fd5204";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=29c330fd5204";
+import { shrinkPicture } from "./backend/pictures.js?v=29c330fd5204";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -52,7 +52,7 @@ export class Loom {
     return user.user_metadata?.full_name || user.user_metadata?.name || "";
   }
 
-  drawGoogleButton(element, signedIn) { return drawSignIn(element, GOOGLE_CLIENT, signedIn, { theme: "outline", text: "continue_with" }); }
+  drawGoogleButton(element, signedIn) { return drawSignIn(element, GOOGLE_CLIENT, signedIn, { theme: "outline", text: "continue_with" }, "Continue with Google"); }
 
   /** Google's answer, if the page has just come back from signing in with it on a phone: { credential, nonce } or { error }, else null. */
   googleAnswer() { return takeGoogleRedirect(); }
