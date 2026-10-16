@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=40368bf32934";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=40368bf32934";
-import { shrinkPicture } from "./backend/pictures.js?v=40368bf32934";
+import { Backend } from "./backend/backend.js?v=11221db3f0c7";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=11221db3f0c7";
+import { shrinkPicture } from "./backend/pictures.js?v=11221db3f0c7";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -100,6 +100,9 @@ export class Loom {
 
   /** Which of these memories hold every one of these words in their words in full: { ok, data: [id] }. */
   async findInTexts(ids, words) { return answer(await this.backend.callRpc("tapestry_find_in_texts", { ids, words })); }
+
+  /** The member's notices seen (tapestry_notices_seen); a platform from before has none to see. */
+  async noticesSeen() { return answer(await this.backend.callRpc("tapestry_notices_seen")); }
 
   // --- memories, events, periods ---
 

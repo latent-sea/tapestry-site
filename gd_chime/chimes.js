@@ -13,8 +13,8 @@
 //
 // Nothing dispatches while any bell sounds (commands.js asks isStriking).
 
-import { Belfry, GLOBAL } from "./belfry.js?v=40368bf32934";
-import { Reads } from "./reads.js?v=40368bf32934";
+import { Belfry, GLOBAL } from "./belfry.js?v=11221db3f0c7";
+import { Reads } from "./reads.js?v=11221db3f0c7";
 
 const LISTENED = "";
 

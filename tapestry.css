@@ -15,6 +15,10 @@
 #app .chime-pressable.NavLink { background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; box-shadow: none; padding: 6px 10px; min-height: 40px; color: var(--chime-ink-soft); }
 #app .chime-pressable.NavLink.chime-current { border-bottom-color: var(--chime-accent); color: var(--chime-accent); }
 #app .NavWords { font-size: calc(var(--chime-size-face) * 0.938); font-weight: 600; }
+/* how many notices wait: a small count beside the tab's name */
+#app .chime-pressable.NavLink { gap: 5px; align-items: center; }
+#app .NavCount { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--chime-accent); color: var(--chime-ground, #fff);
+  font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; box-sizing: border-box; }
 /* every tab along the top; on a phone, people, places and you are behind More */
 #app .chime-pressable.NavLink.Narrow { display: none; }
 #app .TitleRow { align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -27,9 +31,10 @@
     backdrop-filter: blur(10px); border-top: 1px solid var(--chime-lit); border-bottom: none;
     padding: 2px 4px calc(2px + env(safe-area-inset-bottom)); justify-content: center; }
   #app .Nav { flex-wrap: nowrap; width: 100%; justify-content: space-around; }
-  #app .chime-pressable.NavLink { border-bottom: none; border-top: 2px solid transparent; padding: 6px 4px; }
+  #app .chime-pressable.NavLink { border-bottom: none; border-top: 2px solid transparent; padding: 6px 2px; gap: 3px; }
   #app .chime-pressable.NavLink.chime-current { border-top-color: var(--chime-accent); }
-  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.75); }
+  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.688); }
+  #app .NavCount { min-width: 16px; height: 16px; line-height: 16px; font-size: 10px; padding: 0 4px; }
   #app .chime-pressable.NavLink.Wide { display: none; }
   #app .chime-pressable.NavLink.Narrow { display: flex; }
 }
@@ -165,3 +170,8 @@
 #app .chime-surface.Asked { padding: 16px 18px; }
 #app .Requests { gap: 12px; }
 #app .Request { gap: 6px; align-items: center; }
+
+/* notices */
+#app .chime-pressable.Notice { text-align: left; }
+#app .NoticeRow { gap: 12px; align-items: center; width: 100%; }
+#app .NewMark { flex-shrink: 0; overflow: visible; font-size: calc(var(--chime-size-face) * 0.75); font-weight: 800; color: var(--chime-accent); text-transform: uppercase; letter-spacing: 0.06em; }

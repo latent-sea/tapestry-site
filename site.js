@@ -13,25 +13,26 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=40368bf32934";
-import { Loom } from "./loom.js?v=40368bf32934";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=40368bf32934";
-import * as Edit from "./editor.js?v=40368bf32934";
-import * as Folk from "./people.js?v=40368bf32934";
-import * as Where from "./places.js?v=40368bf32934";
-import * as Me from "./you.js?v=40368bf32934";
-import * as Today from "./journal.js?v=40368bf32934";
-import * as Ask from "./asking.js?v=40368bf32934";
-import * as Run from "./admin.js?v=40368bf32934";
-import * as List from "./importing.js?v=40368bf32934";
-import { listed, timeline } from "./weave.js?v=40368bf32934";
-import { heading, mark, notice, problem } from "./parts.js?v=40368bf32934";
-import { drawWoven } from "./woven.js?v=40368bf32934";
-import { linksOf } from "./links.js?v=40368bf32934";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=40368bf32934";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=11221db3f0c7";
+import { Loom } from "./loom.js?v=11221db3f0c7";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=11221db3f0c7";
+import * as Edit from "./editor.js?v=11221db3f0c7";
+import * as Folk from "./people.js?v=11221db3f0c7";
+import * as Where from "./places.js?v=11221db3f0c7";
+import * as Me from "./you.js?v=11221db3f0c7";
+import * as Today from "./journal.js?v=11221db3f0c7";
+import * as Ask from "./asking.js?v=11221db3f0c7";
+import * as Run from "./admin.js?v=11221db3f0c7";
+import * as List from "./importing.js?v=11221db3f0c7";
+import * as Told from "./notices.js?v=11221db3f0c7";
+import { listed, timeline } from "./weave.js?v=11221db3f0c7";
+import { heading, mark, notice, problem } from "./parts.js?v=11221db3f0c7";
+import { drawWoven } from "./woven.js?v=11221db3f0c7";
+import { linksOf } from "./links.js?v=11221db3f0c7";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=11221db3f0c7";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=40368bf32934")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=11221db3f0c7")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -53,6 +54,7 @@ const GOES_TODAY = "goes_to_today";
 const GOES_EVENTS = "goes_to_my_events";
 const GOES_PERIODS = "goes_to_my_periods";
 const GOES_MORE = "goes_to_more";
+const GOES_NOTICES = "goes_to_notices";
 const GOES_ADMIN = "goes_to_the_admin_area";
 const GOES_THREAD = "goes_to_my_thread";
 const GOES_WOVEN = "goes_to_the_tapestry";
@@ -194,7 +196,9 @@ export class Tapestry extends ChimeApp {
       ...Ask.WORDS,
       ...Run.WORDS,
       ...List.WORDS,
+      ...Told.WORDS,
       [GOES_TODAY]: ["Today"],
+      [GOES_NOTICES]: ["Notices"],
       [GOES_EVENTS]: ["Events"],
       [GOES_PERIODS]: ["Periods"],
       [GOES_MORE]: ["More"],
@@ -235,13 +239,14 @@ export class Tapestry extends ChimeApp {
     this.asking = this.model(new Ask.Asking(this.chimes, LOOM, this.account));
     this.admin = this.model(new Run.Admin(this.chimes, LOOM, this.account));
     this.importer = this.model(new List.Importer(this.chimes, LOOM, this.account));
+    this.notices = this.model(new Told.Notices(this.chimes, LOOM, this.account));
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
       this.nav(),
       ui.stack([
         this.door(), this.todayScreen(), this.threadScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
-        this.moreScreen(), Run.describeAdmin(ui, this.admin), List.describeImport(ui, this.importer, this.account),
+        this.moreScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM), Run.describeAdmin(ui, this.admin), List.describeImport(ui, this.importer, this.account),
         Edit.describeEditor(ui, this.editor, this.account),
         Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
         Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
@@ -251,7 +256,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=40368bf32934").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=11221db3f0c7").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -264,11 +269,16 @@ export class Tapestry extends ChimeApp {
   /** The tabs: every one along the top; on a phone, along the bottom, with people, places and you behind More. */
   nav() {
     const ui = this.ui;
-    const links = [[GOES_TODAY, TODAY], [GOES_THREAD, THREAD], [GOES_EVENTS, EVENTS], [GOES_PERIODS, PERIODS], [GOES_WOVEN, WOVEN],
+    const links = [[GOES_TODAY, TODAY], [GOES_THREAD, THREAD], [GOES_EVENTS, EVENTS], [GOES_PERIODS, PERIODS], [GOES_WOVEN, WOVEN], [GOES_NOTICES, Told.NOTICES],
       [GOES_PEOPLE, PEOPLE, "Wide"], [GOES_PLACES, PLACES, "Wide"], [GOES_YOU, YOU, "Wide"], [GOES_MORE, MORE, "Narrow"]];
+    // the notices' tab says how many wait to be seen
+    const waiting = ui.bound(() => { const n = this.notices.count(); return n ? String(n > 99 ? "99+" : n) : ""; });
+    const words = (action) => (action === GOES_NOTICES
+      ? [ui.text(ui.words(action), "NavWords"), ui.text(waiting, "NavCount").hidesEmpty()]
+      : [ui.text(ui.words(action), "NavWords")]);
     return ui.when(this.account.state.map((s) => s === "in"), ui.row([
       ui.text("Tapestry", "Wordmark"),
-      ui.row(links.map(([action, screen, only]) => ui.pressable(action, {}, [ui.text(ui.words(action), "NavWords")], `NavLink${only ? ` ${only}` : ""}`).goesTo(screen)), "Nav"),
+      ui.row(links.map(([action, screen, only]) => ui.pressable(action, {}, words(action), `NavLink${only ? ` ${only}` : ""}`).goesTo(screen)), "Nav"),
     ], "TopNav"));
   }
 
@@ -358,7 +368,6 @@ export class Tapestry extends ChimeApp {
         ui.text(Phrase.of("Your thread"), "Title").grow(),
         ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY),
       ], "TitleRow"),
-      Ask.describeAsked(ui, this.asking, account),
       this.comingBack(),
       ui.row([
         ui.button(Edit.ADDS_MEMORY, { with: "memory:new", goes_to: EDIT }),
@@ -638,7 +647,7 @@ export class Tapestry extends ChimeApp {
       const [wanted, parameter = ""] = hash.replace(/^#/, "").split("/");
       if (["memory", "event", "period"].includes(wanted) && parameter) return [ITEM, `${wanted}:${parameter}`];
       if ([PERSON, PLACE, JOIN].includes(wanted) && parameter) return [wanted, parameter];
-      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT].includes(wanted)) return [wanted, null];
+      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT, Told.NOTICES].includes(wanted)) return [wanted, null];
       return [THREAD, null];
     };
     const go = (screen, parameter) => {
@@ -692,7 +701,7 @@ export class Tapestry extends ChimeApp {
         }
         return;
       }
-      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT].find((screen) => top.includes(screen));
+      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT, Told.NOTICES].find((screen) => top.includes(screen));
       if (!at) return;
       const parameter = this.driver.getParameter(at);
       const address = at === THREAD ? "" : at === ITEM ? `#${String(parameter).replace(":", "/")}` : parameter ? `#${at}/${parameter}` : `#${at}`;

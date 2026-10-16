@@ -5,10 +5,10 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=40368bf32934";
-import { linksOf } from "./links.js?v=40368bf32934";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=11221db3f0c7";
+import { linksOf } from "./links.js?v=11221db3f0c7";
 
-export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
+export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
 // what each thing is with nothing said of it: a light load (tapestry_visible_light) leaves out what is
 // empty - null, [], false, "" - and the page takes each as its kind's nothing
@@ -106,6 +106,9 @@ export class Weave {
 
   /** The member's birthday ("YYYY-MM-DD"), seen by them alone, or null: their times may be ages. */
   get born() { return this.data.me?.birthday ?? null; }
+
+  /** What others did that touches the member, newest first (backend.sql, "notices"). */
+  get notices() { return this.data.notices; }
 
   /** The memories a light load sent cut short: their words past the first 2000 are fetched when wanted. */
   get cutIds() { return this.kept("cut", () => this.data.memories.filter((m) => m.cut).map((m) => m.id)); }
