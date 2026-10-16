@@ -4,9 +4,9 @@
 // as well as a history; anything more (who, where, which event) is the
 // editor's, from the memory itself.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=29c330fd5204";
-import { clockOf, sayWhen } from "./when.js?v=29c330fd5204";
-import { notice, problem } from "./parts.js?v=29c330fd5204";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=40368bf32934";
+import { clockOf, sayWhen } from "./when.js?v=40368bf32934";
+import { notice, problem } from "./parts.js?v=40368bf32934";
 
 export const WRITES_TODAY = "writes_about_today";
 export const ADDS_TODAY_PICTURE = "adds_a_picture_to_today";

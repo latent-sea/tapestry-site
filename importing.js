@@ -7,11 +7,11 @@
 // the member unless they choose otherwise first, and adding twice adds
 // nothing twice.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=29c330fd5204";
-import { heading, notice, problem } from "./parts.js?v=29c330fd5204";
-import { ACTION } from "./look/look.js?v=29c330fd5204";
-import { AUDIENCES } from "./weave.js?v=29c330fd5204";
-import { parseSpan } from "./when.js?v=29c330fd5204";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=40368bf32934";
+import { heading, notice, problem } from "./parts.js?v=40368bf32934";
+import { ACTION } from "./look/look.js?v=40368bf32934";
+import { AUDIENCES } from "./weave.js?v=40368bf32934";
+import { parseSpan } from "./when.js?v=40368bf32934";
 
 export const IMPORT = "import";
 
@@ -98,7 +98,9 @@ export class Importer extends Controller {
     const born = weave.born;
     const { ages } = readList(this.text.read());
     const total = ages.reduce((n, a) => n + a.memories.length, 0);
-    const kept = new Set(weave.data.memories.filter((m) => m.owner === weave.meId).map((m) => `${m.starts}|${m.body}`));
+    // a long memory is loaded cut short to its first 2000: each is told apart by as much
+    const said = (starts, body) => `${starts}|${body.slice(0, 2000)}`;
+    const kept = new Set(weave.data.memories.filter((m) => m.owner === weave.meId).map((m) => said(m.starts, m.body)));
     this.busy.setValue(true);
     this.problem.setValue("");
     let added = 0;
@@ -107,7 +109,7 @@ export class Importer extends Controller {
       const { starts, ends } = parseSpan(`age ${age}`, new Date(), born);
       for (const body of memories) {
         done++;
-        if (!starts || kept.has(`${starts.date}|${body}`)) continue;
+        if (!starts || kept.has(said(starts.date, body))) continue;
         const saved = await this.loom.saveMemory({ title: "", body, audience: this.audience.read(), tags: [], shares: [], links: [], period_ids: [],
           starts: starts.date, starts_precision: starts.precision, starts_about: false, starts_time: "",
           ends: ends.date, ends_precision: ends.precision, ends_about: false, ends_time: "" });
@@ -117,7 +119,7 @@ export class Importer extends Controller {
           break;
         }
         added++;
-        kept.add(`${starts.date}|${body}`);
+        kept.add(said(starts.date, body));
         this.notice.setValue(Phrase.with("Added %d of %d…", [done, total]));
       }
       if (this.problem.read()) break;

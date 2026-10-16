@@ -2,11 +2,11 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=29c330fd5204";
-import { heading, notice, problem } from "./parts.js?v=29c330fd5204";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=29c330fd5204";
-import { CARD, DANGER, LINK } from "./look/look.js?v=29c330fd5204";
-import { describeMerge } from "./asking.js?v=29c330fd5204";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=40368bf32934";
+import { heading, notice, problem } from "./parts.js?v=40368bf32934";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=40368bf32934";
+import { CARD, DANGER, LINK } from "./look/look.js?v=40368bf32934";
+import { describeMerge } from "./asking.js?v=40368bf32934";
 
 export const PLACES = "places";
 export const PLACE = "place";

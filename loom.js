@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=29c330fd5204";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=29c330fd5204";
-import { shrinkPicture } from "./backend/pictures.js?v=29c330fd5204";
+import { Backend } from "./backend/backend.js?v=40368bf32934";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=40368bf32934";
+import { shrinkPicture } from "./backend/pictures.js?v=40368bf32934";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -79,15 +79,27 @@ export class Loom {
 
   // --- reading ---
 
-  /** Everything the member may see (tapestry_visible), with an address for each picture: { ok, data: { tapestry, addresses }, error }. */
+  /**
+   * Everything the member may see, as light as the platform sends it
+   * (tapestry_visible_light: what is empty left out, long memories cut short);
+   * from a platform from before, in full (tapestry_visible). Pictures'
+   * addresses are asked for as they are shown (pictureAddresses).
+   */
   async visible() {
-    const reply = await this.backend.callRpc("tapestry_visible");
+    let reply = await this.backend.callRpc("tapestry_visible_light");
+    if (!reply.ok && reply.status === 404) reply = await this.backend.callRpc("tapestry_visible");
     if (!reply.ok) return answer(reply);
-    const tapestry = reply.data ?? { me: null };
-    const paths = (tapestry.memories ?? []).flatMap((memory) => memory.pictures.map((picture) => picture.path));
-    const signed = await this.backend.privatePictureAddresses(paths);
-    return { ok: true, data: { tapestry, addresses: signed.ok ? signed.data : {} }, error: "" };
+    return { ok: true, data: { tapestry: reply.data ?? { me: null } }, error: "" };
   }
+
+  /** Addresses that show these pictures, by their paths, for an hour: { ok, data: { path: address } }. */
+  async pictureAddresses(paths) { return answer(await this.backend.privatePictureAddresses(paths)); }
+
+  /** Memories' words in full, by their ids, as far as the member sees them: { ok, data: { id: words } }. */
+  async memoryTexts(ids) { return answer(await this.backend.callRpc("tapestry_memory_texts", { ids })); }
+
+  /** Which of these memories hold every one of these words in their words in full: { ok, data: [id] }. */
+  async findInTexts(ids, words) { return answer(await this.backend.callRpc("tapestry_find_in_texts", { ids, words })); }
 
   // --- memories, events, periods ---
 

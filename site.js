@@ -13,24 +13,25 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=29c330fd5204";
-import { Loom } from "./loom.js?v=29c330fd5204";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=29c330fd5204";
-import * as Edit from "./editor.js?v=29c330fd5204";
-import * as Folk from "./people.js?v=29c330fd5204";
-import * as Where from "./places.js?v=29c330fd5204";
-import * as Me from "./you.js?v=29c330fd5204";
-import * as Today from "./journal.js?v=29c330fd5204";
-import * as Ask from "./asking.js?v=29c330fd5204";
-import * as Run from "./admin.js?v=29c330fd5204";
-import * as List from "./importing.js?v=29c330fd5204";
-import { listed, timeline } from "./weave.js?v=29c330fd5204";
-import { heading, mark, notice, problem } from "./parts.js?v=29c330fd5204";
-import { drawWoven } from "./woven.js?v=29c330fd5204";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=29c330fd5204";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=40368bf32934";
+import { Loom } from "./loom.js?v=40368bf32934";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=40368bf32934";
+import * as Edit from "./editor.js?v=40368bf32934";
+import * as Folk from "./people.js?v=40368bf32934";
+import * as Where from "./places.js?v=40368bf32934";
+import * as Me from "./you.js?v=40368bf32934";
+import * as Today from "./journal.js?v=40368bf32934";
+import * as Ask from "./asking.js?v=40368bf32934";
+import * as Run from "./admin.js?v=40368bf32934";
+import * as List from "./importing.js?v=40368bf32934";
+import { listed, timeline } from "./weave.js?v=40368bf32934";
+import { heading, mark, notice, problem } from "./parts.js?v=40368bf32934";
+import { drawWoven } from "./woven.js?v=40368bf32934";
+import { linksOf } from "./links.js?v=40368bf32934";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=40368bf32934";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=29c330fd5204")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=40368bf32934")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -250,7 +251,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=29c330fd5204").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=40368bf32934").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -351,7 +352,7 @@ export class Tapestry extends ChimeApp {
   threadScreen() {
     const ui = this.ui;
     const account = this.account;
-    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.thread(w.meId), this.looking.threadSearch.read()); });
+    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.thread(w.meId), this.looking.threadSearch.read(), account.foundInTexts(this.looking.threadSearch.read())); });
     return ui.screen(THREAD, [
       ui.row([
         ui.text(Phrase.of("Your thread"), "Title").grow(),
@@ -375,7 +376,7 @@ export class Tapestry extends ChimeApp {
     const account = this.account;
     const looking = this.looking;
     const threads = account.weave.map((w) => w.threads());
-    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.woven(looking.shown()), looking.wovenSearch.read()); });
+    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.woven(looking.shown()), looking.wovenSearch.read(), account.foundInTexts(looking.wovenSearch.read())); });
     return ui.screen(WOVEN, [
       ui.text(Phrase.of("The tapestry"), "Title"),
       ui.text(Phrase.of("Your thread and the threads of your people, as far as they share them, woven together. Where threads cross, it says so."), "Hint").wraps(),
@@ -559,6 +560,10 @@ export class Tapestry extends ChimeApp {
         ], "Actions ViewerActions"),
       ], "Viewer");
     });
+    // a memory's words in full: one a light load cut short is fetched as it is opened, its links found in all of them
+    const text = ui.bound(() => (kindOf() === "memory" ? account.textOf(item.read()) : entry.read()?.text ?? ""));
+    const words = ui.bound(() => (kindOf() === "memory" && !item.read()?.title ? text.read().trim().split("\n").slice(1).join("\n").trim() : text.read()));
+    const links = ui.bound(() => (item.read()?.cut ? linksOf({ ...item.read(), body: text.read() }) : entry.read()?.links ?? []));
     const memories = ui.bound(() => (kindOf() === "event" ? account.weave.read().memoriesOf(idOf()) : []));
     const during = ui.bound(() => (kindOf() === "period" ? account.weave.read().during(idOf()) : []));
     return ui.screen(ITEM, [
@@ -572,13 +577,13 @@ export class Tapestry extends ChimeApp {
           ui.text(entry.map((e) => (e?.mine ? Phrase.of("Your thread") : Phrase.with("%s's thread", [e?.ownerName ?? ""]))), "Whose"),
         ], "CardTop"),
         ui.text(entry.map((e) => e?.title ?? ""), "Title").wraps(),
-        ui.text(entry.map((e) => (e?.kind === "memory" && !item.read()?.title ? e.text.trim().split("\n").slice(1).join("\n").trim() : e?.text ?? "")), "Words Body").wraps().hidesEmpty(),
+        ui.text(words, "Words Body").wraps().hidesEmpty(),
         ui.each(pictures, (pic) => ui.pressable(SHOWS_PICTURE, pic.map((p) => ({ parameter: p?.path ?? "" })), [
           ui.image(pic.map((p) => (p ? account.address(p.path) : "")), "Picture", pic.map((p) => p?.caption || Phrase.of("A picture"))),
           ui.text(pic.map((p) => p?.caption ?? ""), "Caption").wraps().hidesEmpty(),
         ], "PictureButton").opens(viewer), (p) => p.id, "Pictures"),
         // its links: a YouTube video plays here, from YouTube's privacy-enhanced address, loading nothing until pressed
-        ui.each(entry.map((e) => e?.links ?? []), (link) => ui.when(link.map((l) => !!l?.video),
+        ui.each(links, (link) => ui.when(link.map((l) => !!l?.video),
           ui.embed(link.map((l) => l?.video?.src ?? ""), { title: Phrase.of("A video"), poster: link.map((l) => l?.video?.poster ?? ""), style: "Video" }),
           ui.hyperlink(link.map((l) => l?.url ?? ""), [ui.text(link.map((l) => l?.site ?? ""), "LinkSite"), ui.text(link.map((l) => l?.url ?? ""), "LinkAddress").wraps()],
             "LinkOut")), (l) => l.url, "Links"),

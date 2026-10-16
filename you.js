@@ -10,13 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=29c330fd5204";
-import { heading, notice, problem } from "./parts.js?v=29c330fd5204";
-import { AUDIENCES, CARD_PARTS } from "./weave.js?v=29c330fd5204";
-import { SIGNS_OUT } from "./account.js?v=29c330fd5204";
-import { copyOf } from "./keep.js?v=29c330fd5204";
-import { parseWhen, sayWhen } from "./when.js?v=29c330fd5204";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=29c330fd5204";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=40368bf32934";
+import { heading, notice, problem } from "./parts.js?v=40368bf32934";
+import { AUDIENCES, CARD_PARTS, Weave } from "./weave.js?v=40368bf32934";
+import { SIGNS_OUT } from "./account.js?v=40368bf32934";
+import { copyOf } from "./keep.js?v=40368bf32934";
+import { parseWhen, sayWhen } from "./when.js?v=40368bf32934";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=40368bf32934";
 
 export const YOU = "you";
 
@@ -123,13 +123,25 @@ export class You extends Controller {
     this.busy.setValue(true);
     this.problem.setValue("");
     this.notice.setValue("Making your copy, with its pictures…");
-    const weave = this.account.weave.read();
+    const loaded = this.account.weave.read();
+    // its long memories in full, as a light load cut them short
+    const thread = new Set(loaded.thread(loaded.meId).map((e) => e.key));
+    const kept = loaded.data.memories.filter((m) => thread.has(`memory:${m.id}`));
+    if (!(await this.account.fetchTexts(kept.filter((m) => m.cut).map((m) => m.id)))) {
+      if (this.disposed) return;
+      this.busy.setValue(false);
+      this.notice.setValue("");
+      this.problem.setValue("Couldn't fetch all of your memories' words. Please try again.");
+      return;
+    }
+    const texts = this.account.texts.read();
+    const weave = new Weave({ ...loaded.data, memories: loaded.data.memories.map((m) => (m.cut && texts[m.id] !== undefined ? { ...m, body: texts[m.id], cut: false } : m)) });
+    const addresses = await this.account.addressesFor(kept.flatMap((m) => m.pictures.map((p) => p.path)));
     const pictures = {};
     let missing = 0;
-    for (const memory of weave.data.memories) {
-      for (const picture of memory.pictures ?? []) {
-        if (memory.owner !== weave.meId && !weave.thread(weave.meId).some((e) => e.key === `memory:${memory.id}`)) continue;
-        const got = await this.loom.pictureData(this.account.address(picture.path));
+    for (const memory of kept) {
+      for (const picture of memory.pictures) {
+        const got = addresses[picture.path] ? await this.loom.pictureData(addresses[picture.path]) : { ok: false };
         if (got.ok) pictures[picture.path] = got.data; else missing++;
       }
     }

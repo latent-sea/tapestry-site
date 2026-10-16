@@ -5,10 +5,26 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=29c330fd5204";
-import { linksOf } from "./links.js?v=29c330fd5204";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=40368bf32934";
+import { linksOf } from "./links.js?v=40368bf32934";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
+
+// what each thing is with nothing said of it: a light load (tapestry_visible_light) leaves out what is
+// empty - null, [], false, "" - and the page takes each as its kind's nothing
+const SPAN = { starts: null, starts_precision: null, starts_about: false, starts_time: null, ends: null, ends_precision: null, ends_about: false, ends_time: null };
+const NOTHING = {
+  memories: { title: "", body: "", links: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
+  events: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
+  periods: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
+};
+
+/** What was loaded, with each memory, event and period whole: what a light load left out put back as nothing. */
+export function filled(data) {
+  const whole = { ...EMPTY, ...(data ?? {}) };
+  for (const [list, nothing] of Object.entries(NOTHING)) whole[list] = whole[list].map((thing) => ({ ...nothing, ...thing }));
+  return whole;
+}
 
 /** The audiences a member chooses between, in the order offered, with their words. */
 export const AUDIENCES = [
@@ -60,7 +76,7 @@ const CARD_PARTS_SHOWN = { ...Object.fromEntries(CARD_PARTS.map(([key]) => [key,
 
 export class Weave {
   constructor(data = EMPTY) {
-    this.data = { ...EMPTY, ...(data ?? {}) };
+    this.data = filled(data);
     const byId = (list) => new Map(list.map((item) => [item.id, item]));
     this.people = byId(this.data.people);
     this.circles = byId(this.data.circles);
@@ -90,6 +106,9 @@ export class Weave {
 
   /** The member's birthday ("YYYY-MM-DD"), seen by them alone, or null: their times may be ages. */
   get born() { return this.data.me?.birthday ?? null; }
+
+  /** The memories a light load sent cut short: their words past the first 2000 are fetched when wanted. */
+  get cutIds() { return this.kept("cut", () => this.data.memories.filter((m) => m.cut).map((m) => m.id)); }
 
   // --- names ---
 
@@ -264,23 +283,28 @@ export class Weave {
     return entry.threads.filter((a) => accounts.includes(a));
   }
 
-  /** The entries whose words, people, place or event hold what is looked for. */
-  find(entries, looked) {
+  /**
+   * The entries whose words, people, place or event hold what is looked for;
+   * also, any memory among these ids (cut short memories the platform found
+   * the words in, past what was sent).
+   */
+  find(entries, looked, also = null) {
     const words = lower(looked).trim().split(/\s+/).filter(Boolean);
     if (!words.length) return entries;
     // the same list looked through for the same words is found once (every screen and card asks)
     if (!FOUND.has(entries)) FOUND.set(entries, new Map());
     const found = FOUND.get(entries);
-    if (!found.has(words.join(" "))) found.set(words.join(" "), this.findIn(entries, words));
-    return found.get(words.join(" "));
+    const key = `${words.join(" ")}|${[...(also ?? [])].join(",")}`;
+    if (!found.has(key)) found.set(key, this.findIn(entries, words, also));
+    return found.get(key);
   }
 
-  /** The entries holding every one of these words. */
-  findIn(entries, words) {
+  /** The entries holding every one of these words, or among these memories. */
+  findIn(entries, words, also = null) {
     return entries.filter((entry) => {
       // what it is found by, worked out once for the entry
       entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people].join(" "));
-      return words.every((word) => entry.hay.includes(word));
+      return words.every((word) => entry.hay.includes(word)) || (entry.kind === "memory" && !!also?.has(entry.id));
     });
   }
 

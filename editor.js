@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=29c330fd5204";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=29c330fd5204";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=29c330fd5204";
-import { chooser, heading, notice, problem } from "./parts.js?v=29c330fd5204";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=29c330fd5204";
-import { DANGER, LINK } from "./look/look.js?v=29c330fd5204";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=40368bf32934";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=40368bf32934";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=40368bf32934";
+import { chooser, heading, notice, problem } from "./parts.js?v=40368bf32934";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=40368bf32934";
+import { DANGER, LINK } from "./look/look.js?v=40368bf32934";
 
 export const EDIT = "edit";
 
@@ -143,6 +143,7 @@ export class Editor extends Controller {
     this.linkText = this.value("");
     this.searches = { event: this.value(""), period: this.value(""), place: this.value(""), person: this.value(""), share: this.value("") };
     this.busy = this.value(false);
+    this.fetching = this.value(false); // a long memory's words being fetched in full: nothing is saved until they are
     this.confirming = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
@@ -172,6 +173,7 @@ export class Editor extends Controller {
       return tied && !tiedId ? Phrase.of("Nothing to add to") : null;
     }
     if ((action === SAVES || action === DELETES || action === ASKS_TO_DELETE) && this.busy.read()) return Phrase.of("Saving");
+    if (action === SAVES && this.fetching.read()) return Phrase.of("Fetching all its words");
     if (action === SAVES) {
       const kind = this.kind.read();
       const span = this.span();
@@ -256,6 +258,20 @@ export class Editor extends Controller {
     return null;
   }
 
+  /** A long memory's words in full put in the draft, unless it was closed first; until they are, it isn't saved. */
+  async fetchWhole(item) {
+    const known = this.account.texts.read()[item.id];
+    if (known !== undefined) { this.text.setValue(known); return; }
+    this.fetching.setValue(true);
+    const fetched = await this.account.fetchTexts([item.id]);
+    if (this.disposed || this.id.read() !== item.id) return;
+    const whole = this.account.texts.read()[item.id];
+    if (!fetched || whole === undefined) { this.problem.setValue("Couldn't fetch all of its words: go back and open it again."); return; }
+    // typed into while it came: what was typed, and the rest after it
+    this.text.setValue(this.text.read() === item.body ? whole : this.text.read() + whole.slice(item.body.length));
+    this.fetching.setValue(false);
+  }
+
   /** A draft opened: "memory:new", "memory:new:event:<id>" (or :period:, :place:), "event:<id>"... */
   open(parameter) {
     const [kind, id, tied, tiedId] = parameter.split(":");
@@ -265,6 +281,9 @@ export class Editor extends Controller {
     this.id.setValue(item?.id ?? null);
     this.title.setValue(item?.title ?? "");
     this.text.setValue((kind === "memory" ? item?.body : item?.notes) ?? "");
+    // a long memory a light load cut short: its words in full, fetched before it can be saved
+    this.fetching.setValue(false);
+    if (kind === "memory" && item?.cut) this.fetchWhole(item);
     this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "");
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
     this.periodIds.setValue(item ? periodsOf(item) : tied === "period" ? [tiedId] : []);
