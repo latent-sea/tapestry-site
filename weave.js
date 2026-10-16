@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { ageDuring, headingOf, saySpan, sortKey, within } from "./when.js?v=627a8c37f81e";
-import { linksOf } from "./links.js?v=627a8c37f81e";
+import { ageDuring, headingOf, saySpan, sortKey, within } from "./when.js?v=53cb48be9b8b";
+import { linksOf } from "./links.js?v=53cb48be9b8b";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -144,25 +144,26 @@ export class Weave {
     const base = {
       key: `${kind}:${item.id}`, kind, id: item.id, owner: item.owner, ownerName: this.nameOf(item.owner), mine,
       colour: this.colourOf(item.owner), place: place ? { id: place.id, name: place.name } : null, people, unlinked,
-      pictures: [], event: null, period: null, threads: [item.owner],
+      pictures: [], event: null, periods: [], threads: [item.owner],
     };
     const { starts: when, ends: until } = this.spanOf(kind, item);
     // a period with no end is still going; anything else with none happened once
-    const said = saySpan(when, until, kind === "period" ? "now" : "", this.born);
+    const said = saySpan(when, until, kind === "period" ? "now" : "");
     // how old the member was then, when Tapestry knows their birthday: a period still going, until today
     const today = new Date();
     const going = kind === "period" && when && !until ? { date: `${today.getFullYear()}-${two(today.getMonth() + 1)}-${two(today.getDate())}`, precision: "day" } : null;
     base.age = ageDuring(this.born, when, until ?? going);
     if (kind === "memory") {
       const event = this.events.get(item.event_id);
-      const period = this.periods.get(item.period_id);
+      // the periods of the member's life it was during, as many as overlap
+      const periods = (item.period_ids ?? []).map((id) => this.periods.get(id)).filter(Boolean).map((p) => ({ id: p.id, title: p.title }));
       const firstLine = item.body.trim().split("\n")[0];
       const title = item.title || (firstLine.length > 70 ? `${firstLine.slice(0, 67)}…` : firstLine) || "A memory";
       const links = linksOf(item);
       return { ...base, when, until, said, title, text: item.body, pictures: item.pictures, links,
         videos: links.filter((l) => l.video).map((l) => l.video.poster),
         event: event ? { id: event.id, title: event.title } : item.event_id ? { id: item.event_id, title: "" } : null,
-        period: period ? { id: period.id, title: period.title } : null };
+        periods };
     }
     if (kind === "event") {
       const memories = this.data.memories.filter((m) => m.event_id === item.id);
@@ -203,7 +204,7 @@ export class Weave {
     const words = lower(looked).trim().split(/\s+/).filter(Boolean);
     if (!words.length) return entries;
     return entries.filter((entry) => {
-      const hay = lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, entry.period?.title, ...entry.people].join(" "));
+      const hay = lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...entry.periods.map((p) => p.title), ...entry.people].join(" "));
       return words.every((word) => hay.includes(word));
     });
   }
@@ -235,7 +236,7 @@ export class Weave {
     if (!period) return [];
     const { starts, ends } = this.spanOf("period", period);
     return sortEntries(this.thread(period.owner).filter((entry) => entry.key !== `period:${periodId}`
-      && ((entry.kind === "memory" && this.memories.get(entry.id).period_id === periodId) || within(entry.when, starts, ends, entry.until))));
+      && ((entry.kind === "memory" && (this.memories.get(entry.id).period_ids ?? []).includes(periodId)) || within(entry.when, starts, ends, entry.until))));
   }
 
   // --- coming back ---

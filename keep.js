@@ -5,9 +5,9 @@
 // read it later. A family's history is never only on the platform. Plain
 // data in, a page's text out, tested by tests/test_keep.mjs.
 
-import { linksOf } from "./links.js?v=627a8c37f81e";
-import { sortEntries } from "./weave.js?v=627a8c37f81e";
-import { headingOf } from "./when.js?v=627a8c37f81e";
+import { linksOf } from "./links.js?v=53cb48be9b8b";
+import { sortEntries } from "./weave.js?v=53cb48be9b8b";
+import { headingOf } from "./when.js?v=53cb48be9b8b";
 
 const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const KIND = { memory: "Memory", event: "Event", period: "Period" };
@@ -37,7 +37,7 @@ export function copyOf(weave, pictures = {}, made = new Date()) {
       entry.place ? `At ${escape(entry.place.name)}` : "",
       entry.people.length ? `With ${escape(entry.people.join(", "))}` : "",
       entry.event?.title ? `Of ${escape(entry.event.title)}` : "",
-      entry.period?.title ? `During ${escape(entry.period.title)}` : "",
+      entry.periods?.length ? `During ${escape(entry.periods.map((p) => p.title).join(", "))}` : "",
       entry.mine ? "" : `Made by ${escape(entry.ownerName)}`,
     ].filter(Boolean);
     const pictured = (entry.pictures ?? []).map((p) => (pictures[p.path]

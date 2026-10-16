@@ -13,22 +13,22 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=627a8c37f81e";
-import { Loom } from "./loom.js?v=627a8c37f81e";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=627a8c37f81e";
-import * as Edit from "./editor.js?v=627a8c37f81e";
-import * as Folk from "./people.js?v=627a8c37f81e";
-import * as Where from "./places.js?v=627a8c37f81e";
-import * as Me from "./you.js?v=627a8c37f81e";
-import * as Today from "./journal.js?v=627a8c37f81e";
-import * as Ask from "./asking.js?v=627a8c37f81e";
-import { listed, timeline } from "./weave.js?v=627a8c37f81e";
-import { heading, mark, notice, problem } from "./parts.js?v=627a8c37f81e";
-import { drawWoven } from "./woven.js?v=627a8c37f81e";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=627a8c37f81e";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=53cb48be9b8b";
+import { Loom } from "./loom.js?v=53cb48be9b8b";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=53cb48be9b8b";
+import * as Edit from "./editor.js?v=53cb48be9b8b";
+import * as Folk from "./people.js?v=53cb48be9b8b";
+import * as Where from "./places.js?v=53cb48be9b8b";
+import * as Me from "./you.js?v=53cb48be9b8b";
+import * as Today from "./journal.js?v=53cb48be9b8b";
+import * as Ask from "./asking.js?v=53cb48be9b8b";
+import { listed, timeline } from "./weave.js?v=53cb48be9b8b";
+import { heading, mark, notice, problem } from "./parts.js?v=53cb48be9b8b";
+import { drawWoven } from "./woven.js?v=53cb48be9b8b";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=53cb48be9b8b";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=627a8c37f81e")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=53cb48be9b8b")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -201,7 +201,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=627a8c37f81e").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=53cb48be9b8b").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -389,10 +389,12 @@ export class Tapestry extends ChimeApp {
         eventId: it.event_id ?? null, shares: it.shares });
       return Phrase.with("Seen by: %s", [said.summary]);
     });
-    const at = (which) => ui.bound(() => (which === "event" ? item.read()?.event_id : item.read()?.period_id) ?? "");
-    const linkTo = (which) => ui.when(ui.bound(() => !!(which === "event" ? entry.read()?.event?.title : entry.read()?.period?.title)),
-      ui.pressable(OPENS_ITEM, ui.bound(() => ({ parameter: `${which}:${at(which).read()}` })), [ui.text(ui.bound(() => Phrase.with(which === "event" ? "Of %s" : "During %s",
-        [(which === "event" ? entry.read()?.event?.title : entry.read()?.period?.title) ?? ""])), "LinkWords")], "Link").goesTo(ITEM));
+    const ofEvent = ui.when(ui.bound(() => !!entry.read()?.event?.title),
+      ui.pressable(OPENS_ITEM, ui.bound(() => ({ parameter: `event:${item.read()?.event_id ?? ""}` })),
+        [ui.text(ui.bound(() => Phrase.with("Of %s", [entry.read()?.event?.title ?? ""])), "LinkWords")], "Link").goesTo(ITEM));
+    // each period of the member's life it was during: as many as overlap
+    const duringPeriods = ui.each(entry.map((e) => e?.periods ?? []), (held) => ui.pressable(OPENS_ITEM, held.map((p) => ({ parameter: `period:${p?.id ?? ""}` })),
+      [ui.text(held.map((p) => Phrase.with("During %s", [p?.title ?? ""])), "LinkWords")], "Link").goesTo(ITEM), (p) => p.id, "PeriodLinks");
     const people = entry.map((e) => e?.people ?? []);
     // a picture shown over everything, as large as the screen allows, with its caption, the one before and after
     const pictures = entry.map((e) => e?.pictures ?? []);
@@ -435,8 +437,8 @@ export class Tapestry extends ChimeApp {
             "LinkOut")), (l) => l.url, "Links"),
         ui.when(entry.map((e) => !!e?.place), ui.pressable(Where.OPENS_PLACE, entry.map((e) => ({ parameter: e?.place?.id ?? "" })),
           [ui.text(entry.map((e) => Phrase.with("At %s", [e?.place?.name ?? ""])), "LinkWords")], "Link").goesTo(PLACE)),
-        linkTo("event"),
-        linkTo("period"),
+        ofEvent,
+        duringPeriods,
         ui.when(people.map((p) => p.length > 0), ui.column([
           ui.text(ui.bound(() => Phrase.of(kindOf() === "event" ? "Who was there" : "With")), "FieldName"),
           ui.text(people.map((p) => listed(p)), "Words").wraps(),

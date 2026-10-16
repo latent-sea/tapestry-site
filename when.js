@@ -13,7 +13,8 @@
 // kept as time: "14:30" - so the thread is a journal too. A span may be a
 // season ("summer 2021", "winter 2021/22": the northern hemisphere's, as
 // months), or, given the member's birthday, an age ("age 12", "when I was
-// 7 to 9", "in my twenties": from that birthday to the day before the next).
+// 7 to 9", "in my twenties"): the dates from that birthday to the day before
+// the next, said back as those dates.
 // Each is said back the same way, so what is shown can be typed again.
 
 export const PRECISIONS = ["day", "month", "year", "decade"];
@@ -262,14 +263,14 @@ export function sayWhen(when) {
  * A span said: "2004 – 2009", "about 1995 – June 1998", "June 2004 – now"
  * when it is still going (stillGoing, "" to say only its start), or one
  * time when it starts and ends within the same. A season is said as one
- * ("Summer 2021"); given the birthday, so is an age ("age 12", "ages 7 – 9").
+ * ("Summer 2021").
  */
-export function saySpan(starts, ends, stillGoing = "", born = null) {
+export function saySpan(starts, ends, stillGoing = "") {
   const from = sayWhen(starts);
   if (!from) return "";
   if (!ends || !ends.date) return stillGoing ? `${from} – ${stillGoing}` : from;
-  const named = seasonSaid(starts, ends) || agesSaid(starts, ends, born);
-  if (named) return named;
+  const season = seasonSaid(starts, ends);
+  if (season) return season;
   const to = sayWhen(ends);
   if (to === from) return from;
   // on the same day, the end is only its time: "12 June 1998, 14:00 – 16:00"
@@ -287,17 +288,6 @@ function seasonSaid(starts, ends) {
   const last = month === 12 ? dateOf(year + 1, 2) : dateOf(year, month + 2);
   if (ends.date !== last) return "";
   const said = month === 12 ? `Winter ${year}/${two((year + 1) % 100)}` : `${SEASON_NAMES[month]} ${year}`;
-  return starts.about ? `about ${said}` : said;
-}
-
-/** A span that is exactly an age or ages, from the birthday, said as one: "age 12", "about ages 7 – 9"; else "". */
-function agesSaid(starts, ends, born) {
-  if (!born || starts.precision !== "day" || ends.precision !== "day" || starts.about !== ends.about || starts.time || ends.time) return "";
-  const first = Number(starts.date.slice(0, 4)) - Number(born.slice(0, 4));
-  if (first < 0 || turning(born, first) !== starts.date) return "";
-  const last = ageOn(born, ends.date);
-  if (last < first || dayBefore(turning(born, last + 1)) !== ends.date) return "";
-  const said = first === last ? `age ${first}` : `ages ${first} – ${last}`;
   return starts.about ? `about ${said}` : said;
 }
 

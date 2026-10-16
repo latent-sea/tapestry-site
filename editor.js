@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=627a8c37f81e";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=627a8c37f81e";
-import { AUDIENCES, timeOf } from "./weave.js?v=627a8c37f81e";
-import { chooser, heading, notice, problem } from "./parts.js?v=627a8c37f81e";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=627a8c37f81e";
-import { DANGER, LINK } from "./look/look.js?v=627a8c37f81e";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=53cb48be9b8b";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=53cb48be9b8b";
+import { AUDIENCES, timeOf } from "./weave.js?v=53cb48be9b8b";
+import { chooser, heading, notice, problem } from "./parts.js?v=53cb48be9b8b";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=53cb48be9b8b";
+import { DANGER, LINK } from "./look/look.js?v=53cb48be9b8b";
 
 export const EDIT = "edit";
 
@@ -128,7 +128,7 @@ export class Editor extends Controller {
     this.text = this.value("");
     this.whenText = this.value("");
     this.eventId = this.value(null);
-    this.periodId = this.value(null);
+    this.periodIds = this.value([]); // a memory's periods: as many as overlap
     this.placeId = this.value(null);
     this.tags = this.value([]);
     this.audience = this.value("there");
@@ -211,8 +211,8 @@ export class Editor extends Controller {
       if (!this.placeId.read()) this.placeId.setValue(this.weave().events.get(payload.id)?.place_id ?? null);
     }
     if (action === DROPS_EVENT) this.eventId.setValue(null);
-    if (action === PICKS_PERIOD) { this.periodId.setValue(payload.id); this.searches.period.setValue(""); }
-    if (action === DROPS_PERIOD) this.periodId.setValue(null);
+    if (action === PICKS_PERIOD) { this.periodIds.update((ids) => (ids.includes(payload.id) ? ids : [...ids, payload.id])); this.searches.period.setValue(""); }
+    if (action === DROPS_PERIOD) this.periodIds.update((ids) => ids.filter((id) => id !== payload.id));
     if (action === PICKS_PLACE) { this.placeId.setValue(payload.id); this.searches.place.setValue(""); }
     if (action === DROPS_PLACE) this.placeId.setValue(null);
     if (action === ADDS_NEW_PLACE) this.addPlace(this.searches.place.read().trim());
@@ -258,9 +258,9 @@ export class Editor extends Controller {
     this.id.setValue(item?.id ?? null);
     this.title.setValue(item?.title ?? "");
     this.text.setValue((kind === "memory" ? item?.body : item?.notes) ?? "");
-    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", this.weave().born) : "");
+    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "") : "");
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
-    this.periodId.setValue(item?.period_id ?? (tied === "period" ? tiedId : null));
+    this.periodIds.setValue(item ? [...(item.period_ids ?? [])] : tied === "period" ? [tiedId] : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
     this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
     this.audience.setValue(item?.audience ?? weave.defaultAudience(kind));
@@ -310,7 +310,7 @@ export class Editor extends Controller {
       id: this.id.read() ?? "", title: this.title.read().trim(), ...time("starts", starts), ...time("ends", ends),
       place_id: this.placeId.read() ?? "", audience: this.audience.read(), tags: this.tags.read(), shares: this.shares.read(),
     };
-    if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_id: this.periodId.read() ?? "" };
+    if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_ids: this.periodIds.read() };
     return { ...common, notes: this.text.read() };
   }
 
@@ -381,15 +381,16 @@ export class Editor extends Controller {
       .map((e) => ({ id: e.id, label: `${e.title} · ${weave.entry("event", e).said}` }));
   }
 
-  chosenPeriod() {
-    const period = this.weave().periods.get(this.periodId.read());
-    return period ? [{ id: period.id, label: period.title }] : [];
+  chosenPeriods() {
+    const weave = this.weave();
+    return this.periodIds.read().map((id) => weave.periods.get(id)).filter(Boolean).map((p) => ({ id: p.id, label: p.title }));
   }
 
   periodMatches() {
     const weave = this.weave();
     const looked = this.searches.period.read();
-    return weave.data.periods.filter((p) => p.owner === weave.meId && matching(looked, p.title)).slice(0, MOST).map((p) => ({ id: p.id, label: p.title }));
+    const chosen = this.periodIds.read();
+    return weave.data.periods.filter((p) => p.owner === weave.meId && !chosen.includes(p.id) && matching(looked, p.title)).slice(0, MOST).map((p) => ({ id: p.id, label: p.title }));
   }
 
   chosenPlace() {
@@ -446,7 +447,7 @@ export function describeEditor(ui, editor, account) {
     const read = span.read();
     if (read.error) return read.error === EXAMPLES ? Phrase.of(EXAMPLES) : Phrase.of(read.error);
     if (!read.starts) return kind.read() === "memory" && editor.eventId.read() ? Phrase.of("The same as its event") : "";
-    return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "", account.weave.read().born)]);
+    return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "")]);
   });
   const audience = ui.bound(() => editor.audienceNow());
   const notOn = audience.map((a) => (a.notOnTapestry.length ? Phrase.with("Not on Tapestry, so can't see it yet: %s", [a.notOnTapestry.join(", ")]) : ""));
@@ -474,7 +475,7 @@ export function describeEditor(ui, editor, account) {
     ui.when(isMemory, ui.column([
       chooser(ui, { label: Phrase.of("Of an event you were at"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
         search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT }),
-      chooser(ui, { label: Phrase.of("During a period of your life"), chosen: ui.bound(() => editor.chosenPeriod()), unpick: DROPS_PERIOD,
+      chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()), unpick: DROPS_PERIOD,
         search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD }),
     ], "Part")),
     chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,

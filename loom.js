@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=627a8c37f81e";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=627a8c37f81e";
-import { shrinkPicture } from "./backend/pictures.js?v=627a8c37f81e";
+import { Backend } from "./backend/backend.js?v=53cb48be9b8b";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=53cb48be9b8b";
+import { shrinkPicture } from "./backend/pictures.js?v=53cb48be9b8b";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
