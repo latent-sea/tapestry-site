@@ -24,17 +24,17 @@
 // is a function of the parameter it is entered with, handed in as a bound
 // value. Every pop-up owns its way out: CLOSES, which goes back.
 
-import { Bound } from "./bound.js?v=11221db3f0c7";
-import { Chimes } from "./chimes.js?v=11221db3f0c7";
-import { Desc } from "./desc.js?v=11221db3f0c7";
-import { Driver } from "./driver.js?v=11221db3f0c7";
-import { Frames } from "./frames.js?v=11221db3f0c7";
-import { Language } from "./language.js?v=11221db3f0c7";
-import { OwnBell } from "./own_bell.js?v=11221db3f0c7";
-import { Phrase } from "./phrase.js?v=11221db3f0c7";
-import { Place } from "./place.js?v=11221db3f0c7";
-import { Pressables, Themes } from "./themes.js?v=11221db3f0c7";
-import { Value } from "./value.js?v=11221db3f0c7";
+import { Bound } from "./bound.js?v=94952f0a6b41";
+import { Chimes } from "./chimes.js?v=94952f0a6b41";
+import { Desc } from "./desc.js?v=94952f0a6b41";
+import { Driver } from "./driver.js?v=94952f0a6b41";
+import { Frames } from "./frames.js?v=94952f0a6b41";
+import { Language } from "./language.js?v=94952f0a6b41";
+import { OwnBell } from "./own_bell.js?v=94952f0a6b41";
+import { Phrase } from "./phrase.js?v=94952f0a6b41";
+import { Place } from "./place.js?v=94952f0a6b41";
+import { Pressables, Themes } from "./themes.js?v=94952f0a6b41";
+import { Value } from "./value.js?v=94952f0a6b41";
 
 const DRAWN = "drawn";
 let fieldsMade = 0; // every field's own id, so its label names it
@@ -168,12 +168,13 @@ export class Ui {
    * saying label: chosen, the action is dispatched with {file}, a File.
    * Options: accept, the kinds of file offered ("image/*"); payload, more
    * to carry with the file - an object, or a bound value read as the file
-   * comes (which item of a list it is for); style. Refused, the refusal is
-   * shown under it, as a pressable's is.
+   * comes (which item of a list it is for); multiple, whether several may
+   * be chosen at once - each then dispatched in turn; style. Refused, the
+   * refusal is shown under it, as a pressable's is.
    */
   file(action, label, options = {}) {
-    checked("a file", options, ["accept", "payload", "style"]);
-    return new Desc("file", { action, label, accept: options.accept ?? "", payload: options.payload ?? {}, style: options.style ?? "" });
+    checked("a file", options, ["accept", "payload", "style", "multiple"]);
+    return new Desc("file", { action, label, accept: options.accept ?? "", payload: options.payload ?? {}, style: options.style ?? "", multiple: !!options.multiple });
   }
 
   /** Lines typed into: each change dispatches the action with {line}; it shows the bound value. */
@@ -637,7 +638,7 @@ const BUILDERS = {
   },
 
   file(ui, desc, parent) {
-    const { action, label, accept, payload, style } = desc.props;
+    const { action, label, accept, payload, style, multiple } = desc.props;
     const place = ui._place;
     if (!place.performs.has(action)) place.performs.set(action, "");
     const holder = el(parent, "div", "chime-column chime-file-holder");
@@ -647,17 +648,22 @@ const BUILDERS = {
     input.type = "file";
     input.dataset.action = action;
     if (accept) input.accept = accept;
+    if (multiple) input.multiple = true;
     const words = el(made, "span", "chime-text");
     ui.draws(words, () => { words.textContent = Language.said(Bound.is(label) ? label.read() : label); });
     const said = el(holder, "p", "chime-text chime-wraps chime-hides-empty Reason");
     const region = place.name;
     input.addEventListener("change", () => {
-      const chosen = input.files?.[0];
+      const chosen = [...(input.files ?? [])].slice(0, multiple ? undefined : 1);
       input.value = ""; // the same file chosen again is a choice again
-      if (!chosen) return;
-      const answer = ui.commands.dispatch(region, action, { ...((Bound.is(payload) ? payload.read() : payload) ?? {}), file: chosen });
-      const last = ui.commands.getLast();
-      said.textContent = answer && !(last && last.paused) ? Language.said(answer) : "";
+      // each file chosen, in turn; what is refused is said under it (the last refusal, of several)
+      let refused = "";
+      for (const file of chosen) {
+        const answer = ui.commands.dispatch(region, action, { ...((Bound.is(payload) ? payload.read() : payload) ?? {}), file });
+        const last = ui.commands.getLast();
+        if (answer && !(last && last.paused)) refused = Language.said(answer);
+      }
+      if (chosen.length) said.textContent = refused;
     });
     return holder;
   },

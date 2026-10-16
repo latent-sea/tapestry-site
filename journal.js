@@ -4,9 +4,9 @@
 // as well as a history; anything more (who, where, which event) is the
 // editor's, from the memory itself.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=11221db3f0c7";
-import { clockOf, sayWhen } from "./when.js?v=11221db3f0c7";
-import { notice, problem } from "./parts.js?v=11221db3f0c7";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=94952f0a6b41";
+import { clockOf, sayWhen } from "./when.js?v=94952f0a6b41";
+import { notice, problem } from "./parts.js?v=94952f0a6b41";
 
 export const WRITES_TODAY = "writes_about_today";
 export const ADDS_TODAY_PICTURE = "adds_a_picture_to_today";
@@ -15,7 +15,7 @@ export const SAVES_TODAY = "saves_today";
 
 export const WORDS = {
   [WRITES_TODAY]: ["What's happening?"],
-  [ADDS_TODAY_PICTURE]: ["Add a picture"],
+  [ADDS_TODAY_PICTURE]: ["Add pictures"],
   [DROPS_TODAY_PICTURE]: ["Remove"],
   [SAVES_TODAY]: ["Keep it"],
 };
@@ -136,7 +136,7 @@ export function describeToday(ui, journal) {
     ], "EditPicture"), (p) => p.key, "EditPictures"),
     ui.row([
       ui.button(SAVES_TODAY),
-      ui.file(ADDS_TODAY_PICTURE, Phrase.of("Add a picture"), { accept: "image/*", style: "FactoryLink" }),
+      ui.file(ADDS_TODAY_PICTURE, Phrase.of("Add pictures"), { accept: "image/*", style: "FactoryLink", multiple: true }),
     ], "Actions"),
     ui.text(ui.bound(() => journal.seenBy()), "Seen").wraps(),
     problem(ui, journal.problem),

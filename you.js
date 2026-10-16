@@ -10,13 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=11221db3f0c7";
-import { heading, notice, problem } from "./parts.js?v=11221db3f0c7";
-import { AUDIENCES, CARD_PARTS, Weave } from "./weave.js?v=11221db3f0c7";
-import { SIGNS_OUT } from "./account.js?v=11221db3f0c7";
-import { copyOf } from "./keep.js?v=11221db3f0c7";
-import { parseWhen, sayWhen } from "./when.js?v=11221db3f0c7";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=11221db3f0c7";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=94952f0a6b41";
+import { heading, notice, problem } from "./parts.js?v=94952f0a6b41";
+import { AUDIENCES, CARD_PARTS, Weave } from "./weave.js?v=94952f0a6b41";
+import { SIGNS_OUT } from "./account.js?v=94952f0a6b41";
+import { copyOf } from "./keep.js?v=94952f0a6b41";
+import { parseWhen, sayWhen } from "./when.js?v=94952f0a6b41";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=94952f0a6b41";
 
 export const YOU = "you";
 
@@ -27,6 +27,7 @@ export const SETS_TEXT_SIZE = "sets_the_text_size";
 export const KEEPS_COPY = "keeps_a_copy";
 export const SETS_BIRTHDAY = "sets_my_birthday";
 export const SHOWS_ON_CARDS = "shows_or_hides_on_cards";
+export const SETS_EMAILS = "sets_whether_emailed";
 export const OPENS_ADMIN = "opens_the_admin_area";
 export const OPENS_IMPORT = "opens_bringing_in_a_list";
 export const SAVES_BIRTHDAY = "saves_my_birthday";
@@ -40,6 +41,7 @@ export const WORDS = {
   [SETS_BIRTHDAY]: ["Your birthday"],
   [SAVES_BIRTHDAY]: ["Save my birthday"],
   [SHOWS_ON_CARDS]: ["Show it on cards"],
+  [SETS_EMAILS]: ["Choose whether you are emailed"],
   [OPENS_ADMIN]: ["Admin"],
   [OPENS_IMPORT]: ["Bring in a list of memories"],
 };
@@ -109,6 +111,7 @@ export class You extends Controller {
       this.sized(payload.size);
     }
     if (action === SETS_DEFAULT) this.change(() => this.loom.saveDefaults({ [`${payload.kind}_audience`]: payload.audience }), "Saved");
+    if (action === SETS_EMAILS) this.change(() => this.loom.saveDefaults({ emails: payload.on }), payload.on ? "You'll be emailed what waits for you" : "No more emails");
     return null;
   }
 
@@ -189,6 +192,7 @@ export function describeYou(ui, you, account) {
     ], "Part")),
     problem(ui, you.problem),
     notice(ui, you.notice),
+    // emails (backend.sql, "emailed") are put away until the platform's mail is set up: no jobs.json runs tapestry_mail
     heading(ui, "What cards show"),
     ui.text(Phrase.of("On your thread and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
     ui.row(CARD_PARTS.map(([part, said]) => ui.pressable(SHOWS_ON_CARDS, { part }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")

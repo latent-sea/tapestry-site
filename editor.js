@@ -12,12 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=11221db3f0c7";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=11221db3f0c7";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=11221db3f0c7";
-import { chooser, heading, notice, problem } from "./parts.js?v=11221db3f0c7";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=11221db3f0c7";
-import { DANGER, LINK } from "./look/look.js?v=11221db3f0c7";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=94952f0a6b41";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=94952f0a6b41";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=94952f0a6b41";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=94952f0a6b41";
+import { chooser, heading, notice, problem } from "./parts.js?v=94952f0a6b41";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=94952f0a6b41";
+import { DANGER, LINK } from "./look/look.js?v=94952f0a6b41";
 
 export const EDIT = "edit";
 
@@ -54,6 +55,7 @@ export const SETS_LINK = "sets_a_link";
 export const ADDS_LINK = "adds_the_link";
 export const DROPS_LINK = "drops_a_link";
 export const DROPS_PICTURE = "drops_a_picture";
+export const USES_PHOTO_DATE = "uses_the_photos_date";
 export const SETS_CAPTION = "sets_a_caption";
 export const SAVES = "saves_it";
 export const ASKS_TO_DELETE = "asks_to_delete_it";
@@ -90,7 +92,8 @@ export const WORDS = {
   [LETS_IN]: ["Let in"],
   [KEEPS_OUT]: ["Keep out"],
   [DROPS_SHARE]: ["Remove"],
-  [ADDS_PICTURE]: ["Add a picture"],
+  [ADDS_PICTURE]: ["Add pictures"],
+  [USES_PHOTO_DATE]: ["Use that for when"],
   [SETS_LINK]: ["A link"],
   [ADDS_LINK]: ["Add the link"],
   [DROPS_LINK]: ["Remove"],
@@ -153,6 +156,21 @@ export class Editor extends Controller {
 
   answers() { return Object.keys(WORDS); }
 
+  /**
+   * When the pictures added say they were taken - a day, or from the first
+   * to the last - as words for when: { said, starts, ends }; null when they
+   * say nothing, or when says it already.
+   */
+  photoSpan() {
+    const days = spanOfDays(this.added.read().map((p) => p.taken));
+    if (!days) return null;
+    const day = (date) => ({ date, precision: "day", about: false });
+    const said = saySpan(day(days.starts), days.ends ? day(days.ends) : null, "", this.kind.read() === "memory");
+    const now = this.span();
+    if (now.starts?.date === days.starts && now.starts?.precision === "day" && (now.ends?.date ?? null) === (days.ends ?? null)) return null;
+    return { said, ...days };
+  }
+
   /** The span typed, read: { starts, ends, error }. A period that names one time is all within it, unless it says it goes on. */
   span() {
     const read = parseSpan(this.whenText.read(), new Date(), this.weave().born);
@@ -185,6 +203,7 @@ export class Editor extends Controller {
       }
     }
     if (action === ASKS_TO_DELETE && !this.id.read()) return Phrase.of("Not saved yet");
+    if (action === USES_PHOTO_DATE && !this.photoSpan()) return Phrase.of("The pictures don't say when they were taken");
     if (action === ADDS_LINK) {
       const link = linkOf(this.linkText.read());
       if (!link) return Phrase.of(this.linkText.read().trim() ? "That isn't a web address" : "Paste a link first");
@@ -242,7 +261,16 @@ export class Editor extends Controller {
     if (action === DROPS_LINK) this.links.update((list) => list.filter((l) => l.url !== payload.id));
     if (action === ADDS_PICTURE) {
       if (!payload.file.type.startsWith("image/")) return Phrase.of("Please choose a picture (JPEG, PNG, WebP or GIF)");
-      this.added.update((list) => [...list, { key: `added-${Date.now()}-${list.length}`, file: payload.file, address: URL.createObjectURL(payload.file) }]);
+      const key = `added-${Date.now()}-${this.added.read().length}`;
+      this.added.update((list) => [...list, { key, file: payload.file, address: URL.createObjectURL(payload.file), taken: null }]);
+      // the day the camera says it was taken, offered for when
+      takenFrom(payload.file).then((day) => {
+        if (day && !this.disposed) this.added.update((list) => list.map((p) => (p.key === key ? { ...p, taken: day } : p)));
+      });
+    }
+    if (action === USES_PHOTO_DATE) {
+      const offered = this.photoSpan();
+      if (offered) this.whenText.setValue(offered.said);
     }
     if (action === DROPS_PICTURE) {
       const kept = this.pictures.read().find((p) => p.id === payload.id);
@@ -540,7 +568,17 @@ export function describeEditor(ui, editor, account) {
       ui.text(Phrase.of("Pictures"), "FieldName"),
       ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.path) : ""))), (p) => p.id, "EditPictures"),
       ui.eachAcross(editor.added, (held) => thumbnail(held, held.map((p) => p?.address ?? "")), (p) => p.key, "EditPictures"),
-      ui.file(ADDS_PICTURE, Phrase.of("Add a picture"), { accept: "image/*" }),
+      ui.file(ADDS_PICTURE, Phrase.of("Add pictures"), { accept: "image/*", multiple: true }),
+      ui.when(ui.bound(() => !!editor.photoSpan()), ui.row([
+        ui.text(ui.bound(() => {
+          const offered = editor.photoSpan();
+          if (!offered) return "";
+          const day = (date) => sayWhen({ date, precision: "day" });
+          return offered.ends ? Phrase.with("These were taken from %s to %s.", [day(offered.starts), day(offered.ends)])
+            : Phrase.with("Taken on %s.", [day(offered.starts)]);
+        }), "Hint").wraps().grow(),
+        ui.button(USES_PHOTO_DATE, { style: LINK }),
+      ], "PhotoDate")),
       ui.text(Phrase.of("Links"), "FieldName"),
       ui.text(Phrase.of("A video, a song, an article. A YouTube link plays in the memory; links in your words count too."), "Hint").wraps(),
       ui.each(editor.links, (held) => ui.row([
