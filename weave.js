@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, saySpan, sortKey, within } from "./when.js?v=44891fca0c4f";
-import { linksOf } from "./links.js?v=44891fca0c4f";
+import { ageDuring, headingOf, saySpan, sortKey, within } from "./when.js?v=627a8c37f81e";
+import { linksOf } from "./links.js?v=627a8c37f81e";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -45,6 +45,8 @@ export function listed(names) {
 export const THREAD_COLOURS = Object.freeze(["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"]);
 export const OTHER_COLOUR = "#8e9ab8";
 
+const two = (n) => String(n).padStart(2, "0");
+
 export class Weave {
   constructor(data = EMPTY) {
     this.data = { ...EMPTY, ...(data ?? {}) };
@@ -67,6 +69,9 @@ export class Weave {
   get meId() { return this.data.me?.id ?? ""; }
 
   get me() { return this.data.me; }
+
+  /** The member's birthday ("YYYY-MM-DD"), seen by them alone, or null: their times may be ages. */
+  get born() { return this.data.me?.birthday ?? null; }
 
   // --- names ---
 
@@ -143,7 +148,11 @@ export class Weave {
     };
     const { starts: when, ends: until } = this.spanOf(kind, item);
     // a period with no end is still going; anything else with none happened once
-    const said = saySpan(when, until, kind === "period" ? "now" : "");
+    const said = saySpan(when, until, kind === "period" ? "now" : "", this.born);
+    // how old the member was then, when Tapestry knows their birthday: a period still going, until today
+    const today = new Date();
+    const going = kind === "period" && when && !until ? { date: `${today.getFullYear()}-${two(today.getMonth() + 1)}-${two(today.getDate())}`, precision: "day" } : null;
+    base.age = ageDuring(this.born, when, until ?? going);
     if (kind === "memory") {
       const event = this.events.get(item.event_id);
       const period = this.periods.get(item.period_id);

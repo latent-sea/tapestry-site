@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=44891fca0c4f";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=44891fca0c4f";
-import { shrinkPicture } from "./backend/pictures.js?v=44891fca0c4f";
+import { Backend } from "./backend/backend.js?v=627a8c37f81e";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=627a8c37f81e";
+import { shrinkPicture } from "./backend/pictures.js?v=627a8c37f81e";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -70,6 +70,9 @@ export class Loom {
 
   /** Whether whoever is signed in may join, by this invitation's token if any (Tapestry is by invitation): { ok, data: true or false }. */
   async mayJoin(invitation = "") { return answer(await this.backend.callRpc("tapestry_may_join", { invitation: invitation || null })); }
+
+  /** The member's birthday ("YYYY-MM-DD", or null for none), seen by them alone. */
+  async saveBirthday(date) { return answer(await this.backend.update("tapestry_members", `user_id=eq.${encodeURIComponent(this.playerId())}`, { birthday: date })); }
 
   /** The member's defaults for who sees new things: { memory_audience, event_audience, period_audience } as far as given. */
   async saveDefaults(changes) { return answer(await this.backend.update("tapestry_members", `user_id=eq.${encodeURIComponent(this.playerId())}`, changes)); }

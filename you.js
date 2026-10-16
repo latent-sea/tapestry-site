@@ -1,6 +1,7 @@
-// The member's own settings: the name others see, who new things are shared
-// with unless they say otherwise, the text size (on this device, as in every
-// app of the factory, D-008), and signing out.
+// The member's own settings: the name others see, their birthday (theirs
+// alone: times may then be written as ages), who new things are shared with
+// unless they say otherwise, the text size (on this device, as in every app
+// of the factory, D-008), and signing out.
 
 const TEXT_KEPT = "tapestry_text_size";
 
@@ -9,12 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=44891fca0c4f";
-import { heading, notice, problem } from "./parts.js?v=44891fca0c4f";
-import { AUDIENCES } from "./weave.js?v=44891fca0c4f";
-import { SIGNS_OUT } from "./account.js?v=44891fca0c4f";
-import { copyOf } from "./keep.js?v=44891fca0c4f";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=44891fca0c4f";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=627a8c37f81e";
+import { heading, notice, problem } from "./parts.js?v=627a8c37f81e";
+import { AUDIENCES } from "./weave.js?v=627a8c37f81e";
+import { SIGNS_OUT } from "./account.js?v=627a8c37f81e";
+import { copyOf } from "./keep.js?v=627a8c37f81e";
+import { parseWhen, sayWhen } from "./when.js?v=627a8c37f81e";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=627a8c37f81e";
 
 export const YOU = "you";
 
@@ -23,6 +25,8 @@ export const SAVES_MY_NAME = "saves_my_name";
 export const SETS_DEFAULT = "sets_who_sees_new_things";
 export const SETS_TEXT_SIZE = "sets_the_text_size";
 export const KEEPS_COPY = "keeps_a_copy";
+export const SETS_BIRTHDAY = "sets_my_birthday";
+export const SAVES_BIRTHDAY = "saves_my_birthday";
 
 export const WORDS = {
   [SETS_MY_NAME]: ["Your name"],
@@ -30,7 +34,17 @@ export const WORDS = {
   [SETS_DEFAULT]: ["Choose who sees new things"],
   [SETS_TEXT_SIZE]: ["Choose the text size"],
   [KEEPS_COPY]: ["Download a copy of my thread"],
+  [SETS_BIRTHDAY]: ["Your birthday"],
+  [SAVES_BIRTHDAY]: ["Save my birthday"],
 };
+
+/** A birthday typed: { date } ("YYYY-MM-DD", or null for none), or { error }. */
+export function birthdayOf(typed) {
+  if (!String(typed ?? "").trim()) return { date: null };
+  const read = parseWhen(typed);
+  if (!read.when || read.when.precision !== "day" || read.when.about || read.when.time) return { error: "A birthday is a day: 12 June 1975" };
+  return { date: read.when.date };
+}
 
 const KINDS = [["memory", "New memories"], ["event", "New events"], ["period", "New periods"]];
 
@@ -53,6 +67,7 @@ export class You extends Controller {
       setTimeout(() => URL.revokeObjectURL(link.href), 60 * 1000);
     };
     this.name = this.value("");
+    this.birthday = this.value("");
     this.busy = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
@@ -63,6 +78,7 @@ export class You extends Controller {
   would(action) {
     if (this.busy.read() && action !== SETS_MY_NAME) return Phrase.of(action === KEEPS_COPY ? "Making your copy" : "Saving");
     if (action === SAVES_MY_NAME && !this.name.read().trim()) return Phrase.of("Your name can't be empty");
+    if (action === SAVES_BIRTHDAY && birthdayOf(this.birthday.read()).error) return Phrase.of(birthdayOf(this.birthday.read()).error);
     return null;
   }
 
@@ -71,6 +87,11 @@ export class You extends Controller {
     if (action === SETS_MY_NAME) this.name.setValue(payload.line);
     if (action === SAVES_MY_NAME) this.change(() => this.loom.join(this.name.read().trim()), "Saved: this is the name your people see");
     if (action === KEEPS_COPY) this.keepCopy();
+    if (action === SETS_BIRTHDAY) this.birthday.setValue(payload.line);
+    if (action === SAVES_BIRTHDAY) {
+      const { date } = birthdayOf(this.birthday.read());
+      this.change(() => this.loom.saveBirthday(date), date ? "Saved: you can write times as ages now - age 12, when I was 7 to 9, in my twenties" : "Your birthday is taken off");
+    }
     if (action === SETS_TEXT_SIZE) {
       this.textSize.setValue(payload.size);
       try { localStorage.setItem(TEXT_KEPT, String(payload.size)); } catch { /* this visit only */ }
@@ -80,7 +101,11 @@ export class You extends Controller {
     return null;
   }
 
-  open() { this.name.setValue(this.account.weave.read().me?.name ?? ""); }
+  open() {
+    const me = this.account.weave.read().me;
+    this.name.setValue(me?.name ?? "");
+    this.birthday.setValue(me?.birthday ? sayWhen({ date: me.birthday, precision: "day" }) : "");
+  }
 
   /** A copy of the member's thread, with its pictures inside it, handed over as one page to keep. */
   async keepCopy() {
@@ -125,6 +150,12 @@ export function describeYou(ui, you, account) {
     ui.row([
       ui.field(SAVES_MY_NAME, "", { label: Phrase.of("The name your people see"), changes: SETS_MY_NAME, shows: you.name, autocomplete: "name" }).grow(),
       ui.button(SAVES_MY_NAME, { style: LINK }),
+    ], "AddRow"),
+    heading(ui, "Your birthday"),
+    ui.text(Phrase.of("Only you see it. With it, a time can be an age - age 12, when I was 7 to 9, in my twenties - and everything says how old you were."), "Hint").wraps(),
+    ui.row([
+      ui.field(SAVES_BIRTHDAY, "", { label: Phrase.of("Your birthday"), changes: SETS_BIRTHDAY, shows: you.birthday, placeholder: Phrase.of("12 June 1975"), autocomplete: "bday" }).grow(),
+      ui.button(SAVES_BIRTHDAY, { style: LINK }),
     ], "AddRow"),
     heading(ui, "Who sees new things"),
     ui.text(Phrase.of("What each new memory, event or period starts out shared with. You can change it on each one as you write it."), "Hint").wraps(),

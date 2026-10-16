@@ -10,7 +10,10 @@
 // British way), "1998-06-12", "today" - with "about", "around", "c." or a
 // "?" for a guess, and a span as two joined by "–", "-", "to" or "until".
 // A day may have a time of day ("12 June 1998, 14:30", "today 2pm", "now"),
-// kept as time: "14:30" - so the thread is a journal too.
+// kept as time: "14:30" - so the thread is a journal too. A span may be a
+// season ("summer 2021", "winter 2021/22": the northern hemisphere's, as
+// months), or, given the member's birthday, an age ("age 12", "when I was
+// 7 to 9", "in my twenties": from that birthday to the day before the next).
 // Each is said back the same way, so what is shown can be typed again.
 
 export const PRECISIONS = ["day", "month", "year", "decade"];
@@ -19,7 +22,15 @@ const MONTHS = ["january", "february", "march", "april", "may", "june", "july", 
 const MONTH_NAMES = MONTHS.map((name) => name[0].toUpperCase() + name.slice(1));
 
 /** What a time written like these may look like, for a person who wrote one that isn't. */
-export const EXAMPLES = "Try 1998, June 1998, 12 June 1998, the 1990s, about 1995, or 2004 – 2009";
+export const EXAMPLES = "Try 1998, June 1998, 12 June 1998, summer 2021, the 1990s, about 1995, 2004 – 2009, or age 12";
+
+/** Said when an age is written by someone whose birthday Tapestry doesn't know. */
+export const NO_BIRTHDAY = "Add your birthday in You, and a time can be an age";
+
+// the seasons, by the month each starts in, and their names said back
+const SEASONS = { spring: 3, summer: 6, autumn: 9, fall: 9, winter: 12 };
+const SEASON_NAMES = { 3: "Spring", 6: "Summer", 9: "Autumn", 12: "Winter" };
+const DECADES = { teens: 13, twenties: 20, thirties: 30, forties: 40, fifties: 50, sixties: 60, seventies: 70, eighties: 80, nineties: 90 };
 
 const two = (n) => String(n).padStart(2, "0");
 const dateOf = (year, month = 1, day = 1) => `${String(year).padStart(4, "0")}-${two(month)}-${two(day)}`;
@@ -123,18 +134,100 @@ export function parseWhen(typed, today = new Date()) {
   return wrong;
 }
 
+/** A season of a year as the months it is: { starts, ends }, or null when the words aren't one. */
+function seasonOf(text) {
+  const found = text.match(/^(spring|summer|autumn|fall|winter)\s+(?:of\s+)?(\d{4})(?:\s*[/-]\s*(\d{2}|\d{4}))?$/);
+  if (!found) return null;
+  const first = SEASONS[found[1]];
+  const year = Number(found[2]);
+  // "winter 2021/22" names both its years
+  if (found[3] && (first !== 12 || Number(found[3]) !== (found[3].length === 2 ? (year + 1) % 100 : year + 1))) return null;
+  if (!reasonable(year)) return null;
+  return {
+    starts: { date: dateOf(year, first), precision: "month", about: false },
+    ends: { date: dateOf(first === 12 ? year + 1 : year, first === 12 ? 2 : first + 2), precision: "month", about: false },
+  };
+}
+
+/** The day someone born on a birthday ("YYYY-MM-DD") turns an age: a 29 February birthday falls on 1 March. */
+function turning(born, age) {
+  const [year, month, day] = born.split("-").map(Number);
+  const at = new Date(Date.UTC(year + age, month - 1, day));
+  return dateOf(at.getUTCFullYear(), at.getUTCMonth() + 1, at.getUTCDate());
+}
+
+/** How old someone born on a birthday is on a day (both "YYYY-MM-DD"): below 0 before it. */
+function ageOn(born, date) {
+  const [bornYear, bornMonth, bornDay] = born.split("-").map(Number);
+  const [year, month, day] = date.split("-").map(Number);
+  return year - bornYear - (month < bornMonth || (month === bornMonth && day < bornDay) ? 1 : 0);
+}
+
+/** The day before a date. */
+function dayBefore(date) {
+  const [year, month, day] = date.split("-").map(Number);
+  const at = new Date(Date.UTC(year, month - 1, day - 1));
+  return dateOf(at.getUTCFullYear(), at.getUTCMonth() + 1, at.getUTCDate());
+}
+
+/** An age, or ages, written: [first, last], or null when the words aren't one. */
+function agesOf(text) {
+  let found = text.match(/^(?:when i was|i was|aged?|ages|at)\s+(\d{1,3})(?:\s*(?:–|—|-|to)\s*(\d{1,3}))?(?:\s+years? old)?$/)
+    ?? text.match(/^(\d{1,3})(?:\s*(?:–|—|-|to)\s*(\d{1,3}))?\s+years? old$/);
+  if (found) return [Number(found[1]), Number(found[2] ?? found[1])];
+  if ((found = text.match(/^(?:when i was |(?:all )?through )?(?:in )?my (teens|twenties|thirties|forties|fifties|sixties|seventies|eighties|nineties|([1-9])0s)$/))) {
+    const first = found[2] ? Number(found[2]) * 10 : DECADES[found[1]];
+    return [first, first === 13 ? 19 : first + 9];
+  }
+  return null;
+}
+
+/**
+ * A whole span written as one: a season, or an age or ages from the
+ * birthday, either "about": { starts, ends } or { error }; null when the
+ * words are neither.
+ */
+function spanNamed(text, today, born) {
+  const guess = text.match(/^(?:about|around|roughly|approximately|approx\.?|circa|ca?\.|~)\s*(.+)$/) ?? text.match(/^(.+?)\s*\?$/);
+  if (guess) {
+    const known = spanNamed(guess[1], today, born);
+    return known && !known.error ? { starts: { ...known.starts, about: true }, ends: { ...known.ends, about: true } } : known;
+  }
+  const season = seasonOf(text);
+  if (season) return season;
+  const ages = agesOf(text);
+  if (!ages) return null;
+  if (!born) return { error: NO_BIRTHDAY };
+  const [first, last] = ages;
+  if (last < first || last > 130) return { error: "Those ages aren't understood: try age 12, or when I was 7 to 9" };
+  const starts = turning(born, first);
+  if (starts > dayOf(today).date) return { error: "That age is still to come" };
+  return { starts: { date: starts, precision: "day", about: false }, ends: { date: dayBefore(turning(born, last + 1)), precision: "day", about: false } };
+}
+
 /**
  * A span typed in: { starts, ends, error }, each end a time or null. One
  * time is a span that starts then; "2004 – 2009", "about 1995 to 1998",
  * "June 2004 – now" one that lasts ("now" or "" for still going, when
- * allowed). An end before its start is an error.
+ * allowed). A season or an age is a span of its own, and may be either end
+ * of one ("summer 2019 – spring 2020"); an age needs the birthday ("YYYY-MM-DD").
+ * An end before its start is an error.
  */
-export function parseSpan(typed, today = new Date()) {
+export function parseSpan(typed, today = new Date(), born = null) {
   const text = String(typed ?? "").trim();
   if (!text) return { starts: null, ends: null, error: "" };
+  const lower = text.toLowerCase().replace(/,/g, " ").replace(/\s+/g, " ");
+  const named = spanNamed(lower, today, born);
+  if (named) return named.error ? { starts: null, ends: null, error: named.error } : { starts: named.starts, ends: named.ends, error: "" };
   const parts = text.split(/\s+(?:–|—|-|to|until|till)\s+|\s*[–—]\s*|(?<=^\d{4})-(?=\d{4}$)/i);
   if (parts.length > 2) return { starts: null, ends: null, error: EXAMPLES };
-  const starts = parseWhen(parts[0], today);
+  // either end may be a season or an age: its start begins the span, its end ends it
+  const end = (part, which) => {
+    const span = spanNamed(part.trim().toLowerCase().replace(/\s+/g, " "), today, born);
+    if (!span) return parseWhen(part, today);
+    return span.error ? { when: null, error: span.error } : { when: span[which], error: "" };
+  };
+  const starts = end(parts[0], "starts");
   if (!starts.when) return { starts: null, ends: null, error: starts.error || EXAMPLES };
   if (parts.length === 1) return { starts: starts.when, ends: null, error: "" };
   const stillGoing = /^(now|today|present|ongoing|still)$/i.test(parts[1].trim()) || !parts[1].trim();
@@ -143,7 +236,7 @@ export function parseSpan(typed, today = new Date()) {
   const endsAlone = splitTime(parts[1].trim().toLowerCase());
   const ends = endsAlone && !endsAlone.error && !endsAlone.rest && starts.when.precision === "day"
     ? { when: { ...starts.when, about: false, time: endsAlone.time }, error: "" }
-    : parseWhen(parts[1], today);
+    : end(parts[1], "ends");
   if (!ends.when) return { starts: null, ends: null, error: ends.error || EXAMPLES };
   if (ends.when.date === starts.when.date && ends.when.time && starts.when.time && ends.when.time < starts.when.time) {
     return { starts: null, ends: null, error: "It ends before it starts" };
@@ -168,12 +261,15 @@ export function sayWhen(when) {
 /**
  * A span said: "2004 – 2009", "about 1995 – June 1998", "June 2004 – now"
  * when it is still going (stillGoing, "" to say only its start), or one
- * time when it starts and ends within the same.
+ * time when it starts and ends within the same. A season is said as one
+ * ("Summer 2021"); given the birthday, so is an age ("age 12", "ages 7 – 9").
  */
-export function saySpan(starts, ends, stillGoing = "") {
+export function saySpan(starts, ends, stillGoing = "", born = null) {
   const from = sayWhen(starts);
   if (!from) return "";
   if (!ends || !ends.date) return stillGoing ? `${from} – ${stillGoing}` : from;
+  const named = seasonSaid(starts, ends) || agesSaid(starts, ends, born);
+  if (named) return named;
   const to = sayWhen(ends);
   if (to === from) return from;
   // on the same day, the end is only its time: "12 June 1998, 14:00 – 16:00"
@@ -181,6 +277,40 @@ export function saySpan(starts, ends, stillGoing = "") {
     return `${from} – ${ends.about ? "about " : ""}${ends.time}`;
   }
   return `${from} – ${to}`;
+}
+
+/** A span that is a season said as one: "Summer 2021", "about Winter 2021/22"; else "". */
+function seasonSaid(starts, ends) {
+  if (starts.precision !== "month" || ends.precision !== "month" || starts.about !== ends.about || starts.time || ends.time) return "";
+  const [year, month] = starts.date.split("-").map(Number);
+  if (!SEASON_NAMES[month]) return "";
+  const last = month === 12 ? dateOf(year + 1, 2) : dateOf(year, month + 2);
+  if (ends.date !== last) return "";
+  const said = month === 12 ? `Winter ${year}/${two((year + 1) % 100)}` : `${SEASON_NAMES[month]} ${year}`;
+  return starts.about ? `about ${said}` : said;
+}
+
+/** A span that is exactly an age or ages, from the birthday, said as one: "age 12", "about ages 7 – 9"; else "". */
+function agesSaid(starts, ends, born) {
+  if (!born || starts.precision !== "day" || ends.precision !== "day" || starts.about !== ends.about || starts.time || ends.time) return "";
+  const first = Number(starts.date.slice(0, 4)) - Number(born.slice(0, 4));
+  if (first < 0 || turning(born, first) !== starts.date) return "";
+  const last = ageOn(born, ends.date);
+  if (last < first || dayBefore(turning(born, last + 1)) !== ends.date) return "";
+  const said = first === last ? `age ${first}` : `ages ${first} – ${last}`;
+  return starts.about ? `about ${said}` : said;
+}
+
+/**
+ * How old someone born on a birthday ("YYYY-MM-DD") was through a time or
+ * span: "12", "7 – 9"; "" with no birthday, or before they were born.
+ */
+export function ageDuring(born, starts, ends = null) {
+  if (!born || !starts || !starts.date) return "";
+  const last = ageOn(born, lastDayOf(ends && ends.date ? ends : starts));
+  if (last < 0) return "";
+  const first = Math.max(ageOn(born, starts.date), 0);
+  return first === last ? String(first) : `${first} – ${last}`;
 }
 
 /** The year a time falls in, or null. */

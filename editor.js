@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=44891fca0c4f";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=44891fca0c4f";
-import { AUDIENCES, timeOf } from "./weave.js?v=44891fca0c4f";
-import { chooser, heading, notice, problem } from "./parts.js?v=44891fca0c4f";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=44891fca0c4f";
-import { DANGER, LINK } from "./look/look.js?v=44891fca0c4f";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=627a8c37f81e";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=627a8c37f81e";
+import { AUDIENCES, timeOf } from "./weave.js?v=627a8c37f81e";
+import { chooser, heading, notice, problem } from "./parts.js?v=627a8c37f81e";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=627a8c37f81e";
+import { DANGER, LINK } from "./look/look.js?v=627a8c37f81e";
 
 export const EDIT = "edit";
 
@@ -152,7 +152,7 @@ export class Editor extends Controller {
 
   /** The span typed, read: { starts, ends, error }. A period that names one time is all within it, unless it says it goes on. */
   span() {
-    const read = parseSpan(this.whenText.read());
+    const read = parseSpan(this.whenText.read(), new Date(), this.weave().born);
     if (read.error || !read.starts) return read;
     if (this.kind.read() !== "period" && read.going) return { starts: null, ends: null, error: "Only a period goes on until now" };
     if (this.kind.read() === "period" && !read.ends && !read.going) return { ...read, ends: read.starts };
@@ -258,7 +258,7 @@ export class Editor extends Controller {
     this.id.setValue(item?.id ?? null);
     this.title.setValue(item?.title ?? "");
     this.text.setValue((kind === "memory" ? item?.body : item?.notes) ?? "");
-    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "") : "");
+    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", this.weave().born) : "");
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
     this.periodId.setValue(item?.period_id ?? (tied === "period" ? tiedId : null));
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
@@ -446,7 +446,7 @@ export function describeEditor(ui, editor, account) {
     const read = span.read();
     if (read.error) return read.error === EXAMPLES ? Phrase.of(EXAMPLES) : Phrase.of(read.error);
     if (!read.starts) return kind.read() === "memory" && editor.eventId.read() ? Phrase.of("The same as its event") : "";
-    return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "")]);
+    return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "", account.weave.read().born)]);
   });
   const audience = ui.bound(() => editor.audienceNow());
   const notOn = audience.map((a) => (a.notOnTapestry.length ? Phrase.with("Not on Tapestry, so can't see it yet: %s", [a.notOnTapestry.join(", ")]) : ""));
