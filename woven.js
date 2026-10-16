@@ -7,6 +7,7 @@
 //
 // Marks are links: each says what it is to a reader who can't see it, and
 // what it is and when as the pointer rests on it.
+import { lastDayOf } from "./when.js?v=dc1a8acb8552";
 
 const LEFT = 100; // the names' room
 const PLOT = 580; // so the whole is about as wide as the column it stands in, and its words their size
@@ -23,6 +24,9 @@ export function yearsOf(when) {
   const [y, m, d] = when.date.split("-").map(Number);
   return y + ((m - 1) * 30.44 + (d - 1)) / 365.25;
 }
+
+/** Where a time ends, in years: the end of its day, month, year or decade. */
+function endOf(when) { return when?.date ? yearsOf({ date: lastDayOf(when) }) + 1 / 365.25 : null; }
 
 /** Years to mark along the top, every so many as the span asks. */
 export function yearMarks(from, to) {
@@ -48,7 +52,7 @@ export function drawWoven(weave, accounts, now = new Date(), colours = {}) {
   if (!entries.length) return null;
   const thisYear = now.getFullYear() + (now.getMonth() + 0.5) / 12;
   const starts = entries.map((entry) => yearsOf(entry.when));
-  const ends = entries.map((entry) => (entry.until ? yearsOf(entry.until) + 0.5 : entry.kind === "period" ? thisYear : yearsOf(entry.when)));
+  const ends = entries.map((entry) => (entry.until ? endOf(entry.until) : entry.kind === "period" ? thisYear : yearsOf(entry.when)));
   const from = Math.floor(Math.min(...starts));
   const to = Math.max(Math.ceil(Math.max(...ends)), from + 1);
   const x = (years) => LEFT + ((years - from) / (to - from)) * PLOT;
@@ -82,13 +86,23 @@ export function drawWoven(weave, accounts, now = new Date(), colours = {}) {
   // periods: thick runs along their owner's lane
   for (const entry of entries.filter((e) => e.kind === "period" && lanes.has(e.owner))) {
     const x1 = x(yearsOf(entry.when));
-    const x2 = Math.max(x(entry.until ? yearsOf(entry.until) + 0.5 : thisYear), x1 + 8);
+    const x2 = Math.max(x(entry.until ? endOf(entry.until) : thisYear), x1 + 8);
     const colour = weave.colourOf(entry.owner);
     out.push(link(entry, `<rect x="${x1}" y="${y(entry.owner) - 6}" width="${x2 - x1}" height="12" rx="6" fill="${colour}" fill-opacity="0.35" stroke="${colour}" stroke-width="2"/>`));
   }
-  // memories: dots on their owner's lane, ringed in the ground so neighbours stay apart
+  // memories: dots on their owner's lane, ringed in the ground so neighbours stay apart; a memory
+  // guessed between two edges is a dot at the middle of a faint bar across them
   for (const entry of entries.filter((e) => e.kind === "memory" && lanes.has(e.owner))) {
-    out.push(link(entry, `<circle cx="${x(yearsOf(entry.when))}" cy="${y(entry.owner)}" r="5" fill="${weave.colourOf(entry.owner)}" stroke="${ground}" stroke-width="2"/>`));
+    const colour = weave.colourOf(entry.owner);
+    if (!entry.until) {
+      out.push(link(entry, `<circle cx="${x(yearsOf(entry.when))}" cy="${y(entry.owner)}" r="5" fill="${colour}" stroke="${ground}" stroke-width="2"/>`));
+      continue;
+    }
+    const x1 = x(yearsOf(entry.when));
+    const x2 = x(endOf(entry.until));
+    const cy = y(entry.owner);
+    out.push(link(entry, `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="${colour}" stroke-width="6" stroke-linecap="round" opacity="0.3"/>`
+      + `<circle cx="${(x1 + x2) / 2}" cy="${cy}" r="5" fill="${colour}" stroke="${ground}" stroke-width="2"/>`));
   }
   // events: a knot through the lanes of everyone at it who is drawn
   for (const entry of entries.filter((e) => e.kind === "event")) {
@@ -96,6 +110,13 @@ export function drawWoven(weave, accounts, now = new Date(), colours = {}) {
     if (!at.length) continue;
     const cx = x(yearsOf(entry.when));
     const knot = [];
+    // an event that lasts: a run along each lane through it, from its start to its end
+    if (entry.until) {
+      const x2 = Math.max(x(endOf(entry.until)), cx + 8);
+      for (const account of at) {
+        knot.push(`<rect x="${cx}" y="${y(account) - 4}" width="${x2 - cx}" height="8" rx="4" fill="${weave.colourOf(account)}" fill-opacity="0.45"/>`);
+      }
+    }
     if (at.length > 1) knot.push(`<line x1="${cx}" y1="${y(at[0])}" x2="${cx}" y2="${y(at[at.length - 1])}" stroke="${ink}" stroke-width="2" opacity="0.7"/>`);
     for (const account of at) knot.push(`<circle cx="${cx}" cy="${y(account)}" r="6" fill="${weave.colourOf(account)}" stroke="${ink}" stroke-width="2"/>`);
     out.push(link(entry, knot.join("")));

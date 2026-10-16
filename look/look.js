@@ -5,7 +5,7 @@
 // the accent to the second, light words in Manrope, teal as the one strong
 // accent and violet as the second; every button a glowing gradient pill.
 //
-//     import { FactoryLook, ACTION, LINK, DANGER, CARD } from "./look/look.js?v=53cb48be9b8b";
+//     import { FactoryLook, ACTION, LINK, DANGER, CARD } from "./look/look.js?v=dc1a8acb8552";
 //     look() { return FactoryLook.make(); }          // or make(palette, textSize)
 //
 // It is gd-chime's Look (its custom properties, --chime-<name>) with the
@@ -20,7 +20,7 @@
 // screen reader, out of sight); every button looks like one - a pill, never
 // words alone.
 
-import { Look } from "../gd_chime/gd_chime.js?v=53cb48be9b8b";
+import { Look } from "../gd_chime/gd_chime.js?v=dc1a8acb8552";
 
 /** The factory's palette, as services/look/look.gd has it: the keys gd-chime reads, then the factory's own. */
 export const PALETTE = Object.freeze({

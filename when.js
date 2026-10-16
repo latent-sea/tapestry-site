@@ -15,6 +15,10 @@
 // months), or, given the member's birthday, an age ("age 12", "when I was
 // 7 to 9", "in my twenties"): the dates from that birthday to the day before
 // the next, said back as those dates.
+// A memory is a moment: given a start and an end, they are the edges of a
+// guess at when it was ("between 1983 and 1984", "1983 or 1984"), and it is
+// said so. An event or a period lasts from its start to its end, and says
+// for how long.
 // Each is said back the same way, so what is shown can be typed again.
 
 export const PRECISIONS = ["day", "month", "year", "decade"];
@@ -220,6 +224,9 @@ export function parseSpan(typed, today = new Date(), born = null) {
   const lower = text.toLowerCase().replace(/,/g, " ").replace(/\s+/g, " ");
   const named = spanNamed(lower, today, born);
   if (named) return named.error ? { starts: null, ends: null, error: named.error } : { starts: named.starts, ends: named.ends, error: "" };
+  // a guess's edges: "between 1983 and 1984", "sometime between...", "1983 or 1984"
+  const edges = lower.match(/^(?:sometime\s+)?between\s+(.+?)\s+and\s+(.+)$/) ?? lower.match(/^(.+?)\s+or\s+(.+)$/);
+  if (edges) return parseSpan(`${edges[1]} – ${edges[2]}`, today, born);
   const parts = text.split(/\s+(?:–|—|-|to|until|till)\s+|\s*[–—]\s*|(?<=^\d{4})-(?=\d{4}$)/i);
   if (parts.length > 2) return { starts: null, ends: null, error: EXAMPLES };
   // either end may be a season or an age: its start begins the span, its end ends it
@@ -228,6 +235,14 @@ export function parseSpan(typed, today = new Date(), born = null) {
     if (!span) return parseWhen(part, today);
     return span.error ? { when: null, error: span.error } : { when: span[which], error: "" };
   };
+  // a start that leaves its month or year to its end: "12 – 19 June 1998", "30 May – 2 June 1998"
+  if (parts.length === 2) {
+    const ending = parseWhen(parts[1], today).when;
+    const [year, month] = ending && ending.precision === "day" ? ending.date.split("-") : [];
+    const short = parts[0].trim().toLowerCase().replace(/\b(\d{1,2})(st|nd|rd|th)\b/g, "$1");
+    if (year && /^\d{1,2}$/.test(short)) parts[0] = `${short} ${MONTH_NAMES[Number(month) - 1]} ${year}`;
+    else if (year && /^\d{1,2} [a-z]+\.?$/.test(short) && monthNamed(short.split(" ")[1])) parts[0] = `${short} ${year}`;
+  }
   const starts = end(parts[0], "starts");
   if (!starts.when) return { starts: null, ends: null, error: starts.error || EXAMPLES };
   if (parts.length === 1) return { starts: starts.when, ends: null, error: "" };
@@ -263,9 +278,10 @@ export function sayWhen(when) {
  * A span said: "2004 – 2009", "about 1995 – June 1998", "June 2004 – now"
  * when it is still going (stillGoing, "" to say only its start), or one
  * time when it starts and ends within the same. A season is said as one
- * ("Summer 2021").
+ * ("Summer 2021"). A guess (a memory's start and end, its edges) is said as
+ * one: "between 1983 and 1984".
  */
-export function saySpan(starts, ends, stillGoing = "") {
+export function saySpan(starts, ends, stillGoing = "", guess = false) {
   const from = sayWhen(starts);
   if (!from) return "";
   if (!ends || !ends.date) return stillGoing ? `${from} – ${stillGoing}` : from;
@@ -273,6 +289,7 @@ export function saySpan(starts, ends, stillGoing = "") {
   if (season) return season;
   const to = sayWhen(ends);
   if (to === from) return from;
+  if (guess) return `between ${from} and ${to}`;
   // on the same day, the end is only its time: "12 June 1998, 14:00 – 16:00"
   if (ends.date === starts.date && ends.precision === "day" && starts.precision === "day" && starts.time && ends.time) {
     return `${from} – ${ends.about ? "about " : ""}${ends.time}`;
@@ -291,16 +308,55 @@ function seasonSaid(starts, ends) {
   return starts.about ? `about ${said}` : said;
 }
 
+/** The day halfway through a time: mid-June for June 1998, early July for 1998; for a decade, halfway through its first year or (last) its last. */
+function middleOf(when, last = false) {
+  const from = when.precision === "decade" ? `${String(Number(when.date.slice(0, 4)) + (last ? 9 : 0)).padStart(4, "0")}-01-01` : when.date;
+  const to = when.precision === "decade" ? lastDayOf({ date: from, precision: "year" }) : lastDayOf(when);
+  const day = (date) => Date.UTC(...date.split("-").map((n, i) => Number(n) - (i === 1 ? 1 : 0)));
+  const middle = new Date((day(from) + day(to)) / 2);
+  return dateOf(middle.getUTCFullYear(), middle.getUTCMonth() + 1, middle.getUTCDate());
+}
+
 /**
  * How old someone born on a birthday ("YYYY-MM-DD") was through a time or
- * span: "12", "7 – 9"; "" with no birthday, or before they were born.
+ * span: "12", "7 – 9"; "" with no birthday, or before they were born. A
+ * fuzzy time is taken at its middle - 1998 at mid-year, June at mid-June -
+ * so "1983 – 1984" is two ages at most, never every age either edge touches.
  */
 export function ageDuring(born, starts, ends = null) {
   if (!born || !starts || !starts.date) return "";
-  const last = ageOn(born, lastDayOf(ends && ends.date ? ends : starts));
+  const last = ageOn(born, middleOf(ends && ends.date ? ends : starts, true));
   if (last < 0) return "";
-  const first = Math.max(ageOn(born, starts.date), 0);
-  return first === last ? String(first) : `${first} – ${last}`;
+  const first = Math.max(ageOn(born, middleOf(starts)), 0);
+  return first >= last ? String(last) : `${first} – ${last}`;
+}
+
+/**
+ * How old someone was, said: through something that lasted, "7 – 9"; at a
+ * moment guessed between two edges, "2 or 3", or "between 5 and 15".
+ */
+export function sayAges(born, starts, ends = null, guess = false) {
+  const ages = ageDuring(born, starts, ends);
+  const [first, last] = ages.split(" – ");
+  if (!guess || last === undefined) return ages;
+  return Number(last) === Number(first) + 1 ? `${first} or ${last}` : `between ${first} and ${last}`;
+}
+
+/**
+ * How long something lasted, from its start to its end (each fuzzy end
+ * taken at its middle): "for 3 days", "for about 5 years"; "" for a day or
+ * less. sofar for something still going, measured to today.
+ */
+export function sayLength(starts, ends, sofar = false) {
+  if (!starts || !starts.date || !ends || !ends.date) return "";
+  const exact = starts.precision === "day" && ends.precision === "day" && !starts.about && !ends.about;
+  const day = (date) => Date.UTC(...date.split("-").map((n, i) => Number(n) - (i === 1 ? 1 : 0)));
+  const days = Math.round((day(exact ? lastDayOf(ends) : middleOf(ends, true)) - day(exact ? starts.date : middleOf(starts))) / 86400000) + (exact ? 1 : 0);
+  if (days < 2) return "";
+  const count = (n, one) => (n === 1 ? `a ${one}` : `${n} ${one}s`);
+  const said = days < 14 ? count(days, "day") : days < 60 ? count(Math.round(days / 7), "week")
+    : days < 330 ? count(Math.round(days / 30.44), "month") : count(Math.max(Math.round(days / 365.25), 1), "year");
+  return `for ${exact ? "" : "about "}${said}${sofar ? " so far" : ""}`;
 }
 
 /** The year a time falls in, or null. */

@@ -2,10 +2,11 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=53cb48be9b8b";
-import { heading, notice, problem } from "./parts.js?v=53cb48be9b8b";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=53cb48be9b8b";
-import { CARD, DANGER, LINK } from "./look/look.js?v=53cb48be9b8b";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
+import { heading, notice, problem } from "./parts.js?v=dc1a8acb8552";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=dc1a8acb8552";
+import { CARD, DANGER, LINK } from "./look/look.js?v=dc1a8acb8552";
+import { describeMerge } from "./asking.js?v=dc1a8acb8552";
 
 export const PLACES = "places";
 export const PLACE = "place";
@@ -117,7 +118,7 @@ export function describePlaces(ui, places, account) {
   ]);
 }
 
-export function describePlace(ui, places, account, timeline) {
+export function describePlace(ui, places, account, timeline, asking) {
   const placeId = ui.parameter(PLACE);
   const place = ui.bound(() => account.weave.read().places.get(placeId.read()) ?? null);
   const mine = ui.bound(() => place.read()?.owner === account.weave.read().meId);
@@ -147,6 +148,9 @@ export function describePlace(ui, places, account, timeline) {
             ui.button(KEEPS_PLACE, { style: LINK }),
           ], "Actions"),
         ])),
+        describeMerge(ui, asking, account, "place", placeId),
+        problem(ui, asking.problem),
+        notice(ui, asking.notice),
       ])),
     ]), ui.text(Phrase.of("This place isn't one you can see."), "Quiet")),
   ], null, { on_fill: () => places.open(placeId.read()) });

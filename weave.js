@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { ageDuring, headingOf, saySpan, sortKey, within } from "./when.js?v=53cb48be9b8b";
-import { linksOf } from "./links.js?v=53cb48be9b8b";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=dc1a8acb8552";
+import { linksOf } from "./links.js?v=dc1a8acb8552";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -19,6 +19,11 @@ export const AUDIENCES = [
 ];
 
 /** A memory's, event's or period's start or end (which: "starts" or "ends"), as a time, or null. */
+/** A memory's periods: its list, or the one period_id a platform from before there could be more gives. */
+export function periodsOf(memory) {
+  return [...(memory?.period_ids ?? (memory?.period_id ? [memory.period_id] : []))];
+}
+
 export function timeOf(item, which) {
   if (!item || !item[which]) return null;
   const time = { date: item[which], precision: item[`${which}_precision`] || "day", about: !!item[`${which}_about`] };
@@ -122,6 +127,26 @@ export class Weave {
       .map(([account, name]) => ({ account, name })).sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  /**
+   * What an event or a place of the member's might be the same as - their own, or someone else's
+   * they see: those named as looked for; else those sharing a word of its name, or an event's time.
+   */
+  twinsOf(kind, id, looked = "") {
+    const list = kind === "event" ? this.data.events : this.data.places;
+    const self = list.find((item) => item.id === id);
+    if (!self) return [];
+    const nameOf = (item) => (kind === "event" ? item.title : item.name) ?? "";
+    const words = (text) => lower(text).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2);
+    const own = new Set(words(nameOf(self)));
+    const wanted = lower(looked).trim();
+    const span = kind === "event" ? this.spanOf("event", self) : null;
+    return list.filter((item) => item.id !== id).filter((item) => (wanted ? lower(nameOf(item)).includes(wanted)
+      : words(nameOf(item)).some((w) => own.has(w)) || (span && within(timeOf(item, "starts"), span.starts, span.ends ?? span.starts, timeOf(item, "ends")))))
+      .slice(0, 8)
+      .map((item) => ({ id: item.id, label: [nameOf(item), kind === "event" ? this.entry("event", item).said : "",
+        item.owner === this.meId ? "yours" : `${this.nameOf(item.owner)}'s`].filter(Boolean).join(" · ") }));
+  }
+
   /** Whether the member may ask to be at an event: someone else's, they aren't at it, and haven't asked. */
   mayAskAt(eventId) {
     const event = this.events.get(eventId);
@@ -148,15 +173,18 @@ export class Weave {
     };
     const { starts: when, ends: until } = this.spanOf(kind, item);
     // a period with no end is still going; anything else with none happened once
-    const said = saySpan(when, until, kind === "period" ? "now" : "");
-    // how old the member was then, when Tapestry knows their birthday: a period still going, until today
+    // a memory is a moment: its start and end are the edges of a guess at when; an event or a period lasts
+    const guess = kind === "memory";
+    const said = saySpan(when, until, kind === "period" ? "now" : "", guess);
+    // how old the member was then, when Tapestry knows their birthday; how long it lasted: a period still going, until today
     const today = new Date();
     const going = kind === "period" && when && !until ? { date: `${today.getFullYear()}-${two(today.getMonth() + 1)}-${two(today.getDate())}`, precision: "day" } : null;
-    base.age = ageDuring(this.born, when, until ?? going);
+    base.age = sayAges(this.born, when, until ?? going, guess);
+    base.lasts = guess ? "" : sayLength(when, until ?? going, !!going);
     if (kind === "memory") {
       const event = this.events.get(item.event_id);
       // the periods of the member's life it was during, as many as overlap
-      const periods = (item.period_ids ?? []).map((id) => this.periods.get(id)).filter(Boolean).map((p) => ({ id: p.id, title: p.title }));
+      const periods = periodsOf(item).map((id) => this.periods.get(id)).filter(Boolean).map((p) => ({ id: p.id, title: p.title }));
       const firstLine = item.body.trim().split("\n")[0];
       const title = item.title || (firstLine.length > 70 ? `${firstLine.slice(0, 67)}…` : firstLine) || "A memory";
       const links = linksOf(item);
@@ -236,7 +264,7 @@ export class Weave {
     if (!period) return [];
     const { starts, ends } = this.spanOf("period", period);
     return sortEntries(this.thread(period.owner).filter((entry) => entry.key !== `period:${periodId}`
-      && ((entry.kind === "memory" && (this.memories.get(entry.id).period_ids ?? []).includes(periodId)) || within(entry.when, starts, ends, entry.until))));
+      && ((entry.kind === "memory" && periodsOf(this.memories.get(entry.id)).includes(periodId)) || within(entry.when, starts, ends, entry.until))));
   }
 
   // --- coming back ---

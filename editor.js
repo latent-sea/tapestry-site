@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=53cb48be9b8b";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=53cb48be9b8b";
-import { AUDIENCES, timeOf } from "./weave.js?v=53cb48be9b8b";
-import { chooser, heading, notice, problem } from "./parts.js?v=53cb48be9b8b";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=53cb48be9b8b";
-import { DANGER, LINK } from "./look/look.js?v=53cb48be9b8b";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=dc1a8acb8552";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=dc1a8acb8552";
+import { chooser, heading, notice, problem } from "./parts.js?v=dc1a8acb8552";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=dc1a8acb8552";
+import { DANGER, LINK } from "./look/look.js?v=dc1a8acb8552";
 
 export const EDIT = "edit";
 
@@ -106,9 +106,9 @@ const MOST = 6; // matches shown for what is typed
 
 const KIND_WORDS = {
   memory: { made: "New memory", changed: "Edit memory", title: "Title (if you like)", text: "What do you remember?", people: "Who's in it",
-    whenHint: "As exactly as you remember it: \"now\", a day (with its time, if you like: \"12 June 1998, 2pm\"), a month, a year or a decade, \"about\" for a guess, and two joined by \"–\" for a while. Leave it empty for its event's time, or none." },
+    whenHint: "As exactly as you remember it: \"now\", a day (with its time, if you like: \"12 June 1998, 2pm\"), a month, a season, a year or a decade, \"about\" for a guess - or, not sure, the edges of your guess: \"between 1983 and 1984\". Leave it empty for its event's time, or none." },
   event: { made: "New event", changed: "Edit event", title: "What happened", text: "Notes", people: "Who was there",
-    whenHint: "As exactly as you remember it: \"12 June 1998\", \"about 1995\", or \"1995 – 1996\" for something that went on." },
+    whenHint: "As exactly as you remember it: \"12 June 1998\", \"about 1995\", or \"12 – 19 June 1998\" for something that went on." },
   period: { made: "New period", changed: "Edit period", title: "What was this time of your life", text: "Notes", people: "Who was with you",
     whenHint: "When it started and ended, each as exactly as you know it: \"2004 – about 2009\", or \"June 2004 – now\" if it goes on." },
 };
@@ -258,9 +258,9 @@ export class Editor extends Controller {
     this.id.setValue(item?.id ?? null);
     this.title.setValue(item?.title ?? "");
     this.text.setValue((kind === "memory" ? item?.body : item?.notes) ?? "");
-    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "") : "");
+    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "");
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
-    this.periodIds.setValue(item ? [...(item.period_ids ?? [])] : tied === "period" ? [tiedId] : []);
+    this.periodIds.setValue(item ? periodsOf(item) : tied === "period" ? [tiedId] : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
     this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
     this.audience.setValue(item?.audience ?? weave.defaultAudience(kind));
@@ -310,7 +310,9 @@ export class Editor extends Controller {
       id: this.id.read() ?? "", title: this.title.read().trim(), ...time("starts", starts), ...time("ends", ends),
       place_id: this.placeId.read() ?? "", audience: this.audience.read(), tags: this.tags.read(), shares: this.shares.read(),
     };
-    if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_ids: this.periodIds.read() };
+    if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_ids: this.periodIds.read(),
+      // the first as period_id too, which a platform from before there could be more keeps
+      period_id: this.periodIds.read()[0] ?? "" };
     return { ...common, notes: this.text.read() };
   }
 
@@ -447,7 +449,7 @@ export function describeEditor(ui, editor, account) {
     const read = span.read();
     if (read.error) return read.error === EXAMPLES ? Phrase.of(EXAMPLES) : Phrase.of(read.error);
     if (!read.starts) return kind.read() === "memory" && editor.eventId.read() ? Phrase.of("The same as its event") : "";
-    return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "")]);
+    return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "", kind.read() === "memory")]);
   });
   const audience = ui.bound(() => editor.audienceNow());
   const notOn = audience.map((a) => (a.notOnTapestry.length ? Phrase.with("Not on Tapestry, so can't see it yet: %s", [a.notOnTapestry.join(", ")]) : ""));

@@ -13,22 +13,22 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=53cb48be9b8b";
-import { Loom } from "./loom.js?v=53cb48be9b8b";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=53cb48be9b8b";
-import * as Edit from "./editor.js?v=53cb48be9b8b";
-import * as Folk from "./people.js?v=53cb48be9b8b";
-import * as Where from "./places.js?v=53cb48be9b8b";
-import * as Me from "./you.js?v=53cb48be9b8b";
-import * as Today from "./journal.js?v=53cb48be9b8b";
-import * as Ask from "./asking.js?v=53cb48be9b8b";
-import { listed, timeline } from "./weave.js?v=53cb48be9b8b";
-import { heading, mark, notice, problem } from "./parts.js?v=53cb48be9b8b";
-import { drawWoven } from "./woven.js?v=53cb48be9b8b";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=53cb48be9b8b";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
+import { Loom } from "./loom.js?v=dc1a8acb8552";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=dc1a8acb8552";
+import * as Edit from "./editor.js?v=dc1a8acb8552";
+import * as Folk from "./people.js?v=dc1a8acb8552";
+import * as Where from "./places.js?v=dc1a8acb8552";
+import * as Me from "./you.js?v=dc1a8acb8552";
+import * as Today from "./journal.js?v=dc1a8acb8552";
+import * as Ask from "./asking.js?v=dc1a8acb8552";
+import { listed, timeline } from "./weave.js?v=dc1a8acb8552";
+import { heading, mark, notice, problem } from "./parts.js?v=dc1a8acb8552";
+import { drawWoven } from "./woven.js?v=dc1a8acb8552";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=dc1a8acb8552";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=53cb48be9b8b")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=dc1a8acb8552")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -194,14 +194,14 @@ export class Tapestry extends ChimeApp {
         this.door(), this.threadScreen(), this.wovenScreen(), this.itemScreen(),
         Edit.describeEditor(ui, this.editor, this.account),
         Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
-        Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf),
+        Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
         Me.describeYou(ui, this.you, this.account),
       ]),
     ]);
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=53cb48be9b8b").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=dc1a8acb8552").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -344,6 +344,7 @@ export class Tapestry extends ChimeApp {
         ui.row([
           ui.text(held.map((e) => Phrase.of(KIND_SAID[e?.kind] ?? "Memory")), "Kind"),
           ui.text(held.map((e) => e?.said ?? ""), "When").hidesEmpty(),
+          ui.text(held.map((e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(held.map((e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
           woven ? ui.text(held.map((e) => (e?.mine ? "" : Phrase.with("%s's thread", [e?.ownerName ?? ""]))), "Whose").hidesEmpty() : null,
         ].filter(Boolean), "CardTop"),
@@ -421,6 +422,7 @@ export class Tapestry extends ChimeApp {
           mark(ui, entry.map((e) => e?.colour ?? "")),
           ui.text(entry.map((e) => Phrase.of(KIND_SAID[e?.kind] ?? "Memory")), "Kind"),
           ui.text(entry.map((e) => e?.said ?? ""), "When").hidesEmpty(),
+          ui.text(entry.map((e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(entry.map((e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
           ui.text(entry.map((e) => (e?.mine ? Phrase.of("Your thread") : Phrase.with("%s's thread", [e?.ownerName ?? ""]))), "Whose"),
         ], "CardTop"),
@@ -466,6 +468,7 @@ export class Tapestry extends ChimeApp {
             ui.button(STAYS_ON, { style: LINK }),
           ], "Actions"),
         ])),
+        ui.when(ui.bound(() => kindOf() === "event" && mine.read()), Ask.describeMerge(ui, this.asking, account, "event", ui.bound(() => idOf()))),
         ui.when(is("event"), ui.column([heading(ui, "Everyone's memories of it"), this.timeline(memories, Phrase.of("No memories of it yet."), true)])),
         ui.when(is("period"), ui.column([heading(ui, "During this time"), this.timeline(during, Phrase.of("Nothing else on this thread falls in this time yet."))])),
       ]), ui.text(Phrase.of("This isn't here, or isn't shared with you."), "Quiet")),

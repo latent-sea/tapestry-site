@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=53cb48be9b8b";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=53cb48be9b8b";
-import { shrinkPicture } from "./backend/pictures.js?v=53cb48be9b8b";
+import { Backend } from "./backend/backend.js?v=dc1a8acb8552";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=dc1a8acb8552";
+import { shrinkPicture } from "./backend/pictures.js?v=dc1a8acb8552";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -170,6 +170,12 @@ export class Loom {
 
   /** Asking to be at an event one sees but isn't at. */
   async askAtEvent(eventId) { return answer(await this.backend.callRpc("tapestry_ask_at_event", { the_event: eventId })); }
+
+  /** One's own event folded into another: at once into one's own, else asked of its maker. */
+  async askMergeEvent(from, into) { return answer(await this.backend.callRpc("tapestry_ask_merge_event", { from_event: from, into_event: into })); }
+
+  /** One's own place folded into another: at once into one's own, else asked of its owner. */
+  async askMergePlace(from, into) { return answer(await this.backend.callRpc("tapestry_ask_merge_place", { from_place: from, into_place: into })); }
 
   /** A request answered yes or no, or taken back (no) by whoever asked. */
   async answer(request, yes) { return answer(await this.backend.callRpc("tapestry_answer", { request, yes })); }
