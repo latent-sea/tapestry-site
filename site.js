@@ -13,24 +13,24 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=de7d6ff7adf3";
-import { Loom } from "./loom.js?v=de7d6ff7adf3";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=de7d6ff7adf3";
-import * as Edit from "./editor.js?v=de7d6ff7adf3";
-import * as Folk from "./people.js?v=de7d6ff7adf3";
-import * as Where from "./places.js?v=de7d6ff7adf3";
-import * as Me from "./you.js?v=de7d6ff7adf3";
-import * as Today from "./journal.js?v=de7d6ff7adf3";
-import * as Ask from "./asking.js?v=de7d6ff7adf3";
-import * as Run from "./admin.js?v=de7d6ff7adf3";
-import * as List from "./importing.js?v=de7d6ff7adf3";
-import { listed, timeline } from "./weave.js?v=de7d6ff7adf3";
-import { heading, mark, notice, problem } from "./parts.js?v=de7d6ff7adf3";
-import { drawWoven } from "./woven.js?v=de7d6ff7adf3";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=de7d6ff7adf3";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=780e7fa78a33";
+import { Loom } from "./loom.js?v=780e7fa78a33";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=780e7fa78a33";
+import * as Edit from "./editor.js?v=780e7fa78a33";
+import * as Folk from "./people.js?v=780e7fa78a33";
+import * as Where from "./places.js?v=780e7fa78a33";
+import * as Me from "./you.js?v=780e7fa78a33";
+import * as Today from "./journal.js?v=780e7fa78a33";
+import * as Ask from "./asking.js?v=780e7fa78a33";
+import * as Run from "./admin.js?v=780e7fa78a33";
+import * as List from "./importing.js?v=780e7fa78a33";
+import { listed, timeline } from "./weave.js?v=780e7fa78a33";
+import { heading, mark, notice, problem } from "./parts.js?v=780e7fa78a33";
+import { drawWoven } from "./woven.js?v=780e7fa78a33";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=780e7fa78a33";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=de7d6ff7adf3")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=780e7fa78a33")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -69,6 +69,9 @@ const SHOWS_LATER = "shows_the_picture_after";
 const LEAVES_EVENT = "takes_me_off_this_event";
 const ASKS_TO_LEAVE = "asks_before_taking_me_off";
 const STAYS_ON = "keeps_me_on_this_event";
+const SHOWS_MORE = "shows_more_of_the_list";
+// a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
+const PAGE = 50;
 
 const KIND_SAID = { memory: "Memory", event: "Event", period: "Period" };
 const INVITE_KEPT = "tapestry_invitation";
@@ -94,9 +97,16 @@ class Looking extends Controller {
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
     this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
+    this.pages = new Map(); // each timeline's own: how many of it are shown
   }
 
-  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON]; }
+  /** How many of a timeline are shown, by its key. */
+  shownOf(key) {
+    if (!this.pages.has(key)) this.pages.set(key, this.value(PAGE));
+    return this.pages.get(key);
+  }
+
+  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE]; }
 
   would(action, payload) {
     if (action === LEAVES_EVENT || action === ASKS_TO_LEAVE) {
@@ -108,6 +118,7 @@ class Looking extends Controller {
   }
 
   told(action, payload) {
+    if (action === SHOWS_MORE) this.shownOf(payload.key).update((shown) => shown + PAGE);
     if (action === SEARCHES_THREAD) this.threadSearch.setValue(payload.line);
     if (action === SEARCHES_WOVEN) this.wovenSearch.setValue(payload.line);
     if (action === FLIPS_ORDER) {
@@ -183,6 +194,7 @@ export class Tapestry extends ChimeApp {
       [SHOWS_PICTURE]: ["Show the picture"],
       [SHOWS_EARLIER]: ["Previous"],
       [SHOWS_LATER]: ["Next"],
+      [SHOWS_MORE]: ["Show more"],
       [SEARCHES_THREAD]: ["Find on my thread"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
       [FLIPS_ORDER]: ["Turn the order around"],
@@ -224,7 +236,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=de7d6ff7adf3").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=780e7fa78a33").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -395,14 +407,23 @@ export class Tapestry extends ChimeApp {
     ], "Finder");
   }
 
-  /** Entries as a timeline, under their years; woven, each says whose thread it is on. */
+  /**
+   * Entries as a timeline, under their years; woven, each says whose thread it is on. A few at a
+   * time: the first so many, and Show more for as many again - a page that drew hundreds of cards
+   * at once would stop answering.
+   */
   timeline(entries, empty, woven = false) {
     const ui = this.ui;
-    const rows = ui.bound(() => timeline(entries.read(), this.looking.newestFirst.read()));
+    const key = `timeline-${(this.timelines = (this.timelines ?? 0) + 1)}`;
+    const shown = this.looking.shownOf(key);
+    const all = ui.bound(() => timeline(entries.read(), this.looking.newestFirst.read()));
+    const rows = ui.bound(() => all.read().slice(0, shown.read()));
+    const more = ui.bound(() => all.read().length - shown.read());
     return ui.column([
       ui.when(entries.map((list) => list.length === 0), ui.text(empty, "Quiet").wraps()),
       ui.each(rows, (held) => ui.when(held.map((row) => !!row?.heading), ui.text(held.map((row) => row?.heading ?? ""), "YearHeading"),
         this.card(held, woven)), (row) => row.key, "Timeline"),
+      ui.when(more.map((n) => n > 0), ui.pressable(SHOWS_MORE, { key }, [ui.text(more.map((n) => Phrase.with("Show more (%d further)", [n])), Themes.FACE)], LINK)),
     ]);
   }
 

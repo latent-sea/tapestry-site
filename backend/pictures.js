@@ -3,7 +3,7 @@
 // pixels. Its longest side is brought down to that, as a JPEG; a picture
 // already small enough, or one that moves (a GIF), goes as it is.
 //
-//     import { shrinkPicture } from "./backend/pictures.js?v=de7d6ff7adf3";
+//     import { shrinkPicture } from "./backend/pictures.js?v=780e7fa78a33";
 //     const reply = await backend.uploadPicture("dj.jpg", await shrinkPicture(file));
 
 /** The picture, its longest side at most longest pixels, as a JPEG Blob; a GIF, or one already small, unchanged. */
