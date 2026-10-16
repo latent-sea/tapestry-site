@@ -5,9 +5,9 @@
 // read it later. A family's history is never only on the platform. Plain
 // data in, a page's text out, tested by tests/test_keep.mjs.
 
-import { linksOf } from "./links.js?v=fa0c5e6418d8";
-import { sortEntries } from "./weave.js?v=fa0c5e6418d8";
-import { headingOf } from "./when.js?v=fa0c5e6418d8";
+import { linksOf } from "./links.js?v=27933e32b72d";
+import { sortEntries } from "./weave.js?v=27933e32b72d";
+import { headingOf } from "./when.js?v=27933e32b72d";
 
 const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const KIND = { memory: "Memory", event: "Event", period: "Period" };

@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=fa0c5e6418d8";
-import { linksOf } from "./links.js?v=fa0c5e6418d8";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=27933e32b72d";
+import { linksOf } from "./links.js?v=27933e32b72d";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -71,6 +71,10 @@ export class Weave {
     this.linked = new Map(this.data.people.filter((p) => p.account).map((p) => [p.account, p]));
     const order = [this.meId, ...[...this.linked.values()].sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? ""))).map((p) => p.account)];
     this.colours = new Map(order.filter(Boolean).map((account, i) => [account, THREAD_COLOURS[i] ?? OTHER_COLOUR]));
+    // a weave is what one load saw, and never changes: each entry, and each thread, is worked out once and
+    // kept - every screen and card reads them, and a life of hundreds of memories would be worked out again
+    // at every read
+    this.made = new Map();
   }
 
   /** A thread's colour: the same for an account wherever it is drawn; grey for one the member doesn't follow. */
@@ -170,6 +174,13 @@ export class Weave {
 
   /** One thing on a timeline, as every screen shows it. */
   entry(kind, item) {
+    const key = `${kind}:${item.id}`;
+    if (this.made.get(key)?.item !== item) this.made.set(key, { item, entry: this.makeEntry(kind, item) });
+    return this.made.get(key).entry;
+  }
+
+  /** What an entry is, worked out (entry() keeps it). */
+  makeEntry(kind, item) {
     const mine = item.owner === this.meId;
     const place = this.places.get(item.place_id) ?? null;
     const people = item.tags.map((tag) => this.tagName(tag));
@@ -214,22 +225,29 @@ export class Weave {
 
   /** Everything visible, as entries. */
   everything() {
-    return [
+    return this.kept("everything", () => [
       ...this.data.periods.map((p) => this.entry("period", p)),
       ...this.data.events.map((e) => this.entry("event", e)),
       ...this.data.memories.map((m) => this.entry("memory", m)),
-    ];
+    ]);
+  }
+
+  /** Something worked out once for this weave, by its name, and kept. */
+  kept(name, work) {
+    if (!this.made.has(name)) this.made.set(name, { entry: work() });
+    return this.made.get(name).entry;
   }
 
   /** An account's thread: what they own, and the events they are at. */
   thread(account) {
-    return this.everything().filter((entry) => entry.owner === account || (entry.kind === "event" && entry.threads.includes(account)));
+    return this.kept(`thread:${account}`, () => this.everything().filter((entry) => entry.owner === account || (entry.kind === "event" && entry.threads.includes(account))));
   }
 
   /** The threads of these accounts woven together: each thing once, events where any of them is. */
   woven(accounts) {
     const wanted = new Set(accounts);
-    return this.everything().filter((entry) => wanted.has(entry.owner) || (entry.kind === "event" && entry.threads.some((a) => wanted.has(a))));
+    return this.kept(`woven:${[...wanted].sort().join(",")}`,
+      () => this.everything().filter((entry) => wanted.has(entry.owner) || (entry.kind === "event" && entry.threads.some((a) => wanted.has(a)))));
   }
 
   /** Who of these accounts crossed at an entry: for an event, every one of them at it. */
@@ -242,9 +260,19 @@ export class Weave {
   find(entries, looked) {
     const words = lower(looked).trim().split(/\s+/).filter(Boolean);
     if (!words.length) return entries;
+    // the same list looked through for the same words is found once (every screen and card asks)
+    if (!FOUND.has(entries)) FOUND.set(entries, new Map());
+    const found = FOUND.get(entries);
+    if (!found.has(words.join(" "))) found.set(words.join(" "), this.findIn(entries, words));
+    return found.get(words.join(" "));
+  }
+
+  /** The entries holding every one of these words. */
+  findIn(entries, words) {
     return entries.filter((entry) => {
-      const hay = lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...entry.periods.map((p) => p.title), ...entry.people].join(" "));
-      return words.every((word) => hay.includes(word));
+      // what it is found by, worked out once for the entry
+      entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people].join(" "));
+      return words.every((word) => entry.hay.includes(word));
     });
   }
 
@@ -344,7 +372,9 @@ const KINDS = ["period", "event", "memory"];
 
 /** Entries in the order of their times, oldest first, the broader first on a day, undated last. */
 export function sortEntries(entries, newestFirst = false) {
-  const sorted = [...entries].sort((a, b) => sortKey(a.when).localeCompare(sortKey(b.when)) || KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.title.localeCompare(b.title));
+  // each entry's place worked out once, not at every comparison
+  for (const entry of entries) entry.sortsAs ??= sortKey(entry.when);
+  const sorted = [...entries].sort((a, b) => (a.sortsAs < b.sortsAs ? -1 : a.sortsAs > b.sortsAs ? 1 : 0) || KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.title.localeCompare(b.title));
   if (!newestFirst) return sorted;
   const dated = sorted.filter((entry) => entry.when).reverse();
   return [...dated, ...sorted.filter((entry) => !entry.when)];
@@ -360,8 +390,19 @@ export function grouped(entries) {
   return entries.filter((entry) => !(entry.kind === "memory" && events.has(entry.event?.id)));
 }
 
-/** A timeline's rows: each entry under the heading of its year (or decade), a heading wherever it changes; an event's memories inside it. */
+// what has been worked out of a list of entries, kept with the list (a weave's lists never change)
+const FOUND = new WeakMap();
+const TIMELINES = new WeakMap();
+
+/** A timeline's rows: each entry under the heading of its year (or decade), a heading wherever it changes; an event's memories inside it. Worked out once for a list and an order. */
 export function timeline(entries, newestFirst = false) {
+  if (!TIMELINES.has(entries)) TIMELINES.set(entries, {});
+  const kept = TIMELINES.get(entries);
+  kept[newestFirst] ??= rowsOf(entries, newestFirst);
+  return kept[newestFirst];
+}
+
+function rowsOf(entries, newestFirst) {
   const rows = [];
   let heading = null;
   for (const entry of sortEntries(grouped(entries), newestFirst)) {
