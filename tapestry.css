@@ -31,6 +31,8 @@
 #app .DoorTitle { font-size: calc(var(--chime-size-face) * 3.25); font-weight: 800; overflow: visible; background: linear-gradient(90deg, var(--chime-accent-end), var(--chime-accent-2-end)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 #app .DoorLine { font-size: calc(var(--chime-size-face) * 1.25); color: var(--chime-ink-soft); }
 #app .GoogleButton { min-height: 44px; display: flex; justify-content: center; padding: 0; background: none; }
+/* Google's button is its own page in a frame: told the page is dark, a browser paints white behind it; as light, its own corners show through */
+#app .GoogleButton { color-scheme: light; }
 #app .Door .chime-field-holder { width: 100%; text-align: left; }
 
 /* words */
@@ -135,3 +137,8 @@
 #app .PersonRow { width: 100%; gap: 10px; }
 #app .PersonName { font-size: calc(var(--chime-size-face) * 1.062); font-weight: 700; }
 #app .InviteLink { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: calc(var(--chime-size-face) * 0.812); background: var(--chime-raised); border: 1px solid var(--chime-lit); padding: 10px; border-radius: 10px; word-break: break-all; }
+
+/* asking, for someone already on Tapestry */
+#app .chime-surface.Asked { padding: 16px 18px; }
+#app .Requests { gap: 12px; }
+#app .Request { gap: 6px; align-items: center; }

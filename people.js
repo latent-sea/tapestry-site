@@ -2,15 +2,17 @@
 //
 // A person is a name in the member's own list, tagged and searched by. To
 // link a name to someone's own account, the member sends them an
-// invitation link (#join/<token>); opening it, they sign in and accept, and
+// invitation link (#join/<token>); opening it, they sign in and accept - or,
+// for someone already on Tapestry, asks them inside it (asking.js). Linked,
 // from then on each is among the other's people: what either shares with
 // "all my people" reaches the other, and an event either tags the other at
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=381dee9418bb";
-import { heading, mark, notice, problem } from "./parts.js?v=381dee9418bb";
-import { CARD, DANGER, LINK } from "./look/look.js?v=381dee9418bb";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=44891fca0c4f";
+import { heading, mark, notice, problem } from "./parts.js?v=44891fca0c4f";
+import { CARD, DANGER, LINK } from "./look/look.js?v=44891fca0c4f";
+import { describeIsThisYou } from "./asking.js?v=44891fca0c4f";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -239,7 +241,7 @@ export function describePeople(ui, people, account) {
 }
 
 /** One of the member's people: who they are to Tapestry, their circles, and everything with them. */
-export function describePerson(ui, people, account, timeline) {
+export function describePerson(ui, people, account, timeline, asking) {
   const personId = ui.parameter(PERSON);
   const person = ui.bound(() => account.weave.read().people.get(personId.read()) ?? null);
   const linked = person.map((p) => !!p?.account);
@@ -258,6 +260,9 @@ export function describePerson(ui, people, account, timeline) {
             ui.text(people.link.map((l) => l.address), "InviteLink").wraps(),
             ui.button(COPIES_LINK, { style: LINK }),
           ])),
+          describeIsThisYou(ui, asking, account, personId),
+          problem(ui, asking.problem),
+          notice(ui, asking.notice),
         ])),
       problem(ui, people.problem),
       notice(ui, people.notice),

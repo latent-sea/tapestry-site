@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=381dee9418bb";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=381dee9418bb";
-import { shrinkPicture } from "./backend/pictures.js?v=381dee9418bb";
+import { Backend } from "./backend/backend.js?v=44891fca0c4f";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=44891fca0c4f";
+import { shrinkPicture } from "./backend/pictures.js?v=44891fca0c4f";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -63,8 +63,13 @@ export class Loom {
 
   // --- the member ---
 
-  /** Joining Tapestry under a name, or changing it. */
-  async join(name) { return answer(await this.backend.callRpc("tapestry_join", { name })); }
+  /** Joining Tapestry under a name - by an invitation's token, unless founding it - or changing the name. */
+  async join(name, invitation = "") {
+    return answer(await (invitation ? this.backend.callRpc("tapestry_join_invited", { name, invitation }) : this.backend.callRpc("tapestry_join", { name })));
+  }
+
+  /** Whether whoever is signed in may join, by this invitation's token if any (Tapestry is by invitation): { ok, data: true or false }. */
+  async mayJoin(invitation = "") { return answer(await this.backend.callRpc("tapestry_may_join", { invitation: invitation || null })); }
 
   /** The member's defaults for who sees new things: { memory_audience, event_audience, period_audience } as far as given. */
   async saveDefaults(changes) { return answer(await this.backend.update("tapestry_members", `user_id=eq.${encodeURIComponent(this.playerId())}`, changes)); }
@@ -154,6 +159,17 @@ export class Loom {
 
   /** An invitation for one of the member's people: its token, for a link they open. */
   async invite(personId) { return answer(await this.backend.callRpc("tapestry_invite", { person: personId })); }
+
+  // --- asking, for someone already on Tapestry (backend.sql, "asking") ---
+
+  /** Asking to link a name to a member: one's own name to someone known of, or someone else's to oneself. */
+  async askLink(person, member) { return answer(await this.backend.callRpc("tapestry_ask_link", { person, member })); }
+
+  /** Asking to be at an event one sees but isn't at. */
+  async askAtEvent(eventId) { return answer(await this.backend.callRpc("tapestry_ask_at_event", { the_event: eventId })); }
+
+  /** A request answered yes or no, or taken back (no) by whoever asked. */
+  async answer(request, yes) { return answer(await this.backend.callRpc("tapestry_answer", { request, yes })); }
 
   /** Who an invitation is from: { from, expired }, or null. */
   async invitation(token) { return answer(await this.backend.callRpc("tapestry_invitation", { token })); }

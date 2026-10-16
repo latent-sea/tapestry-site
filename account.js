@@ -1,11 +1,13 @@
 // Who is signed in, and the tapestry they see. Signing in is with Google;
 // someone signed in for the first time joins Tapestry under a name (Google's,
-// unless they change it). Then everything they may see is loaded at once
+// unless they change it) - by the invitation they came with, as Tapestry is
+// by invitation, or as its founder, the first ever to join. Anyone else
+// signed in is told so, and may only sign out. Then everything they may see is loaded at once
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=381dee9418bb";
-import { Weave } from "./weave.js?v=381dee9418bb";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=44891fca0c4f";
+import { Weave } from "./weave.js?v=44891fca0c4f";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -24,7 +26,9 @@ export class Account extends Controller {
   constructor(chimes, loom) {
     super(chimes);
     this.loom = loom;
-    this.state = this.value("checking"); // checking, out, joining or in
+    this.state = this.value("checking"); // checking, out, uninvited, joining or in
+    /** The token of the invitation they came by, or "" (the page's, kept through signing in). */
+    this.invitation = () => "";
     this.weave = this.value(new Weave());
     this.addresses = this.value({}); // a picture's path -> an address that shows it
     this.joinName = this.value("");
@@ -42,7 +46,7 @@ export class Account extends Controller {
   answers() { return Object.keys(WORDS); }
 
   would(action) {
-    if (action === SIGNS_OUT && this.state.read() !== "in") return Phrase.of("Not signed in");
+    if (action === SIGNS_OUT && ["checking", "out"].includes(this.state.read())) return Phrase.of("Not signed in");
     if (action === JOINS) {
       if (this.busy.read()) return Phrase.of("Joining");
       if (!this.joinName.read().trim()) return Phrase.of("First say what others should call you");
@@ -71,20 +75,22 @@ export class Account extends Controller {
     await this.signedIn();
   }
 
-  /** Someone is signed in: their tapestry, or joining it if they never have. */
+  /** Someone is signed in: their tapestry, or joining it if they never have and may, or told it is by invitation. */
   async signedIn() {
     const loaded = await this.load();
+    if (this.disposed || !loaded) return;
+    if (this.weave.read().me) { this.state.setValue("in"); return; }
+    const may = await this.loom.mayJoin(this.invitation());
     if (this.disposed) return;
-    if (loaded && !this.weave.read().me) {
-      this.joinName.setValue(this.loom.userName());
-      this.state.setValue("joining");
-    } else if (loaded) this.state.setValue("in");
+    if (!may.ok) { this.problem.setValue(may.error); return; }
+    if (may.data) this.joinName.setValue(this.loom.userName());
+    this.state.setValue(may.data ? "joining" : "uninvited");
   }
 
   async join() {
     this.busy.setValue(true);
     this.problem.setValue("");
-    const joined = await this.loom.join(this.joinName.read().trim());
+    const joined = await this.loom.join(this.joinName.read().trim(), this.invitation());
     this.busy.setValue(false);
     if (!joined.ok) { this.problem.setValue(joined.error); return; }
     if (await this.load()) this.state.setValue("in");

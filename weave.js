@@ -5,10 +5,10 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, saySpan, sortKey, within } from "./when.js?v=381dee9418bb";
-import { linksOf } from "./links.js?v=381dee9418bb";
+import { headingOf, saySpan, sortKey, within } from "./when.js?v=44891fca0c4f";
+import { linksOf } from "./links.js?v=44891fca0c4f";
 
-export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [] });
+export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
 /** The audiences a member chooses between, in the order offered, with their words. */
 export const AUDIENCES = [
@@ -106,6 +106,24 @@ export class Weave {
     return [...new Set([event.owner, ...event.tags.map((tag) => tag.account).filter(Boolean)])];
   }
 
+  // --- asking ---
+
+  /** What the member asked, and what waits for their answer (backend.sql, "asking"). */
+  get requests() { return this.data.requests ?? []; }
+
+  /** Everyone on Tapestry the member knows of but hasn't linked, by name: whom they may ask "is this you?". */
+  knownMembers() {
+    return Object.entries(this.data.members).filter(([account]) => account !== this.meId && !this.linked.has(account))
+      .map(([account, name]) => ({ account, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /** Whether the member may ask to be at an event: someone else's, they aren't at it, and haven't asked. */
+  mayAskAt(eventId) {
+    const event = this.events.get(eventId);
+    return !!event && event.owner !== this.meId && !this.isAt(event, this.meId)
+      && !this.requests.some((r) => r.mine && r.kind === "event" && r.event === eventId);
+  }
+
   /** The accounts whose threads the member can follow: their own, then their linked people's, in their colours' order. */
   threads() { return [...this.colours.keys()]; }
 
@@ -116,9 +134,11 @@ export class Weave {
     const mine = item.owner === this.meId;
     const place = this.places.get(item.place_id) ?? null;
     const people = item.tags.map((tag) => this.tagName(tag));
+    // names of someone else's, linked to no one: the member may ask to be one of them
+    const unlinked = item.tags.filter((tag) => tag.unlinked).map((tag) => ({ id: tag.unlinked, name: tag.name }));
     const base = {
       key: `${kind}:${item.id}`, kind, id: item.id, owner: item.owner, ownerName: this.nameOf(item.owner), mine,
-      colour: this.colourOf(item.owner), place: place ? { id: place.id, name: place.name } : null, people,
+      colour: this.colourOf(item.owner), place: place ? { id: place.id, name: place.name } : null, people, unlinked,
       pictures: [], event: null, period: null, threads: [item.owner],
     };
     const { starts: when, ends: until } = this.spanOf(kind, item);

@@ -2,10 +2,10 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=381dee9418bb";
-import { heading, notice, problem } from "./parts.js?v=381dee9418bb";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=381dee9418bb";
-import { CARD, DANGER, LINK } from "./look/look.js?v=381dee9418bb";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=44891fca0c4f";
+import { heading, notice, problem } from "./parts.js?v=44891fca0c4f";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=44891fca0c4f";
+import { CARD, DANGER, LINK } from "./look/look.js?v=44891fca0c4f";
 
 export const PLACES = "places";
 export const PLACE = "place";

@@ -9,12 +9,12 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=381dee9418bb";
-import { heading, notice, problem } from "./parts.js?v=381dee9418bb";
-import { AUDIENCES } from "./weave.js?v=381dee9418bb";
-import { SIGNS_OUT } from "./account.js?v=381dee9418bb";
-import { copyOf } from "./keep.js?v=381dee9418bb";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=381dee9418bb";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=44891fca0c4f";
+import { heading, notice, problem } from "./parts.js?v=44891fca0c4f";
+import { AUDIENCES } from "./weave.js?v=44891fca0c4f";
+import { SIGNS_OUT } from "./account.js?v=44891fca0c4f";
+import { copyOf } from "./keep.js?v=44891fca0c4f";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=44891fca0c4f";
 
 export const YOU = "you";
 
