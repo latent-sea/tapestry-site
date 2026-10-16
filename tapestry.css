@@ -15,6 +15,12 @@
 #app .chime-pressable.NavLink { background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; box-shadow: none; padding: 6px 10px; min-height: 40px; color: var(--chime-ink-soft); }
 #app .chime-pressable.NavLink.chime-current { border-bottom-color: var(--chime-accent); color: var(--chime-accent); }
 #app .NavWords { font-size: calc(var(--chime-size-face) * 0.938); font-weight: 600; }
+/* every tab along the top; on a phone, people, places and you are behind More */
+#app .chime-pressable.NavLink.Narrow { display: none; }
+#app .TitleRow { align-items: center; gap: 12px; flex-wrap: wrap; }
+#app .HowTo { padding: 14px 16px; }
+#app .InEvent { gap: 2px; padding-left: 10px; border-left: 2px solid var(--chime-lit); }
+#app .InEventLine { font-size: calc(var(--chime-size-face) * 0.875); color: var(--chime-ink); }
 @media (max-width: 40rem) {
   #app .TopNav .Wordmark { display: none; }
   #app .TopNav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--chime-raised) 92%, transparent);
@@ -23,7 +29,9 @@
   #app .Nav { flex-wrap: nowrap; width: 100%; justify-content: space-around; }
   #app .chime-pressable.NavLink { border-bottom: none; border-top: 2px solid transparent; padding: 6px 4px; }
   #app .chime-pressable.NavLink.chime-current { border-top-color: var(--chime-accent); }
-  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.812); }
+  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.75); }
+  #app .chime-pressable.NavLink.Wide { display: none; }
+  #app .chime-pressable.NavLink.Narrow { display: flex; }
 }
 
 /* the door */

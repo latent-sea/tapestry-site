@@ -9,10 +9,10 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
-import { heading, mark, notice, problem } from "./parts.js?v=dc1a8acb8552";
-import { CARD, DANGER, LINK } from "./look/look.js?v=dc1a8acb8552";
-import { describeIsThisYou } from "./asking.js?v=dc1a8acb8552";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
+import { heading, mark, notice, problem } from "./parts.js?v=4242d8d537bc";
+import { CARD, DANGER, LINK } from "./look/look.js?v=4242d8d537bc";
+import { describeIsThisYou } from "./asking.js?v=4242d8d537bc";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -34,6 +34,15 @@ export const REMOVES_CIRCLE = "removes_a_circle";
 export const ACCEPTS = "accepts_the_invitation";
 export const ASKS_TO_REMOVE = "asks_before_removing";
 export const KEEPS = "keeps_them";
+
+/** How to invite someone, step by step: on the People page and in the admin area. */
+export const HOW_TO_INVITE = [
+  "1. On People, type their name and press Add.",
+  "2. Press their name to open their page.",
+  "3. Press “Invite them to link their thread”, then “Send the link”: on a phone it opens your share sheet; on a computer it copies the link to paste anywhere.",
+  "4. They open it, sign in with Google, say their name, and press “Link our threads”. A link is for one person, and runs out after 30 days.",
+  "Someone already on Tapestry needs no link: on their name's page, ask them under “Already on Tapestry?”.",
+];
 
 export const WORDS = {
   [SETS_NEW_PERSON]: ["Name"],
@@ -209,6 +218,10 @@ export function describePeople(ui, people, account) {
     problem(ui, people.problem),
     notice(ui, people.notice),
     ui.when(list.map((l) => l.length === 0), ui.text(Phrase.of("No one yet."), "Quiet")),
+    ui.surface("Card HowTo", [ui.column([
+      ui.text(Phrase.of("Inviting someone"), "FieldName"),
+      ...HOW_TO_INVITE.map((step) => ui.text(Phrase.of(step), "Hint").wraps()),
+    ], "Part")]),
     ui.each(list, (held) => ui.pressable(OPENS_PERSON, held.map((p) => ({ parameter: p?.id ?? "" })), [ui.row([
       mark(ui, held.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6"))),
       ui.text(held.map((p) => p?.name ?? ""), "PersonName").grow(),

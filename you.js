@@ -10,13 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
-import { heading, notice, problem } from "./parts.js?v=dc1a8acb8552";
-import { AUDIENCES } from "./weave.js?v=dc1a8acb8552";
-import { SIGNS_OUT } from "./account.js?v=dc1a8acb8552";
-import { copyOf } from "./keep.js?v=dc1a8acb8552";
-import { parseWhen, sayWhen } from "./when.js?v=dc1a8acb8552";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=dc1a8acb8552";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
+import { heading, notice, problem } from "./parts.js?v=4242d8d537bc";
+import { AUDIENCES, CARD_PARTS } from "./weave.js?v=4242d8d537bc";
+import { SIGNS_OUT } from "./account.js?v=4242d8d537bc";
+import { copyOf } from "./keep.js?v=4242d8d537bc";
+import { parseWhen, sayWhen } from "./when.js?v=4242d8d537bc";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=4242d8d537bc";
 
 export const YOU = "you";
 
@@ -26,6 +26,8 @@ export const SETS_DEFAULT = "sets_who_sees_new_things";
 export const SETS_TEXT_SIZE = "sets_the_text_size";
 export const KEEPS_COPY = "keeps_a_copy";
 export const SETS_BIRTHDAY = "sets_my_birthday";
+export const SHOWS_ON_CARDS = "shows_or_hides_on_cards";
+export const OPENS_ADMIN = "opens_the_admin_area";
 export const SAVES_BIRTHDAY = "saves_my_birthday";
 
 export const WORDS = {
@@ -36,6 +38,8 @@ export const WORDS = {
   [KEEPS_COPY]: ["Download a copy of my thread"],
   [SETS_BIRTHDAY]: ["Your birthday"],
   [SAVES_BIRTHDAY]: ["Save my birthday"],
+  [SHOWS_ON_CARDS]: ["Show it on cards"],
+  [OPENS_ADMIN]: ["Admin"],
 };
 
 /** A birthday typed: { date } ("YYYY-MM-DD", or null for none), or { error }. */
@@ -88,6 +92,11 @@ export class You extends Controller {
     if (action === SAVES_MY_NAME) this.change(() => this.loom.join(this.name.read().trim()), "Saved: this is the name your people see");
     if (action === KEEPS_COPY) this.keepCopy();
     if (action === SETS_BIRTHDAY) this.birthday.setValue(payload.line);
+    if (action === SHOWS_ON_CARDS) {
+      const shows = { ...(this.account.weave.read().me?.card_shows ?? {}) };
+      shows[payload.part] = !this.account.weave.read().cardShows[payload.part];
+      this.change(() => this.loom.saveDefaults({ card_shows: shows }), "");
+    }
     if (action === SAVES_BIRTHDAY) {
       const { date } = birthdayOf(this.birthday.read());
       this.change(() => this.loom.saveBirthday(date), date ? "Saved: you can write times as ages now - age 12, when I was 7 to 9, in my twenties" : "Your birthday is taken off");
@@ -166,6 +175,10 @@ export function describeYou(ui, you, account) {
     ], "Part")),
     problem(ui, you.problem),
     notice(ui, you.notice),
+    heading(ui, "What cards show"),
+    ui.text(Phrase.of("On your thread and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
+    ui.row(CARD_PARTS.map(([part, said]) => ui.pressable(SHOWS_ON_CARDS, { part }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
+      .currentWhile(account.weave.map((w) => w.cardShows[part]))), "Segments"),
     heading(ui, "Text size"),
     ui.row(TEXT_SIZES.map(([said, size]) => ui.pressable(SETS_TEXT_SIZE, { size }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
       .currentWhile(you.textSize.map((s) => s === size))), "Segments"),
@@ -173,6 +186,7 @@ export function describeYou(ui, you, account) {
     ui.text(Phrase.of("Everything on your thread, with its pictures, as one page that opens in any browser - to keep, print or pass on."), "Hint").wraps(),
     ui.button(KEEPS_COPY, { style: LINK }),
     ui.divider(),
+    ui.when(me.map((m) => !!m?.admin), ui.pressable(OPENS_ADMIN, {}, [ui.text(ui.words(OPENS_ADMIN), Themes.FACE)], LINK).goesTo("admin")),
     ui.button(SIGNS_OUT, { style: LINK }),
   ], null, { on_fill: () => you.open() });
 }

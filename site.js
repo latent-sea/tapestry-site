@@ -13,33 +13,44 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
-import { Loom } from "./loom.js?v=dc1a8acb8552";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=dc1a8acb8552";
-import * as Edit from "./editor.js?v=dc1a8acb8552";
-import * as Folk from "./people.js?v=dc1a8acb8552";
-import * as Where from "./places.js?v=dc1a8acb8552";
-import * as Me from "./you.js?v=dc1a8acb8552";
-import * as Today from "./journal.js?v=dc1a8acb8552";
-import * as Ask from "./asking.js?v=dc1a8acb8552";
-import { listed, timeline } from "./weave.js?v=dc1a8acb8552";
-import { heading, mark, notice, problem } from "./parts.js?v=dc1a8acb8552";
-import { drawWoven } from "./woven.js?v=dc1a8acb8552";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=dc1a8acb8552";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
+import { Loom } from "./loom.js?v=4242d8d537bc";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=4242d8d537bc";
+import * as Edit from "./editor.js?v=4242d8d537bc";
+import * as Folk from "./people.js?v=4242d8d537bc";
+import * as Where from "./places.js?v=4242d8d537bc";
+import * as Me from "./you.js?v=4242d8d537bc";
+import * as Today from "./journal.js?v=4242d8d537bc";
+import * as Ask from "./asking.js?v=4242d8d537bc";
+import * as Run from "./admin.js?v=4242d8d537bc";
+import { listed, timeline } from "./weave.js?v=4242d8d537bc";
+import { heading, mark, notice, problem } from "./parts.js?v=4242d8d537bc";
+import { drawWoven } from "./woven.js?v=4242d8d537bc";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=4242d8d537bc";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=dc1a8acb8552")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=4242d8d537bc")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
 const THREAD = "thread";
 const WOVEN = "tapestry";
 const ITEM = "item"; // a memory, event or period, entered as "<kind>:<id>"
+const TODAY = "today";
+const EVENTS = "events";
+const PERIODS = "periods";
+const MORE = "more"; // on a phone: people, places, you and the admin area, behind one tab
+const { ADMIN } = Run;
 const { EDIT } = Edit;
 const { PEOPLE, PERSON, JOIN } = Folk;
 const { PLACES, PLACE } = Where;
 const { YOU } = Me;
 
+const GOES_TODAY = "goes_to_today";
+const GOES_EVENTS = "goes_to_my_events";
+const GOES_PERIODS = "goes_to_my_periods";
+const GOES_MORE = "goes_to_more";
+const GOES_ADMIN = "goes_to_the_admin_area";
 const GOES_THREAD = "goes_to_my_thread";
 const GOES_WOVEN = "goes_to_the_tapestry";
 const GOES_PEOPLE = "goes_to_my_people";
@@ -154,6 +165,12 @@ export class Tapestry extends ChimeApp {
       ...Me.WORDS,
       ...Today.WORDS,
       ...Ask.WORDS,
+      ...Run.WORDS,
+      [GOES_TODAY]: ["Today"],
+      [GOES_EVENTS]: ["Events"],
+      [GOES_PERIODS]: ["Periods"],
+      [GOES_MORE]: ["More"],
+      [GOES_ADMIN]: ["Admin"],
       [GOES_THREAD]: ["My thread"],
       [GOES_WOVEN]: ["Tapestry"],
       [GOES_PEOPLE]: ["People"],
@@ -186,12 +203,14 @@ export class Tapestry extends ChimeApp {
     this.places = this.model(new Where.Places(this.chimes, LOOM, this.account));
     this.journal = this.model(new Today.Journal(this.chimes, LOOM, this.account));
     this.asking = this.model(new Ask.Asking(this.chimes, LOOM, this.account));
+    this.admin = this.model(new Run.Admin(this.chimes, LOOM, this.account));
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
       this.nav(),
       ui.stack([
-        this.door(), this.threadScreen(), this.wovenScreen(), this.itemScreen(),
+        this.door(), this.todayScreen(), this.threadScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
+        this.moreScreen(), Run.describeAdmin(ui, this.admin),
         Edit.describeEditor(ui, this.editor, this.account),
         Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
         Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
@@ -201,7 +220,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=dc1a8acb8552").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=4242d8d537bc").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -211,13 +230,61 @@ export class Tapestry extends ChimeApp {
 
   // --- the shell ---
 
+  /** The tabs: every one along the top; on a phone, along the bottom, with people, places and you behind More. */
   nav() {
     const ui = this.ui;
-    const links = [[GOES_THREAD, THREAD], [GOES_WOVEN, WOVEN], [GOES_PEOPLE, PEOPLE], [GOES_PLACES, PLACES], [GOES_YOU, YOU]];
+    const links = [[GOES_TODAY, TODAY], [GOES_THREAD, THREAD], [GOES_EVENTS, EVENTS], [GOES_PERIODS, PERIODS], [GOES_WOVEN, WOVEN],
+      [GOES_PEOPLE, PEOPLE, "Wide"], [GOES_PLACES, PLACES, "Wide"], [GOES_YOU, YOU, "Wide"], [GOES_MORE, MORE, "Narrow"]];
     return ui.when(this.account.state.map((s) => s === "in"), ui.row([
       ui.text("Tapestry", "Wordmark"),
-      ui.row(links.map(([action, screen]) => ui.pressable(action, {}, [ui.text(ui.words(action), "NavWords")], "NavLink").goesTo(screen)), "Nav"),
+      ui.row(links.map(([action, screen, only]) => ui.pressable(action, {}, [ui.text(ui.words(action), "NavWords")], `NavLink${only ? ` ${only}` : ""}`).goesTo(screen)), "Nav"),
     ], "TopNav"));
+  }
+
+  /** Today: the quickest way onto the thread - words for right now. */
+  todayScreen() {
+    const ui = this.ui;
+    return ui.screen(TODAY, [
+      ui.text(Phrase.of("Today"), "Title"),
+      Today.describeToday(ui, this.journal),
+    ]);
+  }
+
+  /** The member's events: each a time and a place or a gathering, holding everyone's memories of it. */
+  eventsScreen() {
+    const ui = this.ui;
+    const account = this.account;
+    const entries = ui.bound(() => { const w = account.weave.read(); return w.thread(w.meId).filter((e) => e.kind === "event"); });
+    return ui.screen(EVENTS, [
+      ui.text(Phrase.of("Events"), "Title"),
+      ui.text(Phrase.of("Times and places where threads cross - a wedding, a holiday, a night out. Each holds everyone's memories of it; open one to add yours, or change it."), "Hint").wraps(),
+      ui.row([ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT })], "Actions"),
+      this.timeline(entries, Phrase.of("No events yet.")),
+    ]);
+  }
+
+  /** The member's periods: spans of their life, each holding the memories during it. */
+  periodsScreen() {
+    const ui = this.ui;
+    const account = this.account;
+    const entries = ui.bound(() => { const w = account.weave.read(); return w.thread(w.meId).filter((e) => e.kind === "period"); });
+    return ui.screen(PERIODS, [
+      ui.text(Phrase.of("Periods"), "Title"),
+      ui.text(Phrase.of("Spans of your life - where you lived, a job, school - overlapping as lives do. Each holds the memories during it; open one to add to it, or change it."), "Hint").wraps(),
+      ui.row([ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT })], "Actions"),
+      this.timeline(entries, Phrase.of("No periods yet.")),
+    ]);
+  }
+
+  /** On a phone, the rest: people, places, you, and the admin area for an admin. */
+  moreScreen() {
+    const ui = this.ui;
+    const admin = this.account.weave.map((w) => !!w.me?.admin);
+    const go = (action, screen) => ui.pressable(action, {}, [ui.text(ui.words(action), "PersonName")], `${CARD} ListItem`).goesTo(screen);
+    return ui.screen(MORE, [
+      ui.text(Phrase.of("More"), "Title"),
+      ui.column([go(GOES_PEOPLE, PEOPLE), go(GOES_PLACES, PLACES), go(GOES_YOU, YOU), ui.when(admin, go(GOES_ADMIN, ADMIN))], "List"),
+    ]);
   }
 
   door() {
@@ -256,8 +323,10 @@ export class Tapestry extends ChimeApp {
     const account = this.account;
     const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.thread(w.meId), this.looking.threadSearch.read()); });
     return ui.screen(THREAD, [
-      ui.text(Phrase.of("Your thread"), "Title"),
-      Today.describeToday(ui, this.journal),
+      ui.row([
+        ui.text(Phrase.of("Your thread"), "Title").grow(),
+        ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY),
+      ], "TitleRow"),
       Ask.describeAsked(ui, this.asking, account),
       this.comingBack(),
       ui.row([
@@ -338,21 +407,29 @@ export class Tapestry extends ChimeApp {
     const ui = this.ui;
     const account = this.account;
     const crossing = held.map((e) => (e?.kind === "event" && e.threads.length > 1 ? e.threads : []));
+    // each part as the member chose cards show it (You)
+    const shown = (part, said) => ui.bound(() => (account.weave.read().cardShows[part] ? said(held.read()) : ""));
+    const shownList = (part, list) => ui.bound(() => (account.weave.read().cardShows[part] ? list(held.read()) : []));
+    // an event's memories, inside it: a few lines, then how many more
+    const inside = shownList("inside", (e) => (e?.inside ?? []).slice(0, 3).map((m) => ({ key: m.key,
+      line: m.mine ? m.title : Phrase.with("%s (%s)", [m.title, m.ownerName]) })));
+    const pictures = shownList("pictures", (e) => (e?.pictures ?? []).slice(0, 4));
     return ui.pressable(OPENS_ITEM, held.map((e) => ({ parameter: e?.key ?? "" })), [ui.row([
       ui.column([mark(ui, held.map((e) => e?.colour ?? ""))], "ThreadMark"),
       ui.column([
         ui.row([
           ui.text(held.map((e) => Phrase.of(KIND_SAID[e?.kind] ?? "Memory")), "Kind"),
           ui.text(held.map((e) => e?.said ?? ""), "When").hidesEmpty(),
-          ui.text(held.map((e) => e?.lasts ?? ""), "Age").hidesEmpty(),
-          ui.text(held.map((e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
+          ui.text(shown("lengths", (e) => e?.lasts ?? ""), "Age").hidesEmpty(),
+          ui.text(shown("ages", (e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
           woven ? ui.text(held.map((e) => (e?.mine ? "" : Phrase.with("%s's thread", [e?.ownerName ?? ""]))), "Whose").hidesEmpty() : null,
         ].filter(Boolean), "CardTop"),
         ui.text(held.map((e) => e?.title ?? ""), "CardTitle").wraps(),
-        ui.text(held.map((e) => (e?.kind === "memory" && e.title !== e.text.trim().split("\n")[0] ? e.text : e?.kind !== "memory" ? e?.text ?? "" : "")), "CardText").wraps().hidesEmpty(),
+        ui.text(shown("words", (e) => (e?.kind === "memory" && e.title !== e.text.trim().split("\n")[0] ? e.text : e?.kind !== "memory" ? e?.text ?? "" : "")), "CardText").wraps().hidesEmpty(),
+        ui.when(inside.map((l) => l.length > 0), ui.each(inside, (line) => ui.text(line.map((l) => l?.line ?? ""), "InEventLine").wraps(), (l) => l.key, "InEvent")),
         ui.row([
-          ui.text(held.map((e) => (e?.place ? Phrase.with("At %s", [e.place.name]) : "")), "Meta").hidesEmpty(),
-          ui.text(held.map((e) => (e?.people?.length ? Phrase.with("With %s", [listed(e.people)]) : "")), "Meta").wraps().hidesEmpty(),
+          ui.text(shown("place", (e) => (e?.place ? Phrase.with("At %s", [e.place.name]) : "")), "Meta").hidesEmpty(),
+          ui.text(shown("people", (e) => (e?.people?.length ? Phrase.with("With %s", [listed(e.people)]) : "")), "Meta").wraps().hidesEmpty(),
           ui.text(held.map((e) => (e?.event?.title ? Phrase.with("Of %s", [e.event.title]) : "")), "Meta").hidesEmpty(),
           ui.text(held.map((e) => (e?.memoryCount ? Phrase.counted("%d memory", "%d memories", e.memoryCount) : "")), "Meta").hidesEmpty(),
           ui.text(held.map((e) => {
@@ -360,10 +437,10 @@ export class Tapestry extends ChimeApp {
             return others ? Phrase.counted("%d link", "%d links", others) : "";
           }), "Meta").hidesEmpty(),
         ], "MetaRow"),
-        ui.eachAcross(held.map((e) => (e?.pictures ?? []).slice(0, 4)), (pic) => ui.image(pic.map((p) => (p ? account.address(p.path) : "")), "Thumb",
+        ui.eachAcross(pictures, (pic) => ui.image(pic.map((p) => (p ? account.address(p.path) : "")), "Thumb",
           pic.map((p) => p?.caption || Phrase.of("A picture"))),
           (p) => p.id, "Thumbs"),
-        ui.eachAcross(held.map((e) => (e?.videos ?? []).slice(0, 2)), (poster) => ui.image(poster, "Thumb VideoThumb", Phrase.of("A video")), null, "Thumbs"),
+        ui.eachAcross(shownList("pictures", (e) => (e?.videos ?? []).slice(0, 2)), (poster) => ui.image(poster, "Thumb VideoThumb", Phrase.of("A video")), null, "Thumbs"),
         ui.when(crossing.map((c) => c.length > 0), ui.row([
           ui.eachAcross(crossing, (who) => mark(ui, who.map((a) => account.weave.read().colourOf(a)), "SmallDot"), null, "Dots"),
           ui.text(ui.bound(() => Phrase.with("Threads cross here: %s", [listed(crossing.read().map((a) => account.weave.read().nameOf(a)))])), "Crossing").wraps(),
@@ -486,7 +563,7 @@ export class Tapestry extends ChimeApp {
       const [wanted, parameter = ""] = hash.replace(/^#/, "").split("/");
       if (["memory", "event", "period"].includes(wanted) && parameter) return [ITEM, `${wanted}:${parameter}`];
       if ([PERSON, PLACE, JOIN].includes(wanted) && parameter) return [wanted, parameter];
-      if ([WOVEN, PEOPLE, PLACES, YOU].includes(wanted)) return [wanted, null];
+      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, MORE, ADMIN].includes(wanted)) return [wanted, null];
       return [THREAD, null];
     };
     const go = (screen, parameter) => {
@@ -540,7 +617,7 @@ export class Tapestry extends ChimeApp {
         }
         return;
       }
-      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN].find((screen) => top.includes(screen));
+      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, MORE, ADMIN].find((screen) => top.includes(screen));
       if (!at) return;
       const parameter = this.driver.getParameter(at);
       const address = at === THREAD ? "" : at === ITEM ? `#${String(parameter).replace(":", "/")}` : parameter ? `#${at}/${parameter}` : `#${at}`;

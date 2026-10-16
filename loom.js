@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=dc1a8acb8552";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=dc1a8acb8552";
-import { shrinkPicture } from "./backend/pictures.js?v=dc1a8acb8552";
+import { Backend } from "./backend/backend.js?v=4242d8d537bc";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=4242d8d537bc";
+import { shrinkPicture } from "./backend/pictures.js?v=4242d8d537bc";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -162,6 +162,30 @@ export class Loom {
 
   /** An invitation for one of the member's people: its token, for a link they open. */
   async invite(personId) { return answer(await this.backend.callRpc("tapestry_invite", { person: personId })); }
+
+  // --- the admin area (backend.sql, "the admin area") ---
+
+  /** Who is on Tapestry and every invitation waiting: { members, invitations }, for an admin. */
+  async adminView() { return answer(await this.backend.callRpc("tapestry_admin_view", {})); }
+
+  /** Someone removed from Tapestry, everything they made with them. */
+  async adminRemove(member) { return answer(await this.backend.callRpc("tapestry_admin_remove", { member })); }
+
+  /** An invitation cancelled. */
+  async adminCancelInvite(token) { return answer(await this.backend.callRpc("tapestry_admin_cancel_invite", { token })); }
+
+  /** Someone made an admin, or not one. */
+  async adminSet(member, admin) { return answer(await this.backend.callRpc("tapestry_admin_set", { member, admin })); }
+
+  /** How the server is: { result, commit, at } (platform/bin/deploy's status, open to anyone). */
+  async platformStatus() {
+    try {
+      const reply = await fetch(`${PLATFORM}/platform/status`, { cache: "no-store" });
+      return reply.ok ? { ok: true, data: await reply.json(), error: "" } : { ok: false, data: null, error: "The server didn't answer" };
+    } catch {
+      return { ok: false, data: null, error: "The server didn't answer" };
+    }
+  }
 
   // --- asking, for someone already on Tapestry (backend.sql, "asking") ---
 

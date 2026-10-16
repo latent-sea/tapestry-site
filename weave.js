@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=dc1a8acb8552";
-import { linksOf } from "./links.js?v=dc1a8acb8552";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=4242d8d537bc";
+import { linksOf } from "./links.js?v=4242d8d537bc";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -52,6 +52,11 @@ export const OTHER_COLOUR = "#8e9ab8";
 
 const two = (n) => String(n).padStart(2, "0");
 
+/** The parts of a card a member may choose to see, as You names them, and that each is shown unless said not. */
+export const CARD_PARTS = [["words", "The words"], ["pictures", "Pictures"], ["people", "Who"], ["place", "Where"], ["inside", "An event's memories"],
+  ["ages", "How old you were"], ["lengths", "How long"]];
+const CARD_PARTS_SHOWN = Object.fromEntries(CARD_PARTS.map(([key]) => [key, true]));
+
 export class Weave {
   constructor(data = EMPTY) {
     this.data = { ...EMPTY, ...(data ?? {}) };
@@ -74,6 +79,9 @@ export class Weave {
   get meId() { return this.data.me?.id ?? ""; }
 
   get me() { return this.data.me; }
+
+  /** What the cards of a timeline show the member: each part shown unless they said not (You). */
+  get cardShows() { return { ...CARD_PARTS_SHOWN, ...(this.data.me?.card_shows ?? {}) }; }
 
   /** The member's birthday ("YYYY-MM-DD"), seen by them alone, or null: their times may be ages. */
   get born() { return this.data.me?.birthday ?? null; }
@@ -195,8 +203,10 @@ export class Weave {
     }
     if (kind === "event") {
       const memories = this.data.memories.filter((m) => m.event_id === item.id);
+      // a grouping of memories: everyone's of it the member sees, inside it
       return { ...base, when, until, said, title: item.title, text: item.notes, threads: this.threadsAt(item),
-        memoryCount: memories.length, pictures: memories.flatMap((m) => m.pictures).slice(0, 4) };
+        memoryCount: memories.length, pictures: memories.flatMap((m) => m.pictures).slice(0, 4),
+        inside: sortEntries(memories.map((m) => this.entry("memory", m))) };
     }
     return { ...base, when, until, said, title: item.title, text: item.notes };
   }
@@ -339,11 +349,21 @@ export function sortEntries(entries, newestFirst = false) {
   return [...dated, ...sorted.filter((entry) => !entry.when)];
 }
 
-/** A timeline's rows: each entry under the heading of its year (or decade), a heading wherever it changes. */
+/**
+ * An event is a grouping of memories: where an event is among the entries,
+ * the memories of it are inside it (entry.inside: everyone's the member
+ * sees, in time order) rather than beside it.
+ */
+export function grouped(entries) {
+  const events = new Set(entries.filter((entry) => entry.kind === "event").map((entry) => entry.id));
+  return entries.filter((entry) => !(entry.kind === "memory" && events.has(entry.event?.id)));
+}
+
+/** A timeline's rows: each entry under the heading of its year (or decade), a heading wherever it changes; an event's memories inside it. */
 export function timeline(entries, newestFirst = false) {
   const rows = [];
   let heading = null;
-  for (const entry of sortEntries(entries, newestFirst)) {
+  for (const entry of sortEntries(grouped(entries), newestFirst)) {
     const under = headingOf(entry.when);
     if (under !== heading) { heading = under; rows.push({ key: `heading:${under}`, heading: under }); }
     rows.push(entry);

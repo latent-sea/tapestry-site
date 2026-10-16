@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=dc1a8acb8552";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=dc1a8acb8552";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=dc1a8acb8552";
-import { chooser, heading, notice, problem } from "./parts.js?v=dc1a8acb8552";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=dc1a8acb8552";
-import { DANGER, LINK } from "./look/look.js?v=dc1a8acb8552";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=4242d8d537bc";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=4242d8d537bc";
+import { chooser, heading, notice, problem } from "./parts.js?v=4242d8d537bc";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=4242d8d537bc";
+import { DANGER, LINK } from "./look/look.js?v=4242d8d537bc";
 
 export const EDIT = "edit";
 
@@ -472,8 +472,11 @@ export function describeEditor(ui, editor, account) {
     ui.field(SETS_WHEN, "", { changes: SETS_WHEN, shows: editor.whenText, placeholder: Phrase.of("e.g. June 1998, about 1995, 2004 – now") }),
     ui.text(said("whenHint"), "Hint").wraps(),
     ui.text(whenSaid, "Hint").wraps().hidesEmpty(),
-    ui.text(said("text"), "FieldName"),
-    ui.area(SETS_TEXT, editor.text, "TextArea Words"),
+    // an event is a grouping of memories: what is written goes in its memories, not on it
+    ui.when(kind.map((k) => k !== "event"), ui.column([
+      ui.text(said("text"), "FieldName"),
+      ui.area(SETS_TEXT, editor.text, "TextArea Words"),
+    ], "Part"), ui.text(Phrase.of("An event holds memories: once it is saved, add yours - and everyone at it adds theirs."), "Hint").wraps()),
     ui.when(isMemory, ui.column([
       chooser(ui, { label: Phrase.of("Of an event you were at"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
         search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT }),
