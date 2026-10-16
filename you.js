@@ -10,13 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=780e7fa78a33";
-import { heading, notice, problem } from "./parts.js?v=780e7fa78a33";
-import { AUDIENCES, CARD_PARTS } from "./weave.js?v=780e7fa78a33";
-import { SIGNS_OUT } from "./account.js?v=780e7fa78a33";
-import { copyOf } from "./keep.js?v=780e7fa78a33";
-import { parseWhen, sayWhen } from "./when.js?v=780e7fa78a33";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=780e7fa78a33";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=fa0c5e6418d8";
+import { heading, notice, problem } from "./parts.js?v=fa0c5e6418d8";
+import { AUDIENCES, CARD_PARTS } from "./weave.js?v=fa0c5e6418d8";
+import { SIGNS_OUT } from "./account.js?v=fa0c5e6418d8";
+import { copyOf } from "./keep.js?v=fa0c5e6418d8";
+import { parseWhen, sayWhen } from "./when.js?v=fa0c5e6418d8";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=fa0c5e6418d8";
 
 export const YOU = "you";
 
@@ -181,6 +181,8 @@ export function describeYou(ui, you, account) {
     ui.text(Phrase.of("On your thread and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
     ui.row(CARD_PARTS.map(([part, said]) => ui.pressable(SHOWS_ON_CARDS, { part }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
       .currentWhile(account.weave.map((w) => w.cardShows[part]))), "Segments"),
+    ui.row([ui.pressable(SHOWS_ON_CARDS, { part: "light" }, [ui.text(Phrase.of("Light cards: just when and the title, one line each"), Themes.FACE)], "Segment")
+      .currentWhile(account.weave.map((w) => !!w.cardShows.light))], "Segments"),
     heading(ui, "Text size"),
     ui.row(TEXT_SIZES.map(([said, size]) => ui.pressable(SETS_TEXT_SIZE, { size }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
       .currentWhile(you.textSize.map((s) => s === size))), "Segments"),

@@ -74,6 +74,16 @@
 
 /* the timeline */
 #app .Timeline { gap: 12px; }
+/* a timeline's years, to flick through: one line, scrolled sideways */
+#app .Years { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 6px; scrollbar-width: thin; }
+#app .chime-pressable.YearChip { flex: 0 0 auto; min-height: 32px; padding: 2px 12px; }
+/* light cards: when on the left, the title beside it, one line each */
+#app .chime-pressable.LightEntry { width: 100%; padding: 8px 12px; align-items: center; }
+#app .LightRow { width: 100%; gap: 10px; align-items: center; }
+#app .LightWhen { flex: 0 0 9.5rem; font-size: calc(var(--chime-size-face) * 0.812); font-weight: 600; color: var(--chime-accent); }
+#app .LightTitle { font-size: calc(var(--chime-size-face) * 0.95); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app .LightMeta { flex: 0 0 auto; font-size: calc(var(--chime-size-face) * 0.75); color: var(--chime-ink-soft); }
+@media (max-width: 40rem) { #app .LightWhen { flex-basis: 6.5rem; } }
 #app .YearHeading { font-size: calc(var(--chime-size-face) * 1.375); font-weight: 800; color: var(--chime-accent); margin-top: 16px; overflow: visible; }
 #app .chime-pressable.Entry { width: 100%; padding: 14px 16px; align-items: stretch; }
 #app .chime-row.CardRow { align-items: flex-start; width: 100%; gap: 12px; }

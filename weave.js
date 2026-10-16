@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=780e7fa78a33";
-import { linksOf } from "./links.js?v=780e7fa78a33";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=fa0c5e6418d8";
+import { linksOf } from "./links.js?v=fa0c5e6418d8";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -55,7 +55,8 @@ const two = (n) => String(n).padStart(2, "0");
 /** The parts of a card a member may choose to see, as You names them, and that each is shown unless said not. */
 export const CARD_PARTS = [["words", "The words"], ["pictures", "Pictures"], ["people", "Who"], ["place", "Where"], ["inside", "An event's memories"],
   ["ages", "How old you were"], ["lengths", "How long"]];
-const CARD_PARTS_SHOWN = Object.fromEntries(CARD_PARTS.map(([key]) => [key, true]));
+// light cards (just when and the title, one line each) only when chosen
+const CARD_PARTS_SHOWN = { ...Object.fromEntries(CARD_PARTS.map(([key]) => [key, true])), light: false };
 
 export class Weave {
   constructor(data = EMPTY) {
