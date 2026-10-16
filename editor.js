@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=27933e32b72d";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=27933e32b72d";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=27933e32b72d";
-import { chooser, heading, notice, problem } from "./parts.js?v=27933e32b72d";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=27933e32b72d";
-import { DANGER, LINK } from "./look/look.js?v=27933e32b72d";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4564ab53dd6d";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=4564ab53dd6d";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=4564ab53dd6d";
+import { chooser, heading, notice, problem } from "./parts.js?v=4564ab53dd6d";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=4564ab53dd6d";
+import { DANGER, LINK } from "./look/look.js?v=4564ab53dd6d";
 
 export const EDIT = "edit";
 
@@ -39,6 +39,7 @@ export const LOOKS_FOR_PLACE = "looks_for_a_place";
 export const PICKS_PLACE = "picks_a_place";
 export const DROPS_PLACE = "drops_the_place";
 export const ADDS_NEW_PLACE = "adds_a_new_place";
+export const ADDS_NEW_EVENT = "adds_a_new_event";
 export const LOOKS_FOR_PERSON = "looks_for_a_person";
 export const TAGS = "tags_a_person";
 export const UNTAGS = "untags_a_person";
@@ -79,6 +80,7 @@ export const WORDS = {
   [PICKS_PLACE]: ["Choose this place"],
   [DROPS_PLACE]: ["Not at a place"],
   [ADDS_NEW_PLACE]: ["Add it as a new place"],
+  [ADDS_NEW_EVENT]: ["Make it a new event"],
   [LOOKS_FOR_PERSON]: ["Find someone"],
   [TAGS]: ["Tag them"],
   [UNTAGS]: ["Untag them"],
@@ -187,6 +189,10 @@ export class Editor extends Controller {
       if (this.links.read().some((l) => l.url === link)) return Phrase.of("That link is on it already");
       if (this.links.read().length >= MOST_LINKS) return Phrase.with("A memory has at most %d links", [MOST_LINKS]);
     }
+    if (action === ADDS_NEW_EVENT) {
+      if (!this.searches.event.read().trim()) return Phrase.of("Type a name first");
+      if (this.span().error || !this.span().starts) return Phrase.of("First say when it was: an event has a time");
+    }
     if ((action === ADDS_NEW_PERSON || action === ADDS_NEW_PLACE) && !this.searches[action === ADDS_NEW_PERSON ? "person" : "place"].read().trim()) {
       return Phrase.of("Type a name first");
     }
@@ -216,6 +222,7 @@ export class Editor extends Controller {
     if (action === PICKS_PLACE) { this.placeId.setValue(payload.id); this.searches.place.setValue(""); }
     if (action === DROPS_PLACE) this.placeId.setValue(null);
     if (action === ADDS_NEW_PLACE) this.addPlace(this.searches.place.read().trim());
+    if (action === ADDS_NEW_EVENT) this.addEvent(this.searches.event.read().trim());
     if (action === TAGS) { this.tag(payload.id); this.searches.person.setValue(""); }
     if (action === UNTAGS) this.tags.update((tags) => tags.filter((id) => id !== payload.id));
     if (action === ADDS_NEW_PERSON) this.addPerson(this.searches.person.read().trim());
@@ -299,6 +306,24 @@ export class Editor extends Controller {
     if (!made.ok) { this.problem.setValue(made.error); return; }
     await this.account.load();
     this.placeId.setValue(made.data.id);
+  }
+
+  /**
+   * A new event, named as typed, made from the memory being written - its time, its place, its people -
+   * and chosen for it: no event need be made first. One of the member's own by that name is chosen instead.
+   */
+  async addEvent(title) {
+    const weave = this.weave();
+    const known = weave.data.events.find((e) => e.owner === weave.meId && e.title.toLowerCase() === title.toLowerCase());
+    this.searches.event.setValue("");
+    if (known) { this.eventId.setValue(known.id); return; }
+    const { starts, ends } = this.span();
+    const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: at?.time ?? "" });
+    const made = await this.loom.saveEvent({ title, notes: "", ...time("starts", starts), ...time("ends", ends), place_id: this.placeId.read() ?? "",
+      audience: weave.defaultAudience("event"), tags: this.tags.read(), shares: [] });
+    if (!made.ok) { this.problem.setValue(made.error); return; }
+    await this.account.load();
+    this.eventId.setValue(made.data);
   }
 
   /** The draft as the platform's save takes it. */
@@ -478,8 +503,9 @@ export function describeEditor(ui, editor, account) {
       ui.area(SETS_TEXT, editor.text, "TextArea Words"),
     ], "Part"), ui.text(Phrase.of("An event holds memories: once it is saved, add yours - and everyone at it adds theirs."), "Hint").wraps()),
     ui.when(isMemory, ui.column([
-      chooser(ui, { label: Phrase.of("Of an event you were at"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
-        search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT }),
+      chooser(ui, { label: Phrase.of("Of an event - one you were at, or name a new one"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
+        search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
+        create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") }),
       chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()), unpick: DROPS_PERIOD,
         search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD }),
     ], "Part")),
@@ -489,6 +515,8 @@ export function describeEditor(ui, editor, account) {
     chooser(ui, { label: said("people"), chosen: ui.bound(() => editor.chosenPeople()), unpick: UNTAGS,
       search: editor.searches.person, looks: LOOKS_FOR_PERSON, matches: ui.bound(() => editor.personMatches()), pick: TAGS,
       create: ADDS_NEW_PERSON, placeholder: Phrase.of("Type a name") }),
+    ui.when(ui.bound(() => isMemory.read() && !editor.eventId.read()),
+      ui.text(Phrase.of("Tag someone who is on Tapestry and it becomes an event when saved: your threads cross there, and they add their own memories of it."), "Hint").wraps()),
     ui.when(isMemory, ui.column([
       ui.text(Phrase.of("Pictures"), "FieldName"),
       ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.path) : ""))), (p) => p.id, "EditPictures"),

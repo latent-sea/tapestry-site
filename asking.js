@@ -11,15 +11,17 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=27933e32b72d";
-import { notice, problem } from "./parts.js?v=27933e32b72d";
-import { ACTION, LINK } from "./look/look.js?v=27933e32b72d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=4564ab53dd6d";
+import { notice, problem } from "./parts.js?v=4564ab53dd6d";
+import { ACTION, LINK } from "./look/look.js?v=4564ab53dd6d";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
 export const SAYS_YES = "says_yes_to_a_request";
 export const SAYS_NO = "says_no_to_a_request";
 export const TAKES_BACK = "takes_back_a_request";
+export const MAKES_EVENT = "makes_it_an_event";
+export const ASKS_SHARE_MEMORY = "says_i_was_there_too";
 export const LOOKS_FOR_TWIN = "looks_for_the_same_one";
 export const PICKS_TWIN = "picks_the_same_one";
 export const MERGES = "merges_into_it";
@@ -31,6 +33,8 @@ export const WORDS = {
   [SAYS_YES]: ["Yes"],
   [SAYS_NO]: ["No"],
   [TAKES_BACK]: ["Take it back"],
+  [MAKES_EVENT]: ["Make it an event"],
+  [ASKS_SHARE_MEMORY]: ["I was there too"],
   [LOOKS_FOR_TWIN]: ["Find the same one"],
   [PICKS_TWIN]: ["The same as this"],
   [MERGES]: ["Yes, merge them"],
@@ -56,6 +60,12 @@ export class Asking extends Controller {
   would(action, payload) {
     if (this.busy.read()) return Phrase.of("Asking");
     if (action === ASKS_AT_EVENT && !this.account.weave.read().mayAskAt(payload?.id)) return Phrase.of("You are at it, or have asked");
+    if (action === MAKES_EVENT) {
+      const memory = this.account.weave.read().memories.get(payload?.id);
+      if (!memory || memory.owner !== this.account.weave.read().meId || memory.event_id) return Phrase.of("Only your own memory, not of an event yet");
+      if (!memory.starts) return Phrase.of("First say when it was: an event has a time");
+    }
+    if (action === ASKS_SHARE_MEMORY && !this.account.weave.read().mayShareMemory(payload?.id)) return Phrase.of("Yours, or you are at it, or have asked");
     return null;
   }
 
@@ -64,11 +74,20 @@ export class Asking extends Controller {
     if (action === ASKS_AT_EVENT) this.ask(() => this.loom.askAtEvent(payload.id), "Asked. You are on it when its maker says yes.");
     if (action === SAYS_YES) this.ask(() => this.loom.answer(payload.id, true), "Done.");
     if (action === SAYS_NO || action === TAKES_BACK) this.ask(() => this.loom.answer(payload.id, false), "");
+    if (action === MAKES_EVENT) this.makeEvent(payload.id);
+    if (action === ASKS_SHARE_MEMORY) this.ask(() => this.loom.askShareMemory(payload.id), "Asked. When they say yes, it is an event you are at, to add your own memories to.");
     if (action === LOOKS_FOR_TWIN) this.twinSearch.setValue(payload?.line ?? this.twinSearch.read());
     if (action === PICKS_TWIN) this.twin.setValue({ kind: payload.kind, from: payload.from, into: payload.into });
     if (action === KEEPS_APART) this.twin.setValue(null);
     if (action === MERGES) this.merge();
     return null;
+  }
+
+  /** One of the member's memories made an event, which opens: others at it add their own. */
+  async makeEvent(memoryId) {
+    let made = null;
+    await this.ask(async () => { made = await this.loom.eventOfMemory(memoryId); return made; }, "It is an event now: everyone at it can add their own memories.");
+    if (made?.ok && !this.disposed) location.hash = `#event/${made.data}`;
   }
 
   /** The merge picked: one's own two at once, opening the one kept; into someone else's, asked. */
@@ -104,10 +123,12 @@ export function sayRequest(request) {
   if (!r.mine) {
     if (r.kind === "link") return Phrase.with("%s knows you as “%s”, and asks to link your threads.", [r.asker ?? "", r.name ?? ""]);
     if (r.kind === "claim") return Phrase.with("%s says they are your “%s”, and asks to be linked to that name.", [r.asker ?? "", r.name ?? ""]);
+    if (r.kind === "memory") return Phrase.with("%s was there too, at your “%s”, and asks to be at it: it becomes an event, and they add their own memories of it.", [r.asker ?? "", r.name ?? ""]);
     if (r.kind === "merge_event") return Phrase.with("%s says their event “%s” is your “%s”, and asks to merge it into yours: everyone at theirs who is among your people, and their memories, come to yours.", [r.asker ?? "", r.name ?? "", r.into_name ?? ""]);
     if (r.kind === "merge_place") return Phrase.with("%s says their place “%s” is your “%s”, and asks to merge it into yours: everything at theirs comes to yours.", [r.asker ?? "", r.name ?? "", r.into_name ?? ""]);
     return Phrase.with("%s says they were at %s, and asks to be on it.", [r.asker ?? "", r.event_title ?? ""]);
   }
+  if (r.kind === "memory") return Phrase.with("You asked %s to be at their “%s”.", [r.decider ?? "", r.name ?? ""]);
   if (r.kind === "merge_event" || r.kind === "merge_place") return Phrase.with("You asked %s to merge your “%s” into their “%s”.", [r.decider ?? "", r.name ?? "", r.into_name ?? ""]);
   if (r.kind === "link") return Phrase.with("You asked %s whether they are your “%s”.", [r.decider ?? "", r.name ?? ""]);
   if (r.kind === "claim") return Phrase.with("You asked %s to link their “%s” to you.", [r.decider ?? "", r.name ?? ""]);

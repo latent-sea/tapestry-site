@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=27933e32b72d";
-import { Weave } from "./weave.js?v=27933e32b72d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=4564ab53dd6d";
+import { Weave } from "./weave.js?v=4564ab53dd6d";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";

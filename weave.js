@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=27933e32b72d";
-import { linksOf } from "./links.js?v=27933e32b72d";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=4564ab53dd6d";
+import { linksOf } from "./links.js?v=4564ab53dd6d";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [] });
 
@@ -158,6 +158,14 @@ export class Weave {
       .slice(0, 8)
       .map((item) => ({ id: item.id, label: [nameOf(item), kind === "event" ? this.entry("event", item).said : "",
         item.owner === this.meId ? "yours" : `${this.nameOf(item.owner)}'s`].filter(Boolean).join(" · ") }));
+  }
+
+  /** Whether the member may say "I was there too" of a memory: someone else's, whose event (if any) they aren't at, not asked yet. */
+  mayShareMemory(memoryId) {
+    const memory = this.memories.get(memoryId);
+    if (!memory || memory.owner === this.meId) return false;
+    if (memory.event_id) return this.mayAskAt(memory.event_id);
+    return !this.requests.some((r) => r.mine && r.kind === "memory" && r.memory === memoryId);
   }
 
   /** Whether the member may ask to be at an event: someone else's, they aren't at it, and haven't asked. */
