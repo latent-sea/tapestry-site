@@ -1,0 +1,188 @@
+/* The factory's look for the web (look.js): dark navy glass, as the apps wear
+   it on a phone (services/look/look.gd). Put in after gd-chime's own sheet,
+   so it dresses gd-chime's styles as well as adding the factory's. Every
+   colour is the look's own, from its palette: --chime-<name>. */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/Manrope.ttf") format("truetype");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+/* --- the ground: navy deepening to violet, two pools of light drifting --- */
+
+.factory-look {
+  --factory-faded: color-mix(in srgb, var(--chime-raised) 70%, var(--chime-ground));
+  --factory-faded-words: color-mix(in srgb, var(--chime-ink-soft) 55%, var(--chime-ground));
+  --factory-corner: 16px;
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-weight: 500;
+  background: linear-gradient(180deg, var(--chime-ground), var(--chime-ground-deep)) fixed;
+  position: relative;
+  isolation: isolate;
+  caret-color: var(--chime-accent);
+}
+.factory-look::before, .factory-look::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  width: 90vmax;
+  height: 90vmax;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: factory-drift 24s ease-in-out infinite alternate;
+}
+.factory-look::before { left: -35vmax; top: -40vmax; background: radial-gradient(closest-side, color-mix(in srgb, var(--chime-accent) 10%, transparent), transparent); }
+.factory-look::after { right: -40vmax; bottom: -45vmax; background: radial-gradient(closest-side, color-mix(in srgb, var(--chime-accent-2) 16%, transparent), transparent); animation-direction: alternate-reverse; }
+@keyframes factory-drift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(12vmax, 8vmax); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .factory-look::before, .factory-look::after { animation: none; }
+}
+
+/* --- words --- */
+
+.factory-look .chime-text.Title {
+  font-size: calc(var(--chime-size-face) * 2);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  background: linear-gradient(90deg, var(--chime-accent-end), color-mix(in srgb, var(--chime-accent-2) 70%, white));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  overflow: visible;
+  white-space: normal;
+}
+.factory-look .chime-text.Words, .factory-look .chime-text.SectionHeading, .factory-look .chime-text.FormHeading { font-weight: 750; }
+.factory-look .chime-text.FactoryQuiet, .factory-look .chime-text.Quiet { color: var(--chime-ink-soft); }
+.factory-look .chime-text.FactoryMarked { color: var(--chime-accent-2); }
+.factory-look .chime-text.Notice { color: var(--chime-accent); }
+.factory-look .chime-text.Reason { color: var(--chime-danger); }
+.factory-look .chime-hyperlink, .factory-look .chime-pressable.Link { color: var(--chime-accent); }
+
+/* a word longer than the screen is wide (a pasted link) breaks rather than widening the page */
+.factory-look .chime-wraps, .factory-look .chime-text.Title { overflow-wrap: anywhere; }
+
+/* --- buttons: every one a pill --- */
+
+.factory-look .chime-pressable {
+  border-radius: 999px;
+  background: var(--chime-raised);
+  border: 2px solid var(--chime-lit);
+  padding: 10px 22px;
+  font-weight: 600;
+  transition: filter 120ms, box-shadow 120ms, transform 120ms;
+}
+.factory-look .chime-pressable:hover { background: var(--chime-lit); }
+.factory-look .chime-pressable:active { transform: scale(0.97); }
+.factory-look .chime-pressable:focus-visible { outline: 2px solid var(--chime-accent); outline-offset: 3px; }
+
+/* the main action: the accent's gradient, softly glowing */
+.factory-look .chime-pressable.BellButton, .factory-look .chime-pressable.FactoryAction, .factory-look .chime-pressable.FactoryToggleOn,
+.factory-look .chime-pressable.ToggleOn, .factory-look .chime-pressable.ChoiceChosen, .factory-look .chime-pressable.SegmentChosen {
+  background: linear-gradient(90deg, var(--chime-accent), var(--chime-accent-end));
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--chime-accent) 45%, transparent);
+}
+/* a lesser one, or one that goes somewhere: the second accent's */
+.factory-look .chime-pressable.FactoryLink {
+  background: linear-gradient(90deg, var(--chime-accent-2), var(--chime-accent-2-end));
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--chime-accent-2) 40%, transparent);
+}
+/* one that deletes: red */
+.factory-look .chime-pressable.FactoryDanger {
+  background: linear-gradient(90deg, var(--chime-danger), var(--chime-danger-end));
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--chime-danger) 40%, transparent);
+}
+.factory-look .chime-pressable.BellButton:hover, .factory-look .chime-pressable.FactoryAction:hover, .factory-look .chime-pressable.FactoryLink:hover,
+.factory-look .chime-pressable.FactoryDanger:hover, .factory-look .chime-pressable.FactoryToggleOn:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--chime-accent) 60%, transparent);
+}
+/* a choice not chosen, or a switch that is off */
+.factory-look .chime-pressable.FactoryToggleOff, .factory-look .chime-pressable.ToggleOff {
+  background: var(--factory-faded);
+  border: 1px solid var(--chime-lit);
+  color: var(--chime-ink-soft);
+}
+/* a choice in a row of them: chosen, the accent's pill; not, faded */
+.factory-look .chime-pressable.Segment { background: var(--factory-faded); border: 1px solid var(--chime-lit); color: var(--chime-ink-soft); }
+.factory-look .chime-pressable.Segment.chime-current {
+  background: linear-gradient(90deg, var(--chime-accent), var(--chime-accent-end));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--chime-accent) 40%, transparent);
+}
+/* a button that can't be used: faded, and saying nothing - its reason kept for a screen reader alone */
+.factory-look .chime-pressable[aria-disabled="true"] {
+  opacity: 1;
+  background: var(--factory-faded);
+  border: 1px solid var(--chime-lit);
+  color: var(--factory-faded-words);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+.factory-look .chime-pressable .Reason {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.factory-look .chime-pressable.Link { background: none; border: none; padding: 0; box-shadow: none; border-radius: 0; font-weight: 500; }
+.factory-look .chime-pressable.Tab { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; box-shadow: none; }
+.factory-look .chime-pressable.Tab.chime-current { border-bottom-color: var(--chime-accent); color: var(--chime-accent); }
+
+/* --- cards: a shade lighter, deepening downwards, edged from the accent to the second --- */
+
+.factory-look .chime-surface.Card, .factory-look .chime-surface.FactoryCard, .factory-look .chime-pressable.FactoryCard {
+  border: 2px solid transparent;
+  border-radius: var(--factory-corner);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--chime-raised) 96%, white), var(--chime-raised)) padding-box,
+    linear-gradient(135deg, color-mix(in srgb, var(--chime-accent) 55%, transparent), color-mix(in srgb, var(--chime-accent-2) 55%, transparent)) border-box;
+  padding: 18px 20px;
+  box-shadow: none;
+  color: var(--chime-ink);
+  font-weight: 500;
+}
+.factory-look .chime-pressable.FactoryCard:hover {
+  background:
+    linear-gradient(180deg, var(--chime-lit), color-mix(in srgb, var(--chime-lit) 80%, black)) padding-box,
+    linear-gradient(135deg, var(--chime-accent), var(--chime-accent-2)) border-box;
+  filter: none;
+}
+.factory-look .chime-surface.Raised { background: var(--chime-raised); border-radius: var(--factory-corner); }
+
+/* --- fields: on the raised ground, outlined in the accent while typed in --- */
+
+.factory-look .chime-field {
+  background: var(--chime-raised);
+  border: 2px solid var(--chime-lit);
+  border-radius: var(--factory-corner);
+  padding: 12px 14px;
+  color: var(--chime-ink);
+  caret-color: var(--chime-accent);
+}
+.factory-look .chime-field::placeholder { color: var(--factory-faded-words); }
+.factory-look .chime-field:focus, .factory-look .chime-field:focus-visible { outline: none; border-color: var(--chime-accent); box-shadow: 0 0 0 1px var(--chime-accent); }
+
+/* --- what is raised over everything --- */
+
+.factory-look .chime-shade { background: rgb(5 8 20 / 0.7); }
+.factory-look .chime-sheet { background: var(--chime-raised); border: 2px solid var(--chime-lit); border-radius: var(--factory-corner); padding: 28px; }
+.factory-look .chime-divider { border-top-color: var(--chime-lit); }
+.factory-look .chime-scroll { scrollbar-width: thin; scrollbar-color: var(--chime-accent) transparent; }
