@@ -10,13 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
-import { heading, notice, problem } from "./parts.js?v=4242d8d537bc";
-import { AUDIENCES, CARD_PARTS } from "./weave.js?v=4242d8d537bc";
-import { SIGNS_OUT } from "./account.js?v=4242d8d537bc";
-import { copyOf } from "./keep.js?v=4242d8d537bc";
-import { parseWhen, sayWhen } from "./when.js?v=4242d8d537bc";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=4242d8d537bc";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=de7d6ff7adf3";
+import { heading, notice, problem } from "./parts.js?v=de7d6ff7adf3";
+import { AUDIENCES, CARD_PARTS } from "./weave.js?v=de7d6ff7adf3";
+import { SIGNS_OUT } from "./account.js?v=de7d6ff7adf3";
+import { copyOf } from "./keep.js?v=de7d6ff7adf3";
+import { parseWhen, sayWhen } from "./when.js?v=de7d6ff7adf3";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=de7d6ff7adf3";
 
 export const YOU = "you";
 
@@ -28,6 +28,7 @@ export const KEEPS_COPY = "keeps_a_copy";
 export const SETS_BIRTHDAY = "sets_my_birthday";
 export const SHOWS_ON_CARDS = "shows_or_hides_on_cards";
 export const OPENS_ADMIN = "opens_the_admin_area";
+export const OPENS_IMPORT = "opens_bringing_in_a_list";
 export const SAVES_BIRTHDAY = "saves_my_birthday";
 
 export const WORDS = {
@@ -40,6 +41,7 @@ export const WORDS = {
   [SAVES_BIRTHDAY]: ["Save my birthday"],
   [SHOWS_ON_CARDS]: ["Show it on cards"],
   [OPENS_ADMIN]: ["Admin"],
+  [OPENS_IMPORT]: ["Bring in a list of memories"],
 };
 
 /** A birthday typed: { date } ("YYYY-MM-DD", or null for none), or { error }. */
@@ -182,6 +184,9 @@ export function describeYou(ui, you, account) {
     heading(ui, "Text size"),
     ui.row(TEXT_SIZES.map(([said, size]) => ui.pressable(SETS_TEXT_SIZE, { size }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
       .currentWhile(you.textSize.map((s) => s === size))), "Segments"),
+    heading(ui, "Bring in a list"),
+    ui.text(Phrase.of("Memories written down elsewhere, year by year of your life - pasted in at once."), "Hint").wraps(),
+    ui.pressable(OPENS_IMPORT, {}, [ui.text(ui.words(OPENS_IMPORT), Themes.FACE)], LINK).goesTo("import"),
     heading(ui, "Keep a copy"),
     ui.text(Phrase.of("Everything on your thread, with its pictures, as one page that opens in any browser - to keep, print or pass on."), "Hint").wraps(),
     ui.button(KEEPS_COPY, { style: LINK }),

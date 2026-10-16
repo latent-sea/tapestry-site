@@ -123,6 +123,8 @@
 /* today */
 #app .chime-surface.Today { padding: 16px 18px; }
 #app textarea.TodayWords { min-height: 5.5rem; }
+#app textarea.ListText { min-height: 14rem; font-size: calc(var(--chime-size-face) * 0.875); }
+#app .ListRead { gap: 4px; }
 
 /* writing */
 #app .Part, #app .Chooser { gap: 6px; }

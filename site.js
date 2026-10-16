@@ -13,23 +13,24 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
-import { Loom } from "./loom.js?v=4242d8d537bc";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=4242d8d537bc";
-import * as Edit from "./editor.js?v=4242d8d537bc";
-import * as Folk from "./people.js?v=4242d8d537bc";
-import * as Where from "./places.js?v=4242d8d537bc";
-import * as Me from "./you.js?v=4242d8d537bc";
-import * as Today from "./journal.js?v=4242d8d537bc";
-import * as Ask from "./asking.js?v=4242d8d537bc";
-import * as Run from "./admin.js?v=4242d8d537bc";
-import { listed, timeline } from "./weave.js?v=4242d8d537bc";
-import { heading, mark, notice, problem } from "./parts.js?v=4242d8d537bc";
-import { drawWoven } from "./woven.js?v=4242d8d537bc";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=4242d8d537bc";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=de7d6ff7adf3";
+import { Loom } from "./loom.js?v=de7d6ff7adf3";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=de7d6ff7adf3";
+import * as Edit from "./editor.js?v=de7d6ff7adf3";
+import * as Folk from "./people.js?v=de7d6ff7adf3";
+import * as Where from "./places.js?v=de7d6ff7adf3";
+import * as Me from "./you.js?v=de7d6ff7adf3";
+import * as Today from "./journal.js?v=de7d6ff7adf3";
+import * as Ask from "./asking.js?v=de7d6ff7adf3";
+import * as Run from "./admin.js?v=de7d6ff7adf3";
+import * as List from "./importing.js?v=de7d6ff7adf3";
+import { listed, timeline } from "./weave.js?v=de7d6ff7adf3";
+import { heading, mark, notice, problem } from "./parts.js?v=de7d6ff7adf3";
+import { drawWoven } from "./woven.js?v=de7d6ff7adf3";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=de7d6ff7adf3";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=4242d8d537bc")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=de7d6ff7adf3")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -41,6 +42,7 @@ const EVENTS = "events";
 const PERIODS = "periods";
 const MORE = "more"; // on a phone: people, places, you and the admin area, behind one tab
 const { ADMIN } = Run;
+const { IMPORT } = List;
 const { EDIT } = Edit;
 const { PEOPLE, PERSON, JOIN } = Folk;
 const { PLACES, PLACE } = Where;
@@ -166,6 +168,7 @@ export class Tapestry extends ChimeApp {
       ...Today.WORDS,
       ...Ask.WORDS,
       ...Run.WORDS,
+      ...List.WORDS,
       [GOES_TODAY]: ["Today"],
       [GOES_EVENTS]: ["Events"],
       [GOES_PERIODS]: ["Periods"],
@@ -204,13 +207,14 @@ export class Tapestry extends ChimeApp {
     this.journal = this.model(new Today.Journal(this.chimes, LOOM, this.account));
     this.asking = this.model(new Ask.Asking(this.chimes, LOOM, this.account));
     this.admin = this.model(new Run.Admin(this.chimes, LOOM, this.account));
+    this.importer = this.model(new List.Importer(this.chimes, LOOM, this.account));
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
       this.nav(),
       ui.stack([
         this.door(), this.todayScreen(), this.threadScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
-        this.moreScreen(), Run.describeAdmin(ui, this.admin),
+        this.moreScreen(), Run.describeAdmin(ui, this.admin), List.describeImport(ui, this.importer, this.account),
         Edit.describeEditor(ui, this.editor, this.account),
         Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
         Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
@@ -220,7 +224,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=4242d8d537bc").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=de7d6ff7adf3").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -563,7 +567,7 @@ export class Tapestry extends ChimeApp {
       const [wanted, parameter = ""] = hash.replace(/^#/, "").split("/");
       if (["memory", "event", "period"].includes(wanted) && parameter) return [ITEM, `${wanted}:${parameter}`];
       if ([PERSON, PLACE, JOIN].includes(wanted) && parameter) return [wanted, parameter];
-      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, MORE, ADMIN].includes(wanted)) return [wanted, null];
+      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT].includes(wanted)) return [wanted, null];
       return [THREAD, null];
     };
     const go = (screen, parameter) => {
@@ -617,7 +621,7 @@ export class Tapestry extends ChimeApp {
         }
         return;
       }
-      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, MORE, ADMIN].find((screen) => top.includes(screen));
+      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT].find((screen) => top.includes(screen));
       if (!at) return;
       const parameter = this.driver.getParameter(at);
       const address = at === THREAD ? "" : at === ITEM ? `#${String(parameter).replace(":", "/")}` : parameter ? `#${at}/${parameter}` : `#${at}`;

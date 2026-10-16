@@ -7,7 +7,7 @@
 //
 // Marks are links: each says what it is to a reader who can't see it, and
 // what it is and when as the pointer rests on it.
-import { lastDayOf } from "./when.js?v=4242d8d537bc";
+import { lastDayOf } from "./when.js?v=de7d6ff7adf3";
 
 const LEFT = 100; // the names' room
 const PLOT = 580; // so the whole is about as wide as the column it stands in, and its words their size

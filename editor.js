@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4242d8d537bc";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=4242d8d537bc";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=4242d8d537bc";
-import { chooser, heading, notice, problem } from "./parts.js?v=4242d8d537bc";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=4242d8d537bc";
-import { DANGER, LINK } from "./look/look.js?v=4242d8d537bc";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=de7d6ff7adf3";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=de7d6ff7adf3";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=de7d6ff7adf3";
+import { chooser, heading, notice, problem } from "./parts.js?v=de7d6ff7adf3";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=de7d6ff7adf3";
+import { DANGER, LINK } from "./look/look.js?v=de7d6ff7adf3";
 
 export const EDIT = "edit";
 
