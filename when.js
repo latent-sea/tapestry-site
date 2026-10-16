@@ -12,7 +12,7 @@
 // A day may have a time of day ("12 June 1998, 14:30", "today 2pm", "now"),
 // kept as time: "14:30" - so the thread is a journal too. A span may be a
 // season ("summer 2021", "winter 2021/22": the northern hemisphere's, as
-// months), or, given the member's birthday, an age ("age 12", "when I was
+// months), a quarter ("Q4 2026": October to December), or, given the member's birthday, an age ("age 12", "when I was
 // 7 to 9", "in my twenties"): the dates from that birthday to the day before
 // the next, said back as those dates.
 // A memory is a moment: given a start and an end, they are the edges of a
@@ -27,7 +27,7 @@ const MONTHS = ["january", "february", "march", "april", "may", "june", "july", 
 const MONTH_NAMES = MONTHS.map((name) => name[0].toUpperCase() + name.slice(1));
 
 /** What a time written like these may look like, for a person who wrote one that isn't. */
-export const EXAMPLES = "Try 1998, June 1998, 12 June 1998, summer 2021, the 1990s, about 1995, 2004 – 2009, or age 12";
+export const EXAMPLES = "Try 1998, June 1998, 12 June 1998, summer 2021, Q4 2026, the 1990s, about 1995, 2004 – 2009, or age 12";
 
 /** Said when an age is written by someone whose birthday Tapestry doesn't know. */
 export const NO_BIRTHDAY = "Add your birthday in You, and a time can be an age";
@@ -154,6 +154,16 @@ function seasonOf(text) {
   };
 }
 
+/** A quarter of a year as the months it is: "Q4 2026" (or "2026 Q4", "Q4 of 2026") is October to December; null when the words aren't one. */
+function quarterOf(text) {
+  const found = text.match(/^q([1-4])\s*(?:of\s+)?(\d{4})$/);
+  const back = text.match(/^(\d{4})\s*q([1-4])$/);
+  const [quarter, year] = found ? [Number(found[1]), Number(found[2])] : back ? [Number(back[2]), Number(back[1])] : [0, 0];
+  if (!quarter || !reasonable(year)) return null;
+  const first = (quarter - 1) * 3 + 1;
+  return { starts: { date: dateOf(year, first), precision: "month", about: false }, ends: { date: dateOf(year, first + 2), precision: "month", about: false } };
+}
+
 /** The day someone born on a birthday ("YYYY-MM-DD") turns an age: a 29 February birthday falls on 1 March. */
 function turning(born, age) {
   const [year, month, day] = born.split("-").map(Number);
@@ -198,7 +208,7 @@ function spanNamed(text, today, born) {
     const known = spanNamed(guess[1], today, born);
     return known && !known.error ? { starts: { ...known.starts, about: true }, ends: { ...known.ends, about: true } } : known;
   }
-  const season = seasonOf(text);
+  const season = seasonOf(text) ?? quarterOf(text);
   if (season) return season;
   const ages = agesOf(text);
   if (!ages) return null;
@@ -285,7 +295,7 @@ export function saySpan(starts, ends, stillGoing = "", guess = false) {
   const from = sayWhen(starts);
   if (!from) return "";
   if (!ends || !ends.date) return stillGoing ? `${from} – ${stillGoing}` : from;
-  const season = seasonSaid(starts, ends);
+  const season = seasonSaid(starts, ends) || quarterSaid(starts, ends);
   if (season) return season;
   const to = sayWhen(ends);
   if (to === from) return from;
@@ -329,6 +339,15 @@ export function ageDuring(born, starts, ends = null) {
   if (last < 0) return "";
   const first = Math.max(ageOn(born, middleOf(starts)), 0);
   return first >= last ? String(last) : `${first} – ${last}`;
+}
+
+/** A span that is a quarter of a year said as one: "Q4 2026", "about Q1 1998"; else "". */
+function quarterSaid(starts, ends) {
+  if (starts.precision !== "month" || ends.precision !== "month" || starts.about !== ends.about || starts.time || ends.time) return "";
+  const [year, month] = starts.date.split("-").map(Number);
+  if ((month - 1) % 3 !== 0 || ends.date !== dateOf(year, month + 2)) return "";
+  const said = `Q${(month + 2) / 3} ${year}`;
+  return starts.about ? `about ${said}` : said;
 }
 
 /**

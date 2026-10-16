@@ -12,12 +12,12 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=4564ab53dd6d";
-import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=4564ab53dd6d";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=4564ab53dd6d";
-import { chooser, heading, notice, problem } from "./parts.js?v=4564ab53dd6d";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=4564ab53dd6d";
-import { DANGER, LINK } from "./look/look.js?v=4564ab53dd6d";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=40c919f5e828";
+import { EXAMPLES, parseSpan, saySpan } from "./when.js?v=40c919f5e828";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=40c919f5e828";
+import { chooser, heading, notice, problem } from "./parts.js?v=40c919f5e828";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=40c919f5e828";
+import { DANGER, LINK } from "./look/look.js?v=40c919f5e828";
 
 export const EDIT = "edit";
 
@@ -108,7 +108,7 @@ const MOST = 6; // matches shown for what is typed
 
 const KIND_WORDS = {
   memory: { made: "New memory", changed: "Edit memory", title: "Title (if you like)", text: "What do you remember?", people: "Who's in it",
-    whenHint: "As exactly as you remember it: \"now\", a day (with its time, if you like: \"12 June 1998, 2pm\"), a month, a season, a year or a decade, \"about\" for a guess - or, not sure, the edges of your guess: \"between 1983 and 1984\". Leave it empty for its event's time, or none." },
+    whenHint: "As exactly as you remember it: \"now\", a day (with its time, if you like: \"12 June 1998, 2pm\"), a month, a season, a quarter (\"Q4 2026\"), a year or a decade, \"about\" for a guess - or, not sure, the edges of your guess: \"between 1983 and 1984\". Leave it empty for its event's time, or none." },
   event: { made: "New event", changed: "Edit event", title: "What happened", text: "Notes", people: "Who was there",
     whenHint: "As exactly as you remember it: \"12 June 1998\", \"about 1995\", or \"12 – 19 June 1998\" for something that went on." },
   period: { made: "New period", changed: "Edit period", title: "What was this time of your life", text: "Notes", people: "Who was with you",
