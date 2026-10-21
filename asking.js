@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=da2d01562306";
-import { notice, problem } from "./parts.js?v=da2d01562306";
-import { ACTION, LINK } from "./look/look.js?v=da2d01562306";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=b200b05114ea";
+import { notice, problem } from "./parts.js?v=b200b05114ea";
+import { ACTION, LINK } from "./look/look.js?v=b200b05114ea";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
@@ -21,6 +21,9 @@ export const SAYS_YES = "says_yes_to_a_request";
 export const SAYS_NO = "says_no_to_a_request";
 export const TAKES_BACK = "takes_back_a_request";
 export const MAKES_EVENT = "makes_it_an_event";
+export const NAMES_EVENT = "names_the_event_it_becomes";
+export const MAKES_NAMED_EVENT = "makes_the_named_event";
+export const KEEPS_AS_MEMORY = "keeps_it_a_memory";
 export const ASKS_SHARE_MEMORY = "says_i_was_there_too";
 export const LOOKS_FOR_TWIN = "looks_for_the_same_one";
 export const PICKS_TWIN = "picks_the_same_one";
@@ -34,6 +37,9 @@ export const WORDS = {
   [SAYS_NO]: ["No"],
   [TAKES_BACK]: ["Take it back"],
   [MAKES_EVENT]: ["Make it an event"],
+  [NAMES_EVENT]: ["The event's name"],
+  [MAKES_NAMED_EVENT]: ["Make the event"],
+  [KEEPS_AS_MEMORY]: ["Not now"],
   [ASKS_SHARE_MEMORY]: ["I was there too"],
   [LOOKS_FOR_TWIN]: ["Find the same one"],
   [PICKS_TWIN]: ["The same as this"],
@@ -53,6 +59,8 @@ export class Asking extends Controller {
     this.notice = this.value("");
     this.twinSearch = this.value("");
     this.twin = this.value(null); // { kind, from, into }: a merge about to be asked
+    this.naming = this.value(""); // the memory being made an event, while its name is asked
+    this.eventName = this.value("");
   }
 
   answers() { return Object.keys(WORDS); }
@@ -66,6 +74,7 @@ export class Asking extends Controller {
       if (!memory.starts) return Phrase.of("First say when it was: an event has a time");
     }
     if (action === ASKS_SHARE_MEMORY && !this.account.weave.read().mayShareMemory(payload?.id)) return Phrase.of("Yours, or you are at it, or have asked");
+    if (action === MAKES_NAMED_EVENT && !this.eventName.read().trim()) return Phrase.of("Give the event a name");
     return null;
   }
 
@@ -74,7 +83,18 @@ export class Asking extends Controller {
     if (action === ASKS_AT_EVENT) this.ask(() => this.loom.askAtEvent(payload.id), "Asked. You are on it when its maker says yes.");
     if (action === SAYS_YES) this.ask(() => this.loom.answer(payload.id, true), "Done.");
     if (action === SAYS_NO || action === TAKES_BACK) this.ask(() => this.loom.answer(payload.id, false), "");
-    if (action === MAKES_EVENT) this.makeEvent(payload.id);
+    // its name asked first: the memory's title if it has one, never its words
+    if (action === MAKES_EVENT) {
+      this.naming.setValue(payload.id);
+      this.eventName.setValue(this.account.weave.read().memories.get(payload.id)?.title ?? "");
+    }
+    if (action === NAMES_EVENT) this.eventName.setValue(payload.line);
+    if (action === KEEPS_AS_MEMORY) this.naming.setValue("");
+    if (action === MAKES_NAMED_EVENT) {
+      const memoryId = this.naming.read();
+      this.naming.setValue("");
+      this.makeEvent(memoryId, this.eventName.read().trim());
+    }
     if (action === ASKS_SHARE_MEMORY) this.ask(() => this.loom.askShareMemory(payload.id), "Asked. When they say yes, it is an event you are at, to add your own memories to.");
     if (action === LOOKS_FOR_TWIN) this.twinSearch.setValue(payload?.line ?? this.twinSearch.read());
     if (action === PICKS_TWIN) this.twin.setValue({ kind: payload.kind, from: payload.from, into: payload.into });
@@ -83,10 +103,10 @@ export class Asking extends Controller {
     return null;
   }
 
-  /** One of the member's memories made an event, which opens: others at it add their own. */
-  async makeEvent(memoryId) {
+  /** One of the member's memories made an event, named as they said, which opens: others at it add their own. */
+  async makeEvent(memoryId, named) {
     let made = null;
-    await this.ask(async () => { made = await this.loom.eventOfMemory(memoryId); return made; }, "It is an event now: everyone at it can add their own memories.");
+    await this.ask(async () => { made = await this.loom.eventOfMemory(memoryId, named); return made; }, "It is an event now: everyone at it can add their own memories.");
     if (made?.ok && !this.disposed) location.hash = `#event/${made.data}`;
   }
 
@@ -240,4 +260,16 @@ export function describeMerge(ui, asking, account, kind, id) {
         [ui.text(held.map((t) => t?.label ?? ""), "MatchWords")], "Match"), (t) => t.id, "Matches"),
     ])),
   ], "Part");
+}
+
+/** Making one of the member's memories an event: its name asked, as the event is a grouping of everyone's memories, not this one's words. */
+export function describeNamingEvent(ui, asking, memoryId) {
+  return ui.when(ui.bound(() => !!asking.naming.read() && asking.naming.read() === memoryId.read()), ui.column([
+    ui.text(Phrase.of("What was it? Give the event a short name - a wedding, a holiday, a night out. Everyone at it hangs their own memories on it."), "Hint").wraps(),
+    ui.field(MAKES_NAMED_EVENT, "", { changes: NAMES_EVENT, shows: asking.eventName, label: Phrase.of("The event's name"), placeholder: Phrase.of("e.g. Lake picnic") }),
+    ui.row([
+      ui.button(MAKES_NAMED_EVENT),
+      ui.button(KEEPS_AS_MEMORY, { style: LINK }),
+    ], "Actions"),
+  ], "Part"));
 }

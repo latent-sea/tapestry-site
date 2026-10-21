@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=da2d01562306";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=da2d01562306";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=da2d01562306";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=da2d01562306";
-import { chooser, heading, notice, problem } from "./parts.js?v=da2d01562306";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=da2d01562306";
-import { DANGER, LINK } from "./look/look.js?v=da2d01562306";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=b200b05114ea";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=b200b05114ea";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=b200b05114ea";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=b200b05114ea";
+import { chooser, heading, notice, problem } from "./parts.js?v=b200b05114ea";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=b200b05114ea";
+import { DANGER, LINK } from "./look/look.js?v=b200b05114ea";
 
 export const EDIT = "edit";
 
@@ -30,6 +30,7 @@ export const EDITS = "edits_this";
 export const SETS_TITLE = "sets_the_title";
 export const SETS_TEXT = "sets_the_words";
 export const SETS_WHEN = "sets_when";
+export const SETS_EVENT_TITLE = "sets_the_name_of_the_event_it_becomes";
 export const LOOKS_FOR_EVENT = "looks_for_an_event";
 export const PICKS_EVENT = "picks_an_event";
 export const DROPS_EVENT = "drops_the_event";
@@ -72,6 +73,7 @@ export const WORDS = {
   [SETS_TITLE]: ["Title"],
   [SETS_TEXT]: ["Words"],
   [SETS_WHEN]: ["When"],
+  [SETS_EVENT_TITLE]: ["The event's name"],
   [LOOKS_FOR_EVENT]: ["Find an event"],
   [PICKS_EVENT]: ["Choose this event"],
   [DROPS_EVENT]: ["Not of an event"],
@@ -133,6 +135,7 @@ export class Editor extends Controller {
     this.text = this.value("");
     this.whenText = this.value("");
     this.eventId = this.value(null);
+    this.eventTitle = this.value(""); // the event a memory becomes when someone on Tapestry is tagged: named here, never by its words
     this.periodIds = this.value([]); // a memory's periods: as many as overlap
     this.placeId = this.value(null);
     this.tags = this.value([]);
@@ -155,6 +158,15 @@ export class Editor extends Controller {
   weave() { return this.account.weave.read(); }
 
   answers() { return Object.keys(WORDS); }
+
+  /** Whether saving makes this memory an event: someone on Tapestry tagged, a time said, and no event chosen. */
+  becomesEvent() {
+    if (this.kind.read() !== "memory" || this.eventId.read()) return false;
+    const weave = this.weave();
+    const saved = this.id.read() ? weave.memories.get(this.id.read()) : null;
+    if (saved?.event_id) return false;
+    return !!this.span().starts && this.tags.read().some((id) => !!weave.people.get(id)?.account);
+  }
 
   /**
    * When the pictures added say they were taken - a day, or from the first
@@ -201,6 +213,7 @@ export class Editor extends Controller {
       if (kind === "memory" && !this.title.read().trim() && !this.text.read().trim() && !this.pictures.read().length && !this.added.read().length) {
         return Phrase.of("Write something, or add a picture");
       }
+      if (this.becomesEvent() && !this.eventTitle.read().trim() && !this.title.read().trim()) return Phrase.of("Give the event it becomes a name");
     }
     if (action === ASKS_TO_DELETE && !this.id.read()) return Phrase.of("Not saved yet");
     if (action === USES_PHOTO_DATE && !this.photoSpan()) return Phrase.of("The pictures don't say when they were taken");
@@ -226,6 +239,7 @@ export class Editor extends Controller {
     if (action === SETS_TITLE) this.title.setValue(payload.line);
     if (action === SETS_TEXT) this.text.setValue(payload.line);
     if (action === SETS_WHEN) this.whenText.setValue(payload.line);
+    if (action === SETS_EVENT_TITLE) this.eventTitle.setValue(payload.line);
     if (action === LOOKS_FOR_EVENT) this.searches.event.setValue(payload.line);
     if (action === LOOKS_FOR_PERIOD) this.searches.period.setValue(payload.line);
     if (action === LOOKS_FOR_PLACE) this.searches.place.setValue(payload.line);
@@ -314,6 +328,7 @@ export class Editor extends Controller {
     if (kind === "memory" && item?.cut) this.fetchWhole(item);
     this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "");
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
+    this.eventTitle.setValue("");
     this.periodIds.setValue(item ? periodsOf(item) : tied === "period" ? [tiedId] : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
     this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
@@ -383,6 +398,7 @@ export class Editor extends Controller {
       place_id: this.placeId.read() ?? "", audience: this.audience.read(), tags: this.tags.read(), shares: this.shares.read(),
     };
     if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_ids: this.periodIds.read(),
+      event_title: this.becomesEvent() ? (this.eventTitle.read().trim() || this.title.read().trim()) : "",
       // the first as period_id too, which a platform from before there could be more keeps
       period_id: this.periodIds.read()[0] ?? "" };
     return { ...common, notes: this.text.read() };
@@ -562,8 +578,13 @@ export function describeEditor(ui, editor, account) {
     chooser(ui, { label: said("people"), chosen: ui.bound(() => editor.chosenPeople()), unpick: UNTAGS,
       search: editor.searches.person, looks: LOOKS_FOR_PERSON, matches: ui.bound(() => editor.personMatches()), pick: TAGS,
       create: ADDS_NEW_PERSON, placeholder: Phrase.of("Type a name") }),
-    ui.when(ui.bound(() => isMemory.read() && !editor.eventId.read()),
+    ui.when(ui.bound(() => isMemory.read() && !editor.eventId.read() && !editor.becomesEvent()),
       ui.text(Phrase.of("Tag someone who is on Tapestry and it becomes an event when saved: your threads cross there, and they add their own memories of it."), "Hint").wraps()),
+    ui.when(ui.bound(() => editor.becomesEvent()), ui.column([
+      ui.text(Phrase.of("Someone tagged is on Tapestry, so this becomes an event when saved, for them to add their own memories to. What was it? Give it a short name."), "Hint").wraps(),
+      ui.field(SETS_EVENT_TITLE, "", { changes: SETS_EVENT_TITLE, shows: editor.eventTitle, label: Phrase.of("The event's name"),
+        placeholder: Phrase.of("e.g. Lake picnic - or leave it, and it takes the memory's title") }),
+    ], "Part")),
     ui.when(isMemory, ui.column([
       ui.text(Phrase.of("Pictures"), "FieldName"),
       ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.path) : ""))), (p) => p.id, "EditPictures"),

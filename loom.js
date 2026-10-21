@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=da2d01562306";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=da2d01562306";
-import { shrinkPicture } from "./backend/pictures.js?v=da2d01562306";
+import { Backend } from "./backend/backend.js?v=b200b05114ea";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=b200b05114ea";
+import { shrinkPicture } from "./backend/pictures.js?v=b200b05114ea";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -223,7 +223,12 @@ export class Loom {
   async askMergePlace(from, into) { return answer(await this.backend.callRpc("tapestry_ask_merge_place", { from_place: from, into_place: into })); }
 
   /** An event made of one of the member's own memories (or the one it is of): its id. */
-  async eventOfMemory(memoryId) { return answer(await this.backend.callRpc("tapestry_event_of_memory", { the_memory: memoryId })); }
+  /** One of the member's memories made an event, named as they say: { ok, data: the event's id }. A platform from before names it itself. */
+  async eventOfMemory(memoryId, named = "") {
+    const made = await this.backend.callRpc("tapestry_event_of_memory", { the_memory: memoryId, named });
+    if (!made.ok && made.status === 404) return answer(await this.backend.callRpc("tapestry_event_of_memory", { the_memory: memoryId }));
+    return answer(made);
+  }
 
   /** "I was there too": asking the owner of a memory to be at it, as an event. */
   async askShareMemory(memoryId) { return answer(await this.backend.callRpc("tapestry_ask_share_memory", { the_memory: memoryId })); }

@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=da2d01562306";
-import { CARD } from "./look/look.js?v=da2d01562306";
-import { describeAsked } from "./asking.js?v=da2d01562306";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=b200b05114ea";
+import { CARD } from "./look/look.js?v=b200b05114ea";
+import { describeAsked } from "./asking.js?v=b200b05114ea";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
