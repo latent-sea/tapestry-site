@@ -24,17 +24,17 @@
 // is a function of the parameter it is entered with, handed in as a bound
 // value. Every pop-up owns its way out: CLOSES, which goes back.
 
-import { Bound } from "./bound.js?v=94952f0a6b41";
-import { Chimes } from "./chimes.js?v=94952f0a6b41";
-import { Desc } from "./desc.js?v=94952f0a6b41";
-import { Driver } from "./driver.js?v=94952f0a6b41";
-import { Frames } from "./frames.js?v=94952f0a6b41";
-import { Language } from "./language.js?v=94952f0a6b41";
-import { OwnBell } from "./own_bell.js?v=94952f0a6b41";
-import { Phrase } from "./phrase.js?v=94952f0a6b41";
-import { Place } from "./place.js?v=94952f0a6b41";
-import { Pressables, Themes } from "./themes.js?v=94952f0a6b41";
-import { Value } from "./value.js?v=94952f0a6b41";
+import { Bound } from "./bound.js?v=a9582fa3fe2c";
+import { Chimes } from "./chimes.js?v=a9582fa3fe2c";
+import { Desc } from "./desc.js?v=a9582fa3fe2c";
+import { Driver } from "./driver.js?v=a9582fa3fe2c";
+import { Frames } from "./frames.js?v=a9582fa3fe2c";
+import { Language } from "./language.js?v=a9582fa3fe2c";
+import { OwnBell } from "./own_bell.js?v=a9582fa3fe2c";
+import { Phrase } from "./phrase.js?v=a9582fa3fe2c";
+import { Place } from "./place.js?v=a9582fa3fe2c";
+import { Pressables, Themes } from "./themes.js?v=a9582fa3fe2c";
+import { Value } from "./value.js?v=a9582fa3fe2c";
 
 const DRAWN = "drawn";
 let fieldsMade = 0; // every field's own id, so its label names it
@@ -62,7 +62,7 @@ export class Ui {
 
   // --- content ---
 
-  /** Words: a phrase, data, or a bound value reading either. Chain wraps, hidesEmpty. */
+  /** Words: a phrase, data, or a bound value reading either; the style a name, or a bound value reading one. Chain wraps, hidesEmpty. */
   text(content, style = "") { return new Desc("text", { content, style, hides_empty: false, wraps: false }); }
 
   /** The register's words for an action: a phrase of its English. */
@@ -400,6 +400,7 @@ const BUILDERS = {
     const made = el(parent, "p", `chime-text ${styleOf(style)}`);
     if (wraps) made.classList.add("chime-wraps");
     if (hides_empty) made.classList.add("chime-hides-empty");
+    wear(ui, made, style);
     ui.draws(made, () => { made.textContent = Language.said(Bound.is(content) ? content.read() : content); });
     return made;
   },
@@ -485,6 +486,7 @@ const BUILDERS = {
 
   surface(ui, desc, parent) {
     const made = el(parent, "div", `chime-surface ${styleOf(desc.props.style)}`);
+    wear(ui, made, desc.props.style);
     ui.buildInto(desc.children, made);
     return made;
   },
@@ -546,6 +548,7 @@ const BUILDERS = {
     made.type = "button";
     made.dataset.action = action;
     if (desc.props.no_focus) made.tabIndex = -1;
+    wear(ui, made, style);
     const region = place.name;
     const bell = new OwnBell("refused");
     bell.hang(ui.chimes);
@@ -755,6 +758,24 @@ function el(parent, tag, classes = "") {
 function styleOf(style) {
   if (!style) return "";
   return Bound.is(style) ? "" : String(style);
+}
+
+/**
+ * A style a bound value reads (gd-chime's styled.gd): the name - or names -
+ * it says now worn as classes, and swapped in place as what it read moves,
+ * so a cell shaded by its value is the same element drawn again. A text, a
+ * surface and a pressable take one.
+ */
+function wear(ui, made, style) {
+  if (!Bound.is(style)) return;
+  let worn = [];
+  ui.draws(made, () => {
+    const said = style.read();
+    const now = said == null ? [] : String(said).split(/\s+/).filter(Boolean);
+    made.classList.remove(...worn);
+    made.classList.add(...now);
+    worn = now;
+  });
 }
 
 function applyFacts(made, facts) {

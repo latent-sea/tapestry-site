@@ -5,10 +5,10 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=94952f0a6b41";
-import { heading, notice, problem } from "./parts.js?v=94952f0a6b41";
-import { CARD, DANGER, LINK } from "./look/look.js?v=94952f0a6b41";
-import { HOW_TO_INVITE } from "./people.js?v=94952f0a6b41";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
+import { heading, notice, problem } from "./parts.js?v=a9582fa3fe2c";
+import { CARD, DANGER, LINK } from "./look/look.js?v=a9582fa3fe2c";
+import { HOW_TO_INVITE } from "./people.js?v=a9582fa3fe2c";
 
 export const ADMIN = "admin";
 

@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=94952f0a6b41";
-import { linksOf } from "./links.js?v=94952f0a6b41";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=a9582fa3fe2c";
+import { linksOf } from "./links.js?v=a9582fa3fe2c";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 

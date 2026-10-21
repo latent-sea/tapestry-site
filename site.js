@@ -13,26 +13,26 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=94952f0a6b41";
-import { Loom } from "./loom.js?v=94952f0a6b41";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=94952f0a6b41";
-import * as Edit from "./editor.js?v=94952f0a6b41";
-import * as Folk from "./people.js?v=94952f0a6b41";
-import * as Where from "./places.js?v=94952f0a6b41";
-import * as Me from "./you.js?v=94952f0a6b41";
-import * as Today from "./journal.js?v=94952f0a6b41";
-import * as Ask from "./asking.js?v=94952f0a6b41";
-import * as Run from "./admin.js?v=94952f0a6b41";
-import * as List from "./importing.js?v=94952f0a6b41";
-import * as Told from "./notices.js?v=94952f0a6b41";
-import { listed, timeline } from "./weave.js?v=94952f0a6b41";
-import { heading, mark, notice, problem } from "./parts.js?v=94952f0a6b41";
-import { drawWoven } from "./woven.js?v=94952f0a6b41";
-import { linksOf } from "./links.js?v=94952f0a6b41";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=94952f0a6b41";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
+import { Loom } from "./loom.js?v=a9582fa3fe2c";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=a9582fa3fe2c";
+import * as Edit from "./editor.js?v=a9582fa3fe2c";
+import * as Folk from "./people.js?v=a9582fa3fe2c";
+import * as Where from "./places.js?v=a9582fa3fe2c";
+import * as Me from "./you.js?v=a9582fa3fe2c";
+import * as Today from "./journal.js?v=a9582fa3fe2c";
+import * as Ask from "./asking.js?v=a9582fa3fe2c";
+import * as Run from "./admin.js?v=a9582fa3fe2c";
+import * as List from "./importing.js?v=a9582fa3fe2c";
+import * as Told from "./notices.js?v=a9582fa3fe2c";
+import { listed, timeline } from "./weave.js?v=a9582fa3fe2c";
+import { heading, mark, notice, problem } from "./parts.js?v=a9582fa3fe2c";
+import { drawWoven } from "./woven.js?v=a9582fa3fe2c";
+import { linksOf } from "./links.js?v=a9582fa3fe2c";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=a9582fa3fe2c";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=94952f0a6b41")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=a9582fa3fe2c")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -256,7 +256,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=94952f0a6b41").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=a9582fa3fe2c").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
