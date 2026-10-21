@@ -9,10 +9,10 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
-import { heading, mark, notice, problem } from "./parts.js?v=a9582fa3fe2c";
-import { CARD, DANGER, LINK } from "./look/look.js?v=a9582fa3fe2c";
-import { describeIsThisYou } from "./asking.js?v=a9582fa3fe2c";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=da2d01562306";
+import { heading, mark, notice, problem } from "./parts.js?v=da2d01562306";
+import { CARD, DANGER, LINK } from "./look/look.js?v=da2d01562306";
+import { describeIsThisYou } from "./asking.js?v=da2d01562306";
 
 export const PEOPLE = "people";
 export const PERSON = "person";

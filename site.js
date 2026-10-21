@@ -13,26 +13,26 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
-import { Loom } from "./loom.js?v=a9582fa3fe2c";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=a9582fa3fe2c";
-import * as Edit from "./editor.js?v=a9582fa3fe2c";
-import * as Folk from "./people.js?v=a9582fa3fe2c";
-import * as Where from "./places.js?v=a9582fa3fe2c";
-import * as Me from "./you.js?v=a9582fa3fe2c";
-import * as Today from "./journal.js?v=a9582fa3fe2c";
-import * as Ask from "./asking.js?v=a9582fa3fe2c";
-import * as Run from "./admin.js?v=a9582fa3fe2c";
-import * as List from "./importing.js?v=a9582fa3fe2c";
-import * as Told from "./notices.js?v=a9582fa3fe2c";
-import { listed, timeline } from "./weave.js?v=a9582fa3fe2c";
-import { heading, mark, notice, problem } from "./parts.js?v=a9582fa3fe2c";
-import { drawWoven } from "./woven.js?v=a9582fa3fe2c";
-import { linksOf } from "./links.js?v=a9582fa3fe2c";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=a9582fa3fe2c";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=da2d01562306";
+import { Loom } from "./loom.js?v=da2d01562306";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=da2d01562306";
+import * as Edit from "./editor.js?v=da2d01562306";
+import * as Folk from "./people.js?v=da2d01562306";
+import * as Where from "./places.js?v=da2d01562306";
+import * as Me from "./you.js?v=da2d01562306";
+import * as Today from "./journal.js?v=da2d01562306";
+import * as Ask from "./asking.js?v=da2d01562306";
+import * as Run from "./admin.js?v=da2d01562306";
+import * as List from "./importing.js?v=da2d01562306";
+import * as Told from "./notices.js?v=da2d01562306";
+import { listed, timeline } from "./weave.js?v=da2d01562306";
+import { heading, mark, notice, problem } from "./parts.js?v=da2d01562306";
+import { drawWoven } from "./woven.js?v=da2d01562306";
+import { linksOf } from "./links.js?v=da2d01562306";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=da2d01562306";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=a9582fa3fe2c")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=da2d01562306")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -256,7 +256,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=a9582fa3fe2c").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=da2d01562306").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -742,18 +742,26 @@ export class Tapestry extends ChimeApp {
     });
   }
 
-  /** Google's button drawn whenever the door shows it. */
+  /**
+   * Google's button drawn whenever the door shows it: into its place as the
+   * door builds it, which may be a frame or two after the door is shown - so
+   * it is looked for until it is there (a place looked for once, too soon,
+   * left the door without a button).
+   */
   keepDoor() {
-    let drawn = false;
+    let drawn = null; // the place it was drawn into
+    const draw = (tries) => {
+      if (!(this.account.state.read() === "out" && this.driver.getTop().includes(DOOR))) { drawn = null; return; }
+      const place = document.getElementById("google-button");
+      if (!place) { if (tries > 0) setTimeout(() => draw(tries - 1), 50); return; }
+      if (drawn === place) return;
+      drawn = place;
+      this.loom.drawGoogleButton(place, (credential, nonce) => this.account.signInWithGoogle(credential, nonce)).catch(() => { drawn = null; });
+    };
     this.chimes.follow({ region: Chimes.GLOBAL }, "door", () => {
-      const out = this.account.state.read() === "out" && this.driver.getTop().includes(DOOR);
-      Frames.defer(() => {
-        if (out && !drawn) {
-          const place = document.getElementById("google-button");
-          if (place) { drawn = true; this.loom.drawGoogleButton(place, (credential, nonce) => this.account.signInWithGoogle(credential, nonce)).catch(() => { drawn = false; }); }
-        }
-        if (!out) drawn = false;
-      });
+      this.account.state.read();
+      this.driver.getTop();
+      Frames.defer(() => draw(40));
     });
   }
 

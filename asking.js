@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
-import { notice, problem } from "./parts.js?v=a9582fa3fe2c";
-import { ACTION, LINK } from "./look/look.js?v=a9582fa3fe2c";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=da2d01562306";
+import { notice, problem } from "./parts.js?v=da2d01562306";
+import { ACTION, LINK } from "./look/look.js?v=da2d01562306";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";

@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
-import { Weave } from "./weave.js?v=a9582fa3fe2c";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=da2d01562306";
+import { Weave } from "./weave.js?v=da2d01562306";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -36,7 +36,10 @@ export class Account extends Controller {
     this.addresses = this.value({}); // a picture's path -> an address that shows it, asked for as it is shown
     this.texts = this.value({}); // a memory cut short by a light load -> its words in full, fetched as it is opened
     this.found = this.value({ key: "", ids: null }); // what the platform found in cut memories' words, for the words last looked for
-    this.forget();
+    // as forget() leaves them, without telling anyone: nothing is listening yet
+    this.since = Date.now();
+    this.asked = new Set();
+    this.wanted = new Set();
     this.joinName = this.value("");
     this.busy = this.value(false);
     this.problem = this.value("");

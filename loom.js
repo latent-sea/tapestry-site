@@ -10,15 +10,19 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=a9582fa3fe2c";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=a9582fa3fe2c";
-import { shrinkPicture } from "./backend/pictures.js?v=a9582fa3fe2c";
+import { Backend } from "./backend/backend.js?v=da2d01562306";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=da2d01562306";
+import { shrinkPicture } from "./backend/pictures.js?v=da2d01562306";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
 const KEY = "sb_publishable_BqVtSYE4ysOb2sHMuFSwMk_HrTAUgLx";
 // public: the Google client the platform accepts (platform/supabase/platform.yml)
 const GOOGLE_CLIENT = "400837578052-jqnhh565es3a92k58u5r2oggdcf7mrkr.apps.googleusercontent.com";
+// on a phone, Google sends people back only to an address its client lists, and Tapestry's isn't listed
+// yet: it comes back through The Hatch's, on the same site, which hands the answer straight on (web/backend's
+// google.js, relayGoogleAnswer)
+const SIGNS_IN_VIA = { address: "https://latent-sea.github.io/thehatch.tech/", as: "tapestry" };
 
 const APP = "tapestry";
 
@@ -52,7 +56,9 @@ export class Loom {
     return user.user_metadata?.full_name || user.user_metadata?.name || "";
   }
 
-  drawGoogleButton(element, signedIn) { return drawSignIn(element, GOOGLE_CLIENT, signedIn, { theme: "outline", text: "continue_with" }, "Continue with Google"); }
+  drawGoogleButton(element, signedIn) {
+    return drawSignIn(element, GOOGLE_CLIENT, signedIn, { theme: "outline", text: "continue_with" }, "Continue with Google", SIGNS_IN_VIA);
+  }
 
   /** Google's answer, if the page has just come back from signing in with it on a phone: { credential, nonce } or { error }, else null. */
   googleAnswer() { return takeGoogleRedirect(); }

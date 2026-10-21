@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a9582fa3fe2c";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=a9582fa3fe2c";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=a9582fa3fe2c";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=a9582fa3fe2c";
-import { chooser, heading, notice, problem } from "./parts.js?v=a9582fa3fe2c";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=a9582fa3fe2c";
-import { DANGER, LINK } from "./look/look.js?v=a9582fa3fe2c";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=da2d01562306";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=da2d01562306";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=da2d01562306";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=da2d01562306";
+import { chooser, heading, notice, problem } from "./parts.js?v=da2d01562306";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=da2d01562306";
+import { DANGER, LINK } from "./look/look.js?v=da2d01562306";
 
 export const EDIT = "edit";
 
