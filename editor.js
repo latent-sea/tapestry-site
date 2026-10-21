@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=b200b05114ea";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=b200b05114ea";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=b200b05114ea";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=b200b05114ea";
-import { chooser, heading, notice, problem } from "./parts.js?v=b200b05114ea";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=b200b05114ea";
-import { DANGER, LINK } from "./look/look.js?v=b200b05114ea";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=55e566562378";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=55e566562378";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=55e566562378";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=55e566562378";
+import { chooser, heading, notice, problem } from "./parts.js?v=55e566562378";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=55e566562378";
+import { DANGER, LINK } from "./look/look.js?v=55e566562378";
 
 export const EDIT = "edit";
 
@@ -42,6 +42,7 @@ export const PICKS_PLACE = "picks_a_place";
 export const DROPS_PLACE = "drops_the_place";
 export const ADDS_NEW_PLACE = "adds_a_new_place";
 export const ADDS_NEW_EVENT = "adds_a_new_event";
+export const ADDS_NEW_PERIOD = "adds_a_new_period";
 export const LOOKS_FOR_PERSON = "looks_for_a_person";
 export const TAGS = "tags_a_person";
 export const UNTAGS = "untags_a_person";
@@ -85,6 +86,7 @@ export const WORDS = {
   [DROPS_PLACE]: ["Not at a place"],
   [ADDS_NEW_PLACE]: ["Add it as a new place"],
   [ADDS_NEW_EVENT]: ["Make it a new event"],
+  [ADDS_NEW_PERIOD]: ["Make it a new period"],
   [LOOKS_FOR_PERSON]: ["Find someone"],
   [TAGS]: ["Tag them"],
   [UNTAGS]: ["Untag them"],
@@ -227,6 +229,14 @@ export class Editor extends Controller {
       if (!this.searches.event.read().trim()) return Phrase.of("Type a name first");
       if (this.span().error || !this.span().starts) return Phrase.of("First say when it was: an event has a time");
     }
+    if (action === ADDS_NEW_PERIOD) {
+      if (!this.searches.period.read().trim()) return Phrase.of("Type a name first");
+      // one already of that name is chosen, whatever the memory's time
+      const named = this.searches.period.read().trim().toLowerCase();
+      const weave = this.weave();
+      const known = weave.data.periods.some((p) => p.owner === weave.meId && p.title.toLowerCase() === named);
+      if (!known && (this.span().error || !this.span().starts)) return Phrase.of("First say when it was: a new period starts from this memory's time");
+    }
     if ((action === ADDS_NEW_PERSON || action === ADDS_NEW_PLACE) && !this.searches[action === ADDS_NEW_PERSON ? "person" : "place"].read().trim()) {
       return Phrase.of("Type a name first");
     }
@@ -258,6 +268,7 @@ export class Editor extends Controller {
     if (action === DROPS_PLACE) this.placeId.setValue(null);
     if (action === ADDS_NEW_PLACE) this.addPlace(this.searches.place.read().trim());
     if (action === ADDS_NEW_EVENT) this.addEvent(this.searches.event.read().trim());
+    if (action === ADDS_NEW_PERIOD) this.addPeriod(this.searches.period.read().trim());
     if (action === TAGS) { this.tag(payload.id); this.searches.person.setValue(""); }
     if (action === UNTAGS) this.tags.update((tags) => tags.filter((id) => id !== payload.id));
     if (action === ADDS_NEW_PERSON) this.addPerson(this.searches.person.read().trim());
@@ -386,6 +397,27 @@ export class Editor extends Controller {
     if (!made.ok) { this.problem.setValue(made.error); return; }
     await this.account.load();
     this.eventId.setValue(made.data);
+  }
+
+  /**
+   * A period named as typed, chosen for the memory: one of that name already
+   * if there is one; else made, over this memory's time for now - its own
+   * beginning and end are said on it, in Periods.
+   */
+  async addPeriod(title) {
+    const weave = this.weave();
+    const known = weave.data.periods.find((p) => p.owner === weave.meId && p.title.toLowerCase() === title.toLowerCase());
+    this.searches.period.setValue("");
+    const choose = (id) => this.periodIds.update((ids) => (ids.includes(id) ? ids : [...ids, id]));
+    if (known) { choose(known.id); return; }
+    const { starts, ends } = this.span();
+    const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: "" });
+    const made = await this.loom.savePeriod({ title, notes: "", ...time("starts", starts), ...time("ends", ends ?? starts), place_id: "",
+      audience: weave.defaultAudience("period"), tags: [], shares: [] });
+    if (!made.ok) { this.problem.setValue(made.error); return; }
+    await this.account.load();
+    choose(made.data);
+    this.notice.setValue(Phrase.with("Made the period “%s”, over this memory's time for now: open it in Periods to say when it began and ended.", [title]));
   }
 
   /** The draft as the platform's save takes it. */
@@ -570,7 +602,8 @@ export function describeEditor(ui, editor, account) {
         search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
         create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") }),
       chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()), unpick: DROPS_PERIOD,
-        search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD }),
+        search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD,
+        create: ADDS_NEW_PERIOD, placeholder: Phrase.of("Type to find a period, or name a new one") }),
     ], "Part")),
     chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,
       search: editor.searches.place, looks: LOOKS_FOR_PLACE, matches: ui.bound(() => editor.placeMatches()), pick: PICKS_PLACE,
