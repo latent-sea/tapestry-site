@@ -13,26 +13,27 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=55e566562378";
-import { Loom } from "./loom.js?v=55e566562378";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=55e566562378";
-import * as Edit from "./editor.js?v=55e566562378";
-import * as Folk from "./people.js?v=55e566562378";
-import * as Where from "./places.js?v=55e566562378";
-import * as Me from "./you.js?v=55e566562378";
-import * as Today from "./journal.js?v=55e566562378";
-import * as Ask from "./asking.js?v=55e566562378";
-import * as Run from "./admin.js?v=55e566562378";
-import * as List from "./importing.js?v=55e566562378";
-import * as Told from "./notices.js?v=55e566562378";
-import { listed, timeline } from "./weave.js?v=55e566562378";
-import { heading, mark, notice, problem } from "./parts.js?v=55e566562378";
-import { drawWoven } from "./woven.js?v=55e566562378";
-import { linksOf } from "./links.js?v=55e566562378";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=55e566562378";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=6503c90b118b";
+import { Loom } from "./loom.js?v=6503c90b118b";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=6503c90b118b";
+import * as Edit from "./editor.js?v=6503c90b118b";
+import * as Folk from "./people.js?v=6503c90b118b";
+import * as Where from "./places.js?v=6503c90b118b";
+import * as Me from "./you.js?v=6503c90b118b";
+import * as Today from "./journal.js?v=6503c90b118b";
+import * as Ask from "./asking.js?v=6503c90b118b";
+import * as Run from "./admin.js?v=6503c90b118b";
+import * as List from "./importing.js?v=6503c90b118b";
+import * as Told from "./notices.js?v=6503c90b118b";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=6503c90b118b";
+import { headingOf } from "./when.js?v=6503c90b118b";
+import { heading, mark, notice, problem } from "./parts.js?v=6503c90b118b";
+import { drawWoven } from "./woven.js?v=6503c90b118b";
+import { linksOf } from "./links.js?v=6503c90b118b";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=6503c90b118b";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=55e566562378")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=6503c90b118b")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -74,6 +75,9 @@ const ASKS_TO_LEAVE = "asks_before_taking_me_off";
 const STAYS_ON = "keeps_me_on_this_event";
 const SHOWS_MORE = "shows_more_of_the_list";
 const JUMPS_TO_YEAR = "jumps_to_a_year";
+const SHOWS_RANDOM_YEAR = "shows_a_random_year";
+const SHOWS_EVERY_YEAR = "shows_every_year";
+const OPENS_RANDOM_MEMORY = "opens_a_random_memory";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
 const PAGE = 50;
 
@@ -99,6 +103,7 @@ class Looking extends Controller {
     this.newestFirst = this.value(keptOrder()); // a journal reads newest first; a life story may be read either way
     this.hidden = this.value([]); // accounts whose threads the tapestry leaves out
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
+    this.threadYear = this.value(""); // the one year (or decade) the member's thread is shown, picked at random; "" for every year
     this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
     this.pages = new Map(); // each timeline's own: how many of it are shown
@@ -117,9 +122,14 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR]; }
+  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERY_YEAR, OPENS_RANDOM_MEMORY]; }
+
+  /** The member's thread: what a random year or memory is picked from. */
+  thread() { const weave = this.account.weave.read(); return weave.thread(weave.meId); }
 
   would(action, payload) {
+    if (action === SHOWS_RANDOM_YEAR && !yearsOfMemories(this.thread()).length) return Phrase.of("No memories with a time yet");
+    if (action === OPENS_RANDOM_MEMORY && !this.thread().some((entry) => entry.kind === "memory")) return Phrase.of("No memories yet");
     if (action === LEAVES_EVENT || action === ASKS_TO_LEAVE) {
       const weave = this.account.weave.read();
       const event = weave.events.get(payload?.id);
@@ -134,6 +144,13 @@ class Looking extends Controller {
       // pressed again, back to the beginning; else from that year, the first so many of it
       this.fromOf(payload.key).update((from) => (from === payload.heading ? "" : payload.heading));
       this.shownOf(payload.key).setValue(PAGE);
+    }
+    // a year with memories in it, picked at random - another each press - and the thread shown for it alone
+    if (action === SHOWS_RANDOM_YEAR) this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? "");
+    if (action === SHOWS_EVERY_YEAR) this.threadYear.setValue("");
+    if (action === OPENS_RANDOM_MEMORY) {
+      const memory = pickAnother(this.thread().filter((entry) => entry.kind === "memory"), null);
+      if (memory) location.hash = `#memory/${memory.id}`;
     }
     if (action === SEARCHES_THREAD) this.threadSearch.setValue(payload.line);
     if (action === SEARCHES_WOVEN) this.wovenSearch.setValue(payload.line);
@@ -214,6 +231,9 @@ export class Tapestry extends ChimeApp {
       [SHOWS_LATER]: ["Next"],
       [SHOWS_MORE]: ["Show more"],
       [JUMPS_TO_YEAR]: ["Go to this year"],
+      [SHOWS_RANDOM_YEAR]: ["A random year"],
+      [SHOWS_EVERY_YEAR]: ["Show every year"],
+      [OPENS_RANDOM_MEMORY]: ["A random memory"],
       [SEARCHES_THREAD]: ["Find on my thread"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
       [FLIPS_ORDER]: ["Turn the order around"],
@@ -256,7 +276,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=55e566562378").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=6503c90b118b").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -362,7 +382,13 @@ export class Tapestry extends ChimeApp {
   threadScreen() {
     const ui = this.ui;
     const account = this.account;
-    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.thread(w.meId), this.looking.threadSearch.read(), account.foundInTexts(this.looking.threadSearch.read())); });
+    const year = this.looking.threadYear;
+    const entries = ui.bound(() => {
+      const w = account.weave.read();
+      const found = w.find(w.thread(w.meId), this.looking.threadSearch.read(), account.foundInTexts(this.looking.threadSearch.read()));
+      // a year picked at random: that year alone
+      return year.read() ? found.filter((entry) => headingOf(entry.when) === year.read()) : found;
+    });
     return ui.screen(THREAD, [
       ui.row([
         ui.text(Phrase.of("Your thread"), "Title").grow(),
@@ -375,6 +401,12 @@ export class Tapestry extends ChimeApp {
         ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT, style: LINK }),
       ], "Actions"),
       this.finder(SEARCHES_THREAD, this.looking.threadSearch),
+      ui.row([
+        ui.pressable(SHOWS_RANDOM_YEAR, {}, [ui.text(year.map((y) => Phrase.of(y ? "Another random year" : "A random year")), "Small")], LINK).absentWhenRefused(),
+        ui.button(OPENS_RANDOM_MEMORY, { style: LINK }).absentWhenRefused(),
+        ui.when(year, ui.pressable(SHOWS_EVERY_YEAR, {}, [ui.text(ui.words(SHOWS_EVERY_YEAR), "Small")], LINK)),
+      ], "Actions RandomRow"),
+      ui.when(year, ui.text(year.map((y) => Phrase.with("Showing %s only, picked at random.", [y])), "Hint")),
       this.timeline(entries, ui.bound(() => (this.looking.threadSearch.read().trim() ? Phrase.of("Nothing found.")
         : Phrase.of("Your thread is empty. Start with a memory, or a period of your life - where you grew up, a job, a house.")))),
     ]);

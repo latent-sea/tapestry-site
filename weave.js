@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=55e566562378";
-import { linksOf } from "./links.js?v=55e566562378";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=6503c90b118b";
+import { linksOf } from "./links.js?v=6503c90b118b";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -428,6 +428,17 @@ export function grouped(entries) {
 // what has been worked out of a list of entries, kept with the list (a weave's lists never change)
 const FOUND = new WeakMap();
 const TIMELINES = new WeakMap();
+
+/** The years (or decades) a thread's memories are in, as its timeline heads them; memories with no time left out. */
+export function yearsOfMemories(entries) {
+  return [...new Set(entries.filter((entry) => entry.kind === "memory" && entry.when?.date).map((entry) => headingOf(entry.when)))];
+}
+
+/** One of these at random - not the one before, while there is another - or null with none. */
+export function pickAnother(list, before = null, random = Math.random) {
+  const others = list.length > 1 ? list.filter((item) => item !== before) : list;
+  return others.length ? others[Math.min(Math.floor(random() * others.length), others.length - 1)] : null;
+}
 
 /** A timeline's rows: each entry under the heading of its year (or decade), a heading wherever it changes; an event's memories inside it. Worked out once for a list and an order. */
 export function timeline(entries, newestFirst = false) {

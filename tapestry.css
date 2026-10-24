@@ -175,3 +175,7 @@
 #app .chime-pressable.Notice { text-align: left; }
 #app .NoticeRow { gap: 12px; align-items: center; width: 100%; }
 #app .NewMark { flex-shrink: 0; overflow: visible; font-size: calc(var(--chime-size-face) * 0.75); font-weight: 800; color: var(--chime-accent); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* a random year, a random memory: small, side by side */
+#app .RandomRow { flex-direction: row !important; flex-wrap: wrap; gap: 8px; }
+#app .RandomRow > * { width: auto !important; flex: 0 0 auto; }
