@@ -10,13 +10,13 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=6503c90b118b";
-import { heading, notice, problem } from "./parts.js?v=6503c90b118b";
-import { AUDIENCES, CARD_PARTS, Weave } from "./weave.js?v=6503c90b118b";
-import { SIGNS_OUT } from "./account.js?v=6503c90b118b";
-import { copyOf } from "./keep.js?v=6503c90b118b";
-import { parseWhen, sayWhen } from "./when.js?v=6503c90b118b";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=6503c90b118b";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=9507d88f42b9";
+import { heading, notice, problem } from "./parts.js?v=9507d88f42b9";
+import { AUDIENCES, CARD_PARTS, Weave } from "./weave.js?v=9507d88f42b9";
+import { SIGNS_OUT } from "./account.js?v=9507d88f42b9";
+import { copyOf } from "./keep.js?v=9507d88f42b9";
+import { parseWhen, sayWhen } from "./when.js?v=9507d88f42b9";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=9507d88f42b9";
 
 export const YOU = "you";
 

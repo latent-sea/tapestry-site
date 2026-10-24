@@ -13,27 +13,27 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=6503c90b118b";
-import { Loom } from "./loom.js?v=6503c90b118b";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=6503c90b118b";
-import * as Edit from "./editor.js?v=6503c90b118b";
-import * as Folk from "./people.js?v=6503c90b118b";
-import * as Where from "./places.js?v=6503c90b118b";
-import * as Me from "./you.js?v=6503c90b118b";
-import * as Today from "./journal.js?v=6503c90b118b";
-import * as Ask from "./asking.js?v=6503c90b118b";
-import * as Run from "./admin.js?v=6503c90b118b";
-import * as List from "./importing.js?v=6503c90b118b";
-import * as Told from "./notices.js?v=6503c90b118b";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=6503c90b118b";
-import { headingOf } from "./when.js?v=6503c90b118b";
-import { heading, mark, notice, problem } from "./parts.js?v=6503c90b118b";
-import { drawWoven } from "./woven.js?v=6503c90b118b";
-import { linksOf } from "./links.js?v=6503c90b118b";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=6503c90b118b";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=9507d88f42b9";
+import { Loom } from "./loom.js?v=9507d88f42b9";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=9507d88f42b9";
+import * as Edit from "./editor.js?v=9507d88f42b9";
+import * as Folk from "./people.js?v=9507d88f42b9";
+import * as Where from "./places.js?v=9507d88f42b9";
+import * as Me from "./you.js?v=9507d88f42b9";
+import * as Today from "./journal.js?v=9507d88f42b9";
+import * as Ask from "./asking.js?v=9507d88f42b9";
+import * as Run from "./admin.js?v=9507d88f42b9";
+import * as List from "./importing.js?v=9507d88f42b9";
+import * as Told from "./notices.js?v=9507d88f42b9";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=9507d88f42b9";
+import { headingOf } from "./when.js?v=9507d88f42b9";
+import { heading, mark, notice, problem } from "./parts.js?v=9507d88f42b9";
+import { drawWoven } from "./woven.js?v=9507d88f42b9";
+import { linksOf } from "./links.js?v=9507d88f42b9";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=9507d88f42b9";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=6503c90b118b")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=9507d88f42b9")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -76,7 +76,8 @@ const STAYS_ON = "keeps_me_on_this_event";
 const SHOWS_MORE = "shows_more_of_the_list";
 const JUMPS_TO_YEAR = "jumps_to_a_year";
 const SHOWS_RANDOM_YEAR = "shows_a_random_year";
-const SHOWS_EVERY_YEAR = "shows_every_year";
+const SHOWS_EVERYTHING = "shows_everything";
+const FILTERS_BY_LABEL = "shows_a_label";
 const OPENS_RANDOM_MEMORY = "opens_a_random_memory";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
 const PAGE = 50;
@@ -104,6 +105,7 @@ class Looking extends Controller {
     this.hidden = this.value([]); // accounts whose threads the tapestry leaves out
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
     this.threadYear = this.value(""); // the one year (or decade) the member's thread is shown, picked at random; "" for every year
+    this.threadLabel = this.value(""); // the one label the member's thread is shown for; "" for all
     this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
     this.pages = new Map(); // each timeline's own: how many of it are shown
@@ -122,7 +124,7 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERY_YEAR, OPENS_RANDOM_MEMORY]; }
+  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY]; }
 
   /** The member's thread: what a random year or memory is picked from. */
   thread() { const weave = this.account.weave.read(); return weave.thread(weave.meId); }
@@ -147,7 +149,9 @@ class Looking extends Controller {
     }
     // a year with memories in it, picked at random - another each press - and the thread shown for it alone
     if (action === SHOWS_RANDOM_YEAR) this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? "");
-    if (action === SHOWS_EVERY_YEAR) this.threadYear.setValue("");
+    if (action === SHOWS_EVERYTHING) { this.threadYear.setValue(""); this.threadLabel.setValue(""); }
+    // a label: the thread shown for its memories alone; pressed again, all of it
+    if (action === FILTERS_BY_LABEL) this.threadLabel.update((label) => (label === payload.label && !payload.only ? "" : payload.label));
     if (action === OPENS_RANDOM_MEMORY) {
       const memory = pickAnother(this.thread().filter((entry) => entry.kind === "memory"), null);
       if (memory) location.hash = `#memory/${memory.id}`;
@@ -232,7 +236,8 @@ export class Tapestry extends ChimeApp {
       [SHOWS_MORE]: ["Show more"],
       [JUMPS_TO_YEAR]: ["Go to this year"],
       [SHOWS_RANDOM_YEAR]: ["A random year"],
-      [SHOWS_EVERY_YEAR]: ["Show every year"],
+      [SHOWS_EVERYTHING]: ["Show everything"],
+      [FILTERS_BY_LABEL]: ["Show the memories with this label"],
       [OPENS_RANDOM_MEMORY]: ["A random memory"],
       [SEARCHES_THREAD]: ["Find on my thread"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
@@ -276,7 +281,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=6503c90b118b").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=9507d88f42b9").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -383,11 +388,14 @@ export class Tapestry extends ChimeApp {
     const ui = this.ui;
     const account = this.account;
     const year = this.looking.threadYear;
+    const label = this.looking.threadLabel;
+    const narrowed = ui.bound(() => !!year.read() || !!label.read());
     const entries = ui.bound(() => {
       const w = account.weave.read();
       const found = w.find(w.thread(w.meId), this.looking.threadSearch.read(), account.foundInTexts(this.looking.threadSearch.read()));
-      // a year picked at random: that year alone
-      return year.read() ? found.filter((entry) => headingOf(entry.when) === year.read()) : found;
+      // a year picked at random: that year alone; a label: its memories alone
+      const inYear = year.read() ? found.filter((entry) => headingOf(entry.when) === year.read()) : found;
+      return label.read() ? inYear.filter((entry) => (entry.labels ?? []).includes(label.read())) : inYear;
     });
     return ui.screen(THREAD, [
       ui.row([
@@ -403,10 +411,15 @@ export class Tapestry extends ChimeApp {
       this.finder(SEARCHES_THREAD, this.looking.threadSearch),
       ui.row([
         ui.pressable(SHOWS_RANDOM_YEAR, {}, [ui.text(year.map((y) => Phrase.of(y ? "Another random year" : "A random year")), "Small")], LINK).absentWhenRefused(),
-        ui.button(OPENS_RANDOM_MEMORY, { style: LINK }).absentWhenRefused(),
-        ui.when(year, ui.pressable(SHOWS_EVERY_YEAR, {}, [ui.text(ui.words(SHOWS_EVERY_YEAR), "Small")], LINK)),
+        ui.pressable(OPENS_RANDOM_MEMORY, {}, [ui.text(ui.words(OPENS_RANDOM_MEMORY), "Small")], LINK).absentWhenRefused(),
+        ui.when(narrowed, ui.pressable(SHOWS_EVERYTHING, {}, [ui.text(ui.words(SHOWS_EVERYTHING), "Small")], LINK)),
       ], "Actions RandomRow"),
+      // the member's labels: pressed, the thread shows that label's memories alone
+      ui.when(account.weave.map((w) => w.labels.length > 0), ui.eachAcross(account.weave.map((w) => w.labels), (held) => ui.pressable(FILTERS_BY_LABEL,
+        held.map((l) => ({ label: l?.label ?? "" })), [ui.text(held.map((l) => `#${l?.label ?? ""}`), "Small")], "Segment LabelChip")
+        .currentWhile(ui.bound(() => label.read() === held.read()?.label)), (l) => l.label, "Labels")),
       ui.when(year, ui.text(year.map((y) => Phrase.with("Showing %s only, picked at random.", [y])), "Hint")),
+      ui.when(label, ui.text(label.map((l) => Phrase.with("Showing the memories labelled #%s.", [l])), "Hint")),
       this.timeline(entries, ui.bound(() => (this.looking.threadSearch.read().trim() ? Phrase.of("Nothing found.")
         : Phrase.of("Your thread is empty. Start with a memory, or a period of your life - where you grew up, a job, a house.")))),
     ]);
@@ -547,6 +560,7 @@ export class Tapestry extends ChimeApp {
             return others ? Phrase.counted("%d link", "%d links", others) : "";
           }), "Meta").hidesEmpty(),
         ], "MetaRow"),
+        ui.eachAcross(held.map((e) => e?.labels ?? []), (l) => ui.text(l.map((x) => `#${x ?? ""}`), "LabelTag"), null, "LabelTags"),
         ui.eachAcross(pictures, (pic) => ui.image(pic.map((p) => (p ? account.address(p.path) : "")), "Thumb",
           pic.map((p) => p?.caption || Phrase.of("A picture"))),
           (p) => p.id, "Thumbs"),
@@ -632,6 +646,8 @@ export class Tapestry extends ChimeApp {
           [ui.text(entry.map((e) => Phrase.with("At %s", [e?.place?.name ?? ""])), "LinkWords")], "Link").goesTo(PLACE)),
         ofEvent,
         duringPeriods,
+        ui.eachAcross(entry.map((e) => e?.labels ?? []), (l) => ui.pressable(FILTERS_BY_LABEL, l.map((x) => ({ label: x ?? "", only: true })),
+          [ui.text(l.map((x) => `#${x ?? ""}`), "Small")], "Segment LabelChip").goesTo(THREAD), null, "Labels"),
         ui.when(people.map((p) => p.length > 0), ui.column([
           ui.text(ui.bound(() => Phrase.of(kindOf() === "event" ? "Who was there" : "With")), "FieldName"),
           ui.text(people.map((p) => listed(p)), "Words").wraps(),

@@ -179,3 +179,9 @@
 /* a random year, a random memory: small, side by side */
 #app .RandomRow { flex-direction: row !important; flex-wrap: wrap; gap: 8px; }
 #app .RandomRow > * { width: auto !important; flex: 0 0 auto; }
+
+/* labels */
+#app .LabelTags { gap: 6px; flex-wrap: wrap; }
+#app .LabelTag { font-size: calc(var(--chime-size-face) * 0.75); font-weight: 700; color: var(--chime-accent); }
+#app .Labels { gap: 6px; flex-wrap: wrap; }
+#app .chime-pressable.LabelChip { min-height: 32px; padding: 4px 12px; }

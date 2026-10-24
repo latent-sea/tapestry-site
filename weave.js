@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=6503c90b118b";
-import { linksOf } from "./links.js?v=6503c90b118b";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=9507d88f42b9";
+import { linksOf } from "./links.js?v=9507d88f42b9";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -14,7 +14,7 @@ export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles:
 // empty - null, [], false, "" - and the page takes each as its kind's nothing
 const SPAN = { starts: null, starts_precision: null, starts_about: false, starts_time: null, ends: null, ends_precision: null, ends_about: false, ends_time: null };
 const NOTHING = {
-  memories: { title: "", body: "", links: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
+  memories: { title: "", body: "", links: [], labels: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
   events: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
   periods: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
 };
@@ -109,6 +109,15 @@ export class Weave {
 
   /** What others did that touches the member, newest first (backend.sql, "notices"). */
   get notices() { return this.data.notices; }
+
+  /** The labels on the member's own memories, each once, in order: [{ label, count }]. */
+  get labels() {
+    return this.kept("labels", () => {
+      const counted = new Map();
+      for (const memory of this.data.memories) if (memory.owner === this.meId) for (const label of memory.labels ?? []) counted.set(label, (counted.get(label) ?? 0) + 1);
+      return [...counted].sort(([a], [b]) => a.localeCompare(b)).map(([label, count]) => ({ label, count }));
+    });
+  }
 
   /** The memories a light load sent cut short: their words past the first 2000 are fetched when wanted. */
   get cutIds() { return this.kept("cut", () => this.data.memories.filter((m) => m.cut).map((m) => m.id)); }
@@ -238,7 +247,7 @@ export class Weave {
       const firstLine = item.body.trim().split("\n")[0];
       const title = item.title || (firstLine.length > 70 ? `${firstLine.slice(0, 67)}…` : firstLine) || "A memory";
       const links = linksOf(item);
-      return { ...base, when, until, said, title, text: item.body, pictures: item.pictures, links,
+      return { ...base, when, until, said, title, text: item.body, pictures: item.pictures, links, labels: item.labels ?? [],
         videos: links.filter((l) => l.video).map((l) => l.video.poster),
         event: event ? { id: event.id, title: event.title } : item.event_id ? { id: item.event_id, title: "" } : null,
         periods };
@@ -306,7 +315,8 @@ export class Weave {
   findIn(entries, words, also = null) {
     return entries.filter((entry) => {
       // what it is found by, worked out once for the entry
-      entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people].join(" "));
+      entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people,
+        ...(entry.labels ?? []).flatMap((label) => [label, `#${label}`])].join(" "));
       return words.every((word) => entry.hay.includes(word)) || (entry.kind === "memory" && !!also?.has(entry.id));
     });
   }

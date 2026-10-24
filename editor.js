@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=6503c90b118b";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=6503c90b118b";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=6503c90b118b";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=6503c90b118b";
-import { chooser, heading, notice, problem } from "./parts.js?v=6503c90b118b";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=6503c90b118b";
-import { DANGER, LINK } from "./look/look.js?v=6503c90b118b";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=9507d88f42b9";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=9507d88f42b9";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=9507d88f42b9";
+import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=9507d88f42b9";
+import { chooser, heading, notice, problem } from "./parts.js?v=9507d88f42b9";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=9507d88f42b9";
+import { DANGER, LINK } from "./look/look.js?v=9507d88f42b9";
 
 export const EDIT = "edit";
 
@@ -43,6 +43,10 @@ export const DROPS_PLACE = "drops_the_place";
 export const ADDS_NEW_PLACE = "adds_a_new_place";
 export const ADDS_NEW_EVENT = "adds_a_new_event";
 export const ADDS_NEW_PERIOD = "adds_a_new_period";
+export const LOOKS_FOR_LABEL = "looks_for_a_label";
+export const PICKS_LABEL = "picks_a_label";
+export const ADDS_LABEL = "adds_a_label";
+export const DROPS_LABEL = "drops_a_label";
 export const LOOKS_FOR_PERSON = "looks_for_a_person";
 export const TAGS = "tags_a_person";
 export const UNTAGS = "untags_a_person";
@@ -87,6 +91,10 @@ export const WORDS = {
   [ADDS_NEW_PLACE]: ["Add it as a new place"],
   [ADDS_NEW_EVENT]: ["Make it a new event"],
   [ADDS_NEW_PERIOD]: ["Make it a new period"],
+  [LOOKS_FOR_LABEL]: ["Find a label"],
+  [PICKS_LABEL]: ["Add this label"],
+  [ADDS_LABEL]: ["Add it as a label"],
+  [DROPS_LABEL]: ["Take off this label"],
   [LOOKS_FOR_PERSON]: ["Find someone"],
   [TAGS]: ["Tag them"],
   [UNTAGS]: ["Untag them"],
@@ -149,7 +157,8 @@ export class Editor extends Controller {
     this.captions = this.value({}); // a picture's id (kept) or key (chosen) -> its caption as typed
     this.links = this.value([]); // { url }
     this.linkText = this.value("");
-    this.searches = { event: this.value(""), period: this.value(""), place: this.value(""), person: this.value(""), share: this.value("") };
+    this.searches = { event: this.value(""), period: this.value(""), place: this.value(""), person: this.value(""), share: this.value(""), label: this.value("") };
+    this.labels = this.value([]); // a memory's labels, its owner's own: school, music, holidays
     this.busy = this.value(false);
     this.fetching = this.value(false); // a long memory's words being fetched in full: nothing is saved until they are
     this.confirming = this.value(false);
@@ -229,6 +238,7 @@ export class Editor extends Controller {
       if (!this.searches.event.read().trim()) return Phrase.of("Type a name first");
       if (this.span().error || !this.span().starts) return Phrase.of("First say when it was: an event has a time");
     }
+    if (action === ADDS_LABEL && !this.searches.label.read().trim()) return Phrase.of("Type a label first");
     if (action === ADDS_NEW_PERIOD) {
       if (!this.searches.period.read().trim()) return Phrase.of("Type a name first");
       // one already of that name is chosen, whatever the memory's time
@@ -269,6 +279,14 @@ export class Editor extends Controller {
     if (action === ADDS_NEW_PLACE) this.addPlace(this.searches.place.read().trim());
     if (action === ADDS_NEW_EVENT) this.addEvent(this.searches.event.read().trim());
     if (action === ADDS_NEW_PERIOD) this.addPeriod(this.searches.period.read().trim());
+    if (action === LOOKS_FOR_LABEL) this.searches.label.setValue(payload.line);
+    // a label as typed - in small letters, once - or one of theirs already
+    if (action === PICKS_LABEL || action === ADDS_LABEL) {
+      const label = String(action === PICKS_LABEL ? payload.id : this.searches.label.read()).trim().toLowerCase().slice(0, 40);
+      if (label) this.labels.update((list) => (list.includes(label) ? list : [...list, label]));
+      this.searches.label.setValue("");
+    }
+    if (action === DROPS_LABEL) this.labels.update((list) => list.filter((l) => l !== payload.id));
     if (action === TAGS) { this.tag(payload.id); this.searches.person.setValue(""); }
     if (action === UNTAGS) this.tags.update((tags) => tags.filter((id) => id !== payload.id));
     if (action === ADDS_NEW_PERSON) this.addPerson(this.searches.person.read().trim());
@@ -343,6 +361,8 @@ export class Editor extends Controller {
     this.periodIds.setValue(item ? periodsOf(item) : tied === "period" ? [tiedId] : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
     this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
+    this.labels.setValue(kind === "memory" && item ? [...(item.labels ?? [])] : []);
+    this.searches.label.setValue("");
     this.audience.setValue(item?.audience ?? weave.defaultAudience(kind));
     this.shares.setValue(item ? item.shares.map((s) => (s.person ? { person: s.person, allowed: s.allowed } : { circle: s.circle, allowed: s.allowed })) : []);
     this.pictures.setValue(item?.pictures ? item.pictures.map(({ id: pid, path, caption }) => ({ id: pid, path, caption: caption ?? "" })) : []);
@@ -431,6 +451,7 @@ export class Editor extends Controller {
     };
     if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_ids: this.periodIds.read(),
       event_title: this.becomesEvent() ? (this.eventTitle.read().trim() || this.title.read().trim()) : "",
+      labels: this.labels.read(),
       // the first as period_id too, which a platform from before there could be more keeps
       period_id: this.periodIds.read()[0] ?? "" };
     return { ...common, notes: this.text.read() };
@@ -513,6 +534,15 @@ export class Editor extends Controller {
     const looked = this.searches.period.read();
     const chosen = this.periodIds.read();
     return weave.data.periods.filter((p) => p.owner === weave.meId && !chosen.includes(p.id) && matching(looked, p.title)).slice(0, MOST).map((p) => ({ id: p.id, label: p.title }));
+  }
+
+  chosenLabels() { return this.labels.read().map((label) => ({ id: label, label: `#${label}` })); }
+
+  /** The member's labels matching what is typed, not on it already. */
+  labelMatches() {
+    const looked = this.searches.label.read();
+    const chosen = this.labels.read();
+    return this.weave().labels.filter(({ label }) => !chosen.includes(label) && matching(looked, label)).slice(0, MOST).map(({ label }) => ({ id: label, label: `#${label}` }));
   }
 
   chosenPlace() {
@@ -608,6 +638,9 @@ export function describeEditor(ui, editor, account) {
     chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,
       search: editor.searches.place, looks: LOOKS_FOR_PLACE, matches: ui.bound(() => editor.placeMatches()), pick: PICKS_PLACE,
       create: ADDS_NEW_PLACE, placeholder: Phrase.of("Type a place") }),
+    ui.when(isMemory, chooser(ui, { label: Phrase.of("Labels - yours alone, to find your memories by"), chosen: ui.bound(() => editor.chosenLabels()), unpick: DROPS_LABEL,
+      search: editor.searches.label, looks: LOOKS_FOR_LABEL, matches: ui.bound(() => editor.labelMatches()), pick: PICKS_LABEL,
+      create: ADDS_LABEL, placeholder: Phrase.of("e.g. school, music, holidays - Enter adds it") })),
     chooser(ui, { label: said("people"), chosen: ui.bound(() => editor.chosenPeople()), unpick: UNTAGS,
       search: editor.searches.person, looks: LOOKS_FOR_PERSON, matches: ui.bound(() => editor.personMatches()), pick: TAGS,
       create: ADDS_NEW_PERSON, placeholder: Phrase.of("Type a name") }),
