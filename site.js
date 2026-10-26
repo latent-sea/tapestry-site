@@ -13,27 +13,28 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=9507d88f42b9";
-import { Loom } from "./loom.js?v=9507d88f42b9";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=9507d88f42b9";
-import * as Edit from "./editor.js?v=9507d88f42b9";
-import * as Folk from "./people.js?v=9507d88f42b9";
-import * as Where from "./places.js?v=9507d88f42b9";
-import * as Me from "./you.js?v=9507d88f42b9";
-import * as Today from "./journal.js?v=9507d88f42b9";
-import * as Ask from "./asking.js?v=9507d88f42b9";
-import * as Run from "./admin.js?v=9507d88f42b9";
-import * as List from "./importing.js?v=9507d88f42b9";
-import * as Told from "./notices.js?v=9507d88f42b9";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=9507d88f42b9";
-import { headingOf } from "./when.js?v=9507d88f42b9";
-import { heading, mark, notice, problem } from "./parts.js?v=9507d88f42b9";
-import { drawWoven } from "./woven.js?v=9507d88f42b9";
-import { linksOf } from "./links.js?v=9507d88f42b9";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=9507d88f42b9";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=2abad7652e6f";
+import { Loom } from "./loom.js?v=2abad7652e6f";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=2abad7652e6f";
+import * as Edit from "./editor.js?v=2abad7652e6f";
+import * as Folk from "./people.js?v=2abad7652e6f";
+import * as Where from "./places.js?v=2abad7652e6f";
+import * as Me from "./you.js?v=2abad7652e6f";
+import * as Today from "./journal.js?v=2abad7652e6f";
+import * as Ask from "./asking.js?v=2abad7652e6f";
+import * as Run from "./admin.js?v=2abad7652e6f";
+import * as List from "./importing.js?v=2abad7652e6f";
+import * as Told from "./notices.js?v=2abad7652e6f";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=2abad7652e6f";
+import { headingOf } from "./when.js?v=2abad7652e6f";
+import { heading, mark, notice, problem } from "./parts.js?v=2abad7652e6f";
+import { drawWoven } from "./woven.js?v=2abad7652e6f";
+import { drawPeriods } from "./gantt.js?v=2abad7652e6f";
+import { linksOf } from "./links.js?v=2abad7652e6f";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=2abad7652e6f";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=9507d88f42b9")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=2abad7652e6f")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -79,16 +80,22 @@ const SHOWS_RANDOM_YEAR = "shows_a_random_year";
 const SHOWS_EVERYTHING = "shows_everything";
 const FILTERS_BY_LABEL = "shows_a_label";
 const OPENS_RANDOM_MEMORY = "opens_a_random_memory";
+const SHOWS_PERIODS_AS = "shows_periods_as";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
 const PAGE = 50;
 
 const KIND_SAID = { memory: "Memory", event: "Event", period: "Period" };
 const INVITE_KEPT = "tapestry_invitation";
 const ORDER_KEPT = "tapestry_order";
+const PERIODS_KEPT = "tapestry_periods_as"; // the periods shown as a list or a chart, on this device
 const SEEN_KEPT = "tapestry_seen_at";
 const NEW_SHOWN = 5;
 
 /** The order timelines were last read in on this device: newest first unless turned around. */
+function keptPeriodsAs() {
+  try { return localStorage.getItem(PERIODS_KEPT) === "chart" ? "chart" : "list"; } catch { return "list"; }
+}
+
 function keptOrder() {
   try { return localStorage.getItem(ORDER_KEPT) !== "oldest"; } catch { return true; }
 }
@@ -106,6 +113,7 @@ class Looking extends Controller {
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
     this.threadYear = this.value(""); // the one year (or decade) the member's thread is shown, picked at random; "" for every year
     this.threadLabel = this.value(""); // the one label the member's thread is shown for; "" for all
+    this.periodsAs = this.value(keptPeriodsAs()); // the periods as a list, or a chart across the years
     this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
     this.pages = new Map(); // each timeline's own: how many of it are shown
@@ -124,7 +132,7 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY]; }
+  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, SHOWS_PERIODS_AS]; }
 
   /** The member's thread: what a random year or memory is picked from. */
   thread() { const weave = this.account.weave.read(); return weave.thread(weave.meId); }
@@ -149,6 +157,10 @@ class Looking extends Controller {
     }
     // a year with memories in it, picked at random - another each press - and the thread shown for it alone
     if (action === SHOWS_RANDOM_YEAR) this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? "");
+    if (action === SHOWS_PERIODS_AS) {
+      this.periodsAs.setValue(payload.as);
+      try { localStorage.setItem(PERIODS_KEPT, payload.as); } catch { /* this visit only */ }
+    }
     if (action === SHOWS_EVERYTHING) { this.threadYear.setValue(""); this.threadLabel.setValue(""); }
     // a label: the thread shown for its memories alone; pressed again, all of it
     if (action === FILTERS_BY_LABEL) this.threadLabel.update((label) => (label === payload.label && !payload.only ? "" : payload.label));
@@ -239,6 +251,7 @@ export class Tapestry extends ChimeApp {
       [SHOWS_EVERYTHING]: ["Show everything"],
       [FILTERS_BY_LABEL]: ["Show the memories with this label"],
       [OPENS_RANDOM_MEMORY]: ["A random memory"],
+      [SHOWS_PERIODS_AS]: ["Show the periods so"],
       [SEARCHES_THREAD]: ["Find on my thread"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
       [FLIPS_ORDER]: ["Turn the order around"],
@@ -281,11 +294,11 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=9507d88f42b9").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=2abad7652e6f").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
-    this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepWoven(); } });
+    this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepWoven(); this.keepPeriods(); } });
     return this;
   }
 
@@ -338,7 +351,15 @@ export class Tapestry extends ChimeApp {
       ui.text(Phrase.of("Periods"), "Title"),
       ui.text(Phrase.of("Spans of your life - where you lived, a job, school - overlapping as lives do. Each holds the memories during it; open one to add to it, or change it."), "Hint").wraps(),
       ui.row([ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT })], "Actions"),
-      this.timeline(entries, Phrase.of("No periods yet.")),
+      ui.row([["list", "List"], ["chart", "Chart"]].map(([as, said]) => ui.pressable(SHOWS_PERIODS_AS, { as }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
+        .currentWhile(this.looking.periodsAs.map((a) => a === as))), "Segments"),
+      // as a chart: each period a bar across the years, drawn to the width there is (keepPeriods); each bar opens it
+      ui.when(this.looking.periodsAs.map((a) => a === "chart"), ui.column([
+        ui.surface("PeriodsChart", []).named("periods-chart"),
+        ui.when(entries.map((list) => !list.some((e) => e.when?.date)), ui.text(Phrase.of("No periods with a time yet."), "Quiet").wraps()),
+        ui.text(Phrase.of("Each period is a bar across the years, an arrow where it is still going. Press one to open it."), "Hint").wraps(),
+      ])),
+      ui.when(this.looking.periodsAs.map((a) => a === "list"), this.timeline(entries, Phrase.of("No periods yet."))),
     ]);
   }
 
@@ -781,13 +802,37 @@ export class Tapestry extends ChimeApp {
       const open = this.driver.getTop().includes(WOVEN);
       const weave = this.account.weave.read();
       const shown = this.looking.shown();
-      Frames.defer(() => {
-        const place = document.getElementById("woven-picture");
-        if (!place || !open) return;
-        const drawn = drawWoven(weave, shown, new Date(), { ground: PALETTE.ground, ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit });
-        place.innerHTML = drawn ? drawn.svg : "";
-        place.hidden = !drawn;
-      });
+      this.drawInto("woven-picture", open, () => drawWoven(weave, shown, new Date(), { ground: PALETTE.ground, ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit }));
+    });
+  }
+
+  /** The periods' chart drawn whenever it is shown, to the width it has - again as that changes. */
+  keepPeriods() {
+    let draw = () => {};
+    this.chimes.follow({ region: Chimes.GLOBAL }, "periods-chart", () => {
+      const open = this.driver.getTop().includes(PERIODS) && this.looking.periodsAs.read() === "chart";
+      const weave = this.account.weave.read();
+      draw = () => this.drawInto("periods-chart", open, (place) => drawPeriods(weave, Math.max(Math.round(place.clientWidth) || 700, 280), new Date(),
+        { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit }));
+      draw();
+    });
+    let waiting = null;
+    addEventListener("resize", () => { clearTimeout(waiting); waiting = setTimeout(() => draw(), 150); });
+  }
+
+  /**
+   * A picture drawn into its place while its screen is open: the place is
+   * looked for until the screen has built it (a frame or two after it is
+   * shown), then drawn by draw(place) - an SVG's text, or null for nothing.
+   */
+  drawInto(name, open, draw, tries = 40) {
+    if (!open) return;
+    Frames.defer(() => {
+      const place = document.getElementById(name);
+      if (!place) { if (tries > 0) setTimeout(() => this.drawInto(name, open, draw, tries - 1), 50); return; }
+      const drawn = draw(place);
+      place.innerHTML = drawn ? drawn.svg : "";
+      place.hidden = !drawn;
     });
   }
 

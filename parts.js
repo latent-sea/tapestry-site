@@ -2,8 +2,8 @@
 // chooser (type to find, press to pick, or add what was typed), and the
 // little rows of names.
 
-import { Phrase, Themes } from "./gd_chime/gd_chime.js?v=9507d88f42b9";
-import { LINK } from "./look/look.js?v=9507d88f42b9";
+import { Phrase, Themes } from "./gd_chime/gd_chime.js?v=2abad7652e6f";
+import { LINK } from "./look/look.js?v=2abad7652e6f";
 
 /** A thread's mark: a dot in its colour, as a picture, since a colour is the thread's own. */
 export function dotOf(colour) {
