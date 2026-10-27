@@ -10,14 +10,14 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { heading, notice, problem } from "./parts.js?v=328f3a22fb80";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=328f3a22fb80";
-import { dotOf } from "./parts.js?v=328f3a22fb80";
-import { SIGNS_OUT } from "./account.js?v=328f3a22fb80";
-import { copyOf } from "./keep.js?v=328f3a22fb80";
-import { parseWhen, sayWhen } from "./when.js?v=328f3a22fb80";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=328f3a22fb80";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { heading, notice, problem } from "./parts.js?v=eba5a4f179db";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=eba5a4f179db";
+import { dotOf } from "./parts.js?v=eba5a4f179db";
+import { SIGNS_OUT } from "./account.js?v=eba5a4f179db";
+import { copyOf } from "./keep.js?v=eba5a4f179db";
+import { parseWhen, sayWhen } from "./when.js?v=eba5a4f179db";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=eba5a4f179db";
 
 export const YOU = "you";
 

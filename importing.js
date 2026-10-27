@@ -7,11 +7,11 @@
 // the member unless they choose otherwise first, and adding twice adds
 // nothing twice.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { heading, notice, problem } from "./parts.js?v=328f3a22fb80";
-import { ACTION } from "./look/look.js?v=328f3a22fb80";
-import { AUDIENCES } from "./weave.js?v=328f3a22fb80";
-import { parseSpan } from "./when.js?v=328f3a22fb80";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { heading, notice, problem } from "./parts.js?v=eba5a4f179db";
+import { ACTION } from "./look/look.js?v=eba5a4f179db";
+import { AUDIENCES } from "./weave.js?v=eba5a4f179db";
+import { parseSpan } from "./when.js?v=eba5a4f179db";
 
 export const IMPORT = "import";
 
@@ -77,6 +77,7 @@ export class Importer extends Controller {
 
   would(action) {
     if (action !== ADDS_LIST) return null;
+    if (!this.account.weave.read().writes) return Phrase.of("Keeping your own thread is part of the paid plan");
     if (this.busy.read()) return Phrase.of("Adding");
     const read = readList(this.text.read());
     if (read.error) return Phrase.of("First fix the list");

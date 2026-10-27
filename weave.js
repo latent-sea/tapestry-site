@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=328f3a22fb80";
-import { linksOf } from "./links.js?v=328f3a22fb80";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=eba5a4f179db";
+import { linksOf } from "./links.js?v=eba5a4f179db";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -14,7 +14,7 @@ export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles:
 // empty - null, [], false, "" - and the page takes each as its kind's nothing
 const SPAN = { starts: null, starts_precision: null, starts_about: false, starts_time: null, ends: null, ends_precision: null, ends_about: false, ends_time: null };
 const NOTHING = {
-  memories: { title: "", body: "", links: [], labels: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
+  memories: { title: "", body: "", links: [], labels: [], comments: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
   events: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
   periods: { title: "", notes: "", kind: null, ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
 };
@@ -135,6 +135,9 @@ export class Weave {
 
   /** What others did that touches the member, newest first (backend.sql, "notices"). */
   get notices() { return this.data.notices; }
+
+  /** Whether the member keeps a thread of their own: on the paid plan, or an admin (a platform from before plans: yes). */
+  get writes() { return this.data.me?.writes ?? true; }
 
   /** The member's kinds of period: their own, or those they start with. */
   get periodKinds() { return Array.isArray(this.data.me?.period_kinds) ? this.data.me.period_kinds : STARTING_KINDS; }

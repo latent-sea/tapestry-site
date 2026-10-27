@@ -13,28 +13,29 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { Loom } from "./loom.js?v=328f3a22fb80";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=328f3a22fb80";
-import * as Edit from "./editor.js?v=328f3a22fb80";
-import * as Folk from "./people.js?v=328f3a22fb80";
-import * as Where from "./places.js?v=328f3a22fb80";
-import * as Me from "./you.js?v=328f3a22fb80";
-import * as Today from "./journal.js?v=328f3a22fb80";
-import * as Ask from "./asking.js?v=328f3a22fb80";
-import * as Run from "./admin.js?v=328f3a22fb80";
-import * as List from "./importing.js?v=328f3a22fb80";
-import * as Told from "./notices.js?v=328f3a22fb80";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=328f3a22fb80";
-import { headingOf } from "./when.js?v=328f3a22fb80";
-import { dotOf, heading, mark, notice, problem } from "./parts.js?v=328f3a22fb80";
-import { drawWoven } from "./woven.js?v=328f3a22fb80";
-import { drawPeriods } from "./gantt.js?v=328f3a22fb80";
-import { linksOf } from "./links.js?v=328f3a22fb80";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=328f3a22fb80";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { Loom } from "./loom.js?v=eba5a4f179db";
+import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=eba5a4f179db";
+import * as Edit from "./editor.js?v=eba5a4f179db";
+import * as Folk from "./people.js?v=eba5a4f179db";
+import * as Where from "./places.js?v=eba5a4f179db";
+import * as Me from "./you.js?v=eba5a4f179db";
+import * as Today from "./journal.js?v=eba5a4f179db";
+import * as Ask from "./asking.js?v=eba5a4f179db";
+import * as Run from "./admin.js?v=eba5a4f179db";
+import * as List from "./importing.js?v=eba5a4f179db";
+import * as Told from "./notices.js?v=eba5a4f179db";
+import * as Talk from "./comments.js?v=eba5a4f179db";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=eba5a4f179db";
+import { headingOf } from "./when.js?v=eba5a4f179db";
+import { dotOf, heading, mark, notice, problem } from "./parts.js?v=eba5a4f179db";
+import { drawWoven } from "./woven.js?v=eba5a4f179db";
+import { drawPeriods } from "./gantt.js?v=eba5a4f179db";
+import { linksOf } from "./links.js?v=eba5a4f179db";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=eba5a4f179db";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=328f3a22fb80")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=eba5a4f179db")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -233,6 +234,7 @@ export class Tapestry extends ChimeApp {
       ...Run.WORDS,
       ...List.WORDS,
       ...Told.WORDS,
+      ...Talk.WORDS,
       [GOES_TODAY]: ["Today"],
       [GOES_NOTICES]: ["Notices"],
       [GOES_EVENTS]: ["Events"],
@@ -282,6 +284,7 @@ export class Tapestry extends ChimeApp {
     this.admin = this.model(new Run.Admin(this.chimes, LOOM, this.account));
     this.importer = this.model(new List.Importer(this.chimes, LOOM, this.account));
     this.notices = this.model(new Told.Notices(this.chimes, LOOM, this.account));
+    this.comments = this.model(new Talk.Comments(this.chimes, LOOM, this.account));
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
@@ -298,7 +301,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=328f3a22fb80").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=eba5a4f179db").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -329,7 +332,8 @@ export class Tapestry extends ChimeApp {
     const ui = this.ui;
     return ui.screen(TODAY, [
       ui.text(Phrase.of("Today"), "Title"),
-      Today.describeToday(ui, this.journal),
+      this.freePlan(),
+      ui.when(this.account.weave.map((w) => w.writes), Today.describeToday(ui, this.journal)),
     ]);
   }
 
@@ -341,7 +345,8 @@ export class Tapestry extends ChimeApp {
     return ui.screen(EVENTS, [
       ui.text(Phrase.of("Events"), "Title"),
       ui.text(Phrase.of("Times and places where threads cross - a wedding, a holiday, a night out. Each holds everyone's memories of it; open one to add yours, or change it."), "Hint").wraps(),
-      ui.row([ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT })], "Actions"),
+      this.freePlan(),
+      ui.row([ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT }).absentWhenRefused()], "Actions"),
       this.timeline(entries, Phrase.of("No events yet.")),
     ]);
   }
@@ -364,7 +369,8 @@ export class Tapestry extends ChimeApp {
     return ui.screen(PERIODS, [
       ui.text(Phrase.of("Periods"), "Title"),
       ui.text(Phrase.of("Spans of your life - where you lived, a job, school - overlapping as lives do. Each holds the memories during it; open one to add to it, or change it."), "Hint").wraps(),
-      ui.row([ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT })], "Actions"),
+      this.freePlan(),
+      ui.row([ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT }).absentWhenRefused()], "Actions"),
       ui.row([["list", "List"], ["chart", "Chart"]].map(([as, said]) => ui.pressable(SHOWS_PERIODS_AS, { as }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
         .currentWhile(this.looking.periodsAs.map((a) => a === as))), "Segments"),
       ui.when(kinds.map((k) => k.length > 1 || (k.length === 1 && k[0].type !== "")), ui.eachAcross(kinds, (held) => ui.pressable(TOGGLES_PERIOD_TYPE,
@@ -424,6 +430,12 @@ export class Tapestry extends ChimeApp {
     ]);
   }
 
+  /** On the free plan: what it is, said where a thread would be kept. */
+  freePlan(words = "You're on the free plan: you see what your people share with you, and comment on it. Keeping your own thread - memories, events and periods - is part of the paid plan.") {
+    const ui = this.ui;
+    return ui.when(this.account.weave.map((w) => !w.writes), ui.text(Phrase.of(words), "Notice").wraps());
+  }
+
   threadScreen() {
     const ui = this.ui;
     const account = this.account;
@@ -440,13 +452,14 @@ export class Tapestry extends ChimeApp {
     return ui.screen(THREAD, [
       ui.row([
         ui.text(Phrase.of("Your thread"), "Title").grow(),
-        ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY),
+        ui.when(account.weave.map((w) => w.writes), ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY)),
       ], "TitleRow"),
       this.comingBack(),
+      this.freePlan(),
       ui.row([
-        ui.button(Edit.ADDS_MEMORY, { with: "memory:new", goes_to: EDIT }),
-        ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT, style: LINK }),
-        ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT, style: LINK }),
+        ui.button(Edit.ADDS_MEMORY, { with: "memory:new", goes_to: EDIT }).absentWhenRefused(),
+        ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT, style: LINK }).absentWhenRefused(),
+        ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT, style: LINK }).absentWhenRefused(),
       ], "Actions"),
       this.finder(SEARCHES_THREAD, this.looking.threadSearch),
       ui.row([
@@ -693,6 +706,7 @@ export class Tapestry extends ChimeApp {
           ui.text(people.map((p) => listed(p)), "Words").wraps(),
         ])),
         Ask.describeThatsMe(ui, this.asking, account, entry),
+        Talk.describeComments(ui, this.comments, account, ui.bound(() => (kindOf() === "memory" ? item.read() : null))),
         ui.when(ui.bound(() => (entry.read()?.threads?.length ?? 0) > 1), ui.text(ui.bound(() => Phrase.with("Threads cross here: %s",
           [listed((entry.read()?.threads ?? []).map((a) => account.weave.read().nameOf(a)))])), "Crossing").wraps()),
         ui.text(seenBy, "Seen").wraps().hidesEmpty(),

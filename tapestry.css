@@ -196,3 +196,7 @@
 /* a kind of period: its chip is its key - outlined while shown, faded while hidden - so its colour dot stays clear */
 #app .chime-pressable.KindChip { background: var(--chime-raised); color: var(--chime-ink); border: 1px solid var(--chime-lit); box-shadow: none; opacity: 0.45; }
 #app .chime-pressable.KindChip.chime-current { opacity: 1; border-color: var(--chime-ink-soft); background: var(--chime-raised); color: var(--chime-ink); }
+
+/* comments: each quiet, its taking off small */
+#app .Comment .chime-pressable { min-height: 28px; padding: 2px 12px; align-self: flex-start; font-size: calc(var(--chime-size-face) * 0.812); }
+#app .CommentText { min-height: 72px; }

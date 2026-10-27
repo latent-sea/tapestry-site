@@ -4,9 +4,9 @@
 // as well as a history; anything more (who, where, which event) is the
 // editor's, from the memory itself.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { clockOf, sayWhen } from "./when.js?v=328f3a22fb80";
-import { notice, problem } from "./parts.js?v=328f3a22fb80";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { clockOf, sayWhen } from "./when.js?v=eba5a4f179db";
+import { notice, problem } from "./parts.js?v=eba5a4f179db";
 
 export const WRITES_TODAY = "writes_about_today";
 export const ADDS_TODAY_PICTURE = "adds_a_picture_to_today";
@@ -42,6 +42,7 @@ export class Journal extends Controller {
 
   would(action) {
     if (action === SAVES_TODAY) {
+      if (!this.account.weave.read().writes) return Phrase.of("Keeping your own thread is part of the paid plan");
       if (this.busy.read()) return Phrase.of("Keeping it");
       if (!this.text.read().trim() && !this.added.read().length) return Phrase.of("Write something, or add a picture");
       if (this.into.read() && !this.added.read().length && !this.text.read().trim()) return Phrase.of("Write something, or add a picture");

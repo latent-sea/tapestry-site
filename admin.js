@@ -5,10 +5,10 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { heading, notice, problem } from "./parts.js?v=328f3a22fb80";
-import { CARD, DANGER, LINK } from "./look/look.js?v=328f3a22fb80";
-import { HOW_TO_INVITE } from "./people.js?v=328f3a22fb80";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { heading, notice, problem } from "./parts.js?v=eba5a4f179db";
+import { CARD, DANGER, LINK } from "./look/look.js?v=eba5a4f179db";
+import { HOW_TO_INVITE } from "./people.js?v=eba5a4f179db";
 
 export const ADMIN = "admin";
 
@@ -19,6 +19,7 @@ export const CANCELS_INVITE = "cancels_the_invitation";
 export const MAKES_ADMIN = "makes_them_an_admin";
 export const UNMAKES_ADMIN = "makes_them_not_an_admin";
 export const LOOKS_AGAIN = "looks_again";
+export const SETS_PLAN = "sets_their_plan";
 
 export const WORDS = {
   [ASKS_TO_REMOVE_MEMBER]: ["Remove from Tapestry"],
@@ -28,6 +29,7 @@ export const WORDS = {
   [MAKES_ADMIN]: ["Make an admin"],
   [UNMAKES_ADMIN]: ["Not an admin"],
   [LOOKS_AGAIN]: ["Look again"],
+  [SETS_PLAN]: ["Change their plan"],
 };
 
 const when = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "");
@@ -64,6 +66,7 @@ export class Admin extends Controller {
     if (action === MAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, true), "They are an admin now.");
     if (action === UNMAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, false), "They are not an admin now.");
     if (action === LOOKS_AGAIN) this.open();
+    if (action === SETS_PLAN) this.change(() => this.loom.adminSetPlan(payload.id, payload.plan), payload.plan === "paid" ? "On the paid plan: they keep a thread of their own." : "On the free plan: they see and comment.");
     return null;
   }
 
@@ -119,6 +122,12 @@ export function describeAdmin(ui, admin) {
         ui.text(held.map((m) => (m?.admin ? Phrase.of("Admin") : "")), "Quiet").hidesEmpty(),
       ], "PersonRow"),
       ui.text(held.map((m) => m?.email ?? ""), "Meta").hidesEmpty(),
+      // their plan: paid keeps a thread of their own; free sees and comments (an admin keeps one whatever their plan)
+      ui.row([
+        ui.text(held.map((m) => Phrase.of(m?.plan === "free" ? "Free plan" : "Paid plan")), "Meta").grow(),
+        ui.pressable(SETS_PLAN, held.map((m) => ({ id: m?.id ?? "", plan: m?.plan === "free" ? "paid" : "free" })),
+          [ui.text(held.map((m) => Phrase.of(m?.plan === "free" ? "Put on the paid plan" : "Put on the free plan")), "Small")], LINK),
+      ], "PersonRow"),
       ui.text(held.map((m) => (m?.invited_by ? Phrase.with("Joined %s, invited by %s", [when(m.joined), m.invited_by])
         : Phrase.with("Joined %s", [when(m?.joined)]))), "Meta"),
       ui.when(held.map((m) => !m?.you), ui.column([

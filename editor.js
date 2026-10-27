@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=328f3a22fb80";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=328f3a22fb80";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=328f3a22fb80";
-import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=328f3a22fb80";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=328f3a22fb80";
-import { DANGER, LINK } from "./look/look.js?v=328f3a22fb80";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=eba5a4f179db";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=eba5a4f179db";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=eba5a4f179db";
+import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=eba5a4f179db";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=eba5a4f179db";
+import { DANGER, LINK } from "./look/look.js?v=eba5a4f179db";
 
 export const EDIT = "edit";
 
@@ -215,6 +215,8 @@ export class Editor extends Controller {
     if (OPENS.includes(action)) {
       const [kind, id, tied, tiedId] = String(payload?.parameter ?? "").split(":");
       const weave = this.weave();
+      // on the free plan: what others share, and comments on it - no thread of their own
+      if (!weave.writes) return Phrase.of("Keeping your own thread is part of the paid plan");
       if (action === ADDS_MEMORY_TO && !weave.isAt(weave.events.get(tiedId), weave.meId)) return Phrase.of("Only someone who was there adds to it");
       if (action === EDITS && id !== "new" && ({ memory: weave.memories, event: weave.events, period: weave.periods }[kind]?.get(id)?.owner !== weave.meId)) {
         return Phrase.of("Only its owner edits it");

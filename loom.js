@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=328f3a22fb80";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=328f3a22fb80";
-import { shrinkPicture } from "./backend/pictures.js?v=328f3a22fb80";
+import { Backend } from "./backend/backend.js?v=eba5a4f179db";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=eba5a4f179db";
+import { shrinkPicture } from "./backend/pictures.js?v=eba5a4f179db";
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -196,6 +196,14 @@ export class Loom {
   async adminCancelInvite(token) { return answer(await this.backend.callRpc("tapestry_admin_cancel_invite", { token })); }
 
   /** Someone made an admin, or not one. */
+  async adminSetPlan(member, plan) { return answer(await this.backend.callRpc("tapestry_admin_set_plan", { member, plan })); }
+
+  /** A comment on a memory the member sees: { ok, data: its id }. */
+  async comment(memoryId, words) { return answer(await this.backend.callRpc("tapestry_comment", { the_memory: memoryId, words })); }
+
+  /** A comment taken off, by its writer or the memory's owner. */
+  async deleteComment(id) { return answer(await this.backend.callRpc("tapestry_delete_comment", { comment: id })); }
+
   async adminSet(member, admin) { return answer(await this.backend.callRpc("tapestry_admin_set", { member, admin })); }
 
   /** How the server is: { result, commit, at } (platform/bin/deploy's status, open to anyone). */

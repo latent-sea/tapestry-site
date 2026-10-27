@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
-import { CARD } from "./look/look.js?v=328f3a22fb80";
-import { describeAsked } from "./asking.js?v=328f3a22fb80";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
+import { CARD } from "./look/look.js?v=eba5a4f179db";
+import { describeAsked } from "./asking.js?v=eba5a4f179db";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -27,6 +27,7 @@ export function sayNotice(notice) {
   }
   if (n.kind === "added") return Phrase.with("%s added “%s” to %s", [who, title, n.event_title || Phrase.of("an event you are at")]);
   if (n.kind === "shared") return Phrase.with("%s shared “%s” with you", [who, title]);
+  if (n.kind === "commented") return Phrase.with("%s commented on “%s”", [who, title]);
   if (n.kind === "linked") return Phrase.with("%s came by your invitation: your threads are linked", [who]);
   if (n.kind === "answered") {
     const about = n.about ?? "";

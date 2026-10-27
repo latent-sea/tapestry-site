@@ -7,8 +7,8 @@
 // Each bar in its kind's colour (weave.js, kindColour) - the page's kind
 // chips above it are its key, and its filter - and named in words. Bars are links: each says what it is to a reader who
 // can't see it, and its time and length as the pointer rests on it.
-import { lastDayOf } from "./when.js?v=328f3a22fb80";
-import { yearMarks, yearsOf } from "./woven.js?v=328f3a22fb80";
+import { lastDayOf } from "./when.js?v=eba5a4f179db";
+import { yearMarks, yearsOf } from "./woven.js?v=eba5a4f179db";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room
