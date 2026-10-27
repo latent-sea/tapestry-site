@@ -192,3 +192,7 @@
 #app .PeriodsChart .mark { cursor: pointer; outline: none; }
 #app .PeriodsChart .mark:hover rect[rx], #app .PeriodsChart .mark:focus-visible rect[rx] { filter: brightness(1.25); }
 #app .PeriodsChart .mark:focus-visible { outline: 2px solid var(--chime-accent); outline-offset: 2px; }
+
+/* a kind of period: its chip is its key - outlined while shown, faded while hidden - so its colour dot stays clear */
+#app .chime-pressable.KindChip { background: var(--chime-raised); color: var(--chime-ink); border: 1px solid var(--chime-lit); box-shadow: none; opacity: 0.45; }
+#app .chime-pressable.KindChip.chime-current { opacity: 1; border-color: var(--chime-ink-soft); background: var(--chime-raised); color: var(--chime-ink); }

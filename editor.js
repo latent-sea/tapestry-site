@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=2abad7652e6f";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=2abad7652e6f";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=2abad7652e6f";
-import { AUDIENCES, periodsOf, timeOf } from "./weave.js?v=2abad7652e6f";
-import { chooser, heading, notice, problem } from "./parts.js?v=2abad7652e6f";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=2abad7652e6f";
-import { DANGER, LINK } from "./look/look.js?v=2abad7652e6f";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
+import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=328f3a22fb80";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=328f3a22fb80";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=328f3a22fb80";
+import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=328f3a22fb80";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=328f3a22fb80";
+import { DANGER, LINK } from "./look/look.js?v=328f3a22fb80";
 
 export const EDIT = "edit";
 
@@ -52,6 +52,9 @@ export const TAGS = "tags_a_person";
 export const UNTAGS = "untags_a_person";
 export const ADDS_NEW_PERSON = "adds_and_tags_a_new_person";
 export const SETS_AUDIENCE = "sets_who_sees_it";
+export const SETS_PERIOD_TYPE = "sets_the_kind_of_period";
+export const ADDS_PERIOD_KIND = "adds_a_kind_of_period";
+export const SETS_NEW_KIND = "types_a_new_kind_of_period";
 export const LOOKS_FOR_SHARE = "looks_for_someone_to_let_in_or_keep_out";
 export const LETS_IN = "lets_them_in";
 export const KEEPS_OUT = "keeps_them_out";
@@ -100,6 +103,9 @@ export const WORDS = {
   [UNTAGS]: ["Untag them"],
   [ADDS_NEW_PERSON]: ["Add them as someone new"],
   [SETS_AUDIENCE]: ["Choose who sees it"],
+  [SETS_PERIOD_TYPE]: ["Choose what kind of time it was"],
+  [ADDS_PERIOD_KIND]: ["Add this kind"],
+  [SETS_NEW_KIND]: ["A kind of your own"],
   [LOOKS_FOR_SHARE]: ["Find someone or a circle"],
   [LETS_IN]: ["Let in"],
   [KEEPS_OUT]: ["Keep out"],
@@ -157,7 +163,9 @@ export class Editor extends Controller {
     this.captions = this.value({}); // a picture's id (kept) or key (chosen) -> its caption as typed
     this.links = this.value([]); // { url }
     this.linkText = this.value("");
+    this.newKind = this.value("");
     this.searches = { event: this.value(""), period: this.value(""), place: this.value(""), person: this.value(""), share: this.value(""), label: this.value("") };
+    this.periodType = this.value(""); // a period's kind, as the member names their kinds, or "" for none
     this.labels = this.value([]); // a memory's labels, its owner's own: school, music, holidays
     this.busy = this.value(false);
     this.fetching = this.value(false); // a long memory's words being fetched in full: nothing is saved until they are
@@ -291,6 +299,9 @@ export class Editor extends Controller {
     if (action === UNTAGS) this.tags.update((tags) => tags.filter((id) => id !== payload.id));
     if (action === ADDS_NEW_PERSON) this.addPerson(this.searches.person.read().trim());
     if (action === SETS_AUDIENCE) this.audience.setValue(payload.audience);
+    if (action === SETS_PERIOD_TYPE) this.periodType.setValue(payload.type);
+    if (action === SETS_NEW_KIND) this.newKind.setValue(payload.line);
+    if (action === ADDS_PERIOD_KIND) this.addKind(this.newKind.read());
     if (action === LETS_IN || action === KEEPS_OUT) {
       const [which, id] = String(payload.id).split(":");
       const share = { [which]: id, allowed: action === LETS_IN };
@@ -362,6 +373,8 @@ export class Editor extends Controller {
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
     this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
     this.labels.setValue(kind === "memory" && item ? [...(item.labels ?? [])] : []);
+    this.periodType.setValue(kind === "period" ? item?.kind ?? "" : "");
+    this.newKind.setValue("");
     this.searches.label.setValue("");
     this.audience.setValue(item?.audience ?? weave.defaultAudience(kind));
     this.shares.setValue(item ? item.shares.map((s) => (s.person ? { person: s.person, allowed: s.allowed } : { circle: s.circle, allowed: s.allowed })) : []);
@@ -440,6 +453,21 @@ export class Editor extends Controller {
     this.notice.setValue(Phrase.with("Made the period “%s”, over this memory's time for now: open it in Periods to say when it began and ended.", [title]));
   }
 
+  /** A kind of period of the member's own made, kept on them, and chosen for this one. */
+  async addKind(name) {
+    const named = String(name ?? "").trim().slice(0, 40);
+    if (!named) return;
+    const kinds = this.weave().periodKinds;
+    const made = withKind(kinds, named);
+    this.newKind.setValue("");
+    if (made !== kinds) {
+      const kept = await this.loom.saveDefaults({ period_kinds: made });
+      if (!kept.ok) { this.problem.setValue(kept.error); return; }
+      await this.account.load();
+    }
+    this.periodType.setValue(made.find((k) => k.name.toLowerCase() === named.toLowerCase())?.name ?? named);
+  }
+
   /** The draft as the platform's save takes it. */
   given() {
     const kind = this.kind.read();
@@ -454,6 +482,7 @@ export class Editor extends Controller {
       labels: this.labels.read(),
       // the first as period_id too, which a platform from before there could be more keeps
       period_id: this.periodIds.read()[0] ?? "" };
+    if (kind === "period") return { ...common, notes: this.text.read(), kind: this.periodType.read() };
     return { ...common, notes: this.text.read() };
   }
 
@@ -622,6 +651,15 @@ export function describeEditor(ui, editor, account) {
     ui.field(SETS_WHEN, "", { changes: SETS_WHEN, shows: editor.whenText, placeholder: Phrase.of("e.g. June 1998, about 1995, 2004 – now") }),
     ui.text(said("whenHint"), "Hint").wraps(),
     ui.text(whenSaid, "Hint").wraps().hidesEmpty(),
+    // a period's kind: its colour on the periods' chart, and what it is filtered by
+    ui.when(kind.map((k) => k === "period"), ui.column([
+      ui.text(Phrase.of("What kind of time"), "FieldName"),
+      ui.eachAcross(account.weave.map((w) => [...w.periodKinds.map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }]),
+        (held) => ui.pressable(SETS_PERIOD_TYPE, held.map((k) => ({ type: k?.type ?? "" })),
+          [ui.image(ui.bound(() => dotOf(account.weave.read().kindColour(held.read()?.type))), "SmallDot", ""), ui.text(held.map((k) => k?.said ?? ""), Themes.FACE)], "Segment")
+          .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
+      ui.field(ADDS_PERIOD_KIND, "", { changes: SETS_NEW_KIND, shows: editor.newKind, placeholder: Phrase.of("Or a kind of your own - Enter adds it") }),
+    ], "Part")),
     // an event is a grouping of memories: what is written goes in its memories, not on it
     ui.when(kind.map((k) => k !== "event"), ui.column([
       ui.text(said("text"), "FieldName"),

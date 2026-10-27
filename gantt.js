@@ -4,11 +4,11 @@
 // SVG's text out, tested by tests/test_gantt.mjs; the page puts it in place,
 // drawn to the width it has so its words stay their size (site.js).
 //
-// One thread's, so one colour - the member's own - and no legend: each bar
-// carries its name. Bars are links: each says what it is to a reader who
+// Each bar in its kind's colour (weave.js, kindColour) - the page's kind
+// chips above it are its key, and its filter - and named in words. Bars are links: each says what it is to a reader who
 // can't see it, and its time and length as the pointer rests on it.
-import { lastDayOf } from "./when.js?v=2abad7652e6f";
-import { yearMarks, yearsOf } from "./woven.js?v=2abad7652e6f";
+import { lastDayOf } from "./when.js?v=328f3a22fb80";
+import { yearMarks, yearsOf } from "./woven.js?v=328f3a22fb80";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room
@@ -28,16 +28,16 @@ function fitted(name, room, size) {
 }
 
 /**
- * The member's dated periods, drawn width wide, now being when it is now:
+ * The member's dated periods, but those of the kinds hidden ("" for none),
+ * drawn width wide, now being when it is now:
  * { svg, width, height, rows } - rows being the periods' keys, top to bottom
  * - or null when none has a time.
  */
-export function drawPeriods(weave, width = 700, now = new Date(), colours = {}) {
+export function drawPeriods(weave, width = 700, now = new Date(), colours = {}, hidden = []) {
   const ink = colours.ink ?? "#eef2fa";
   const soft = colours.soft ?? "#8e9ab8";
   const grid = colours.grid ?? "#34426a";
-  const colour = weave.colourOf(weave.meId);
-  const periods = weave.thread(weave.meId).filter((entry) => entry.kind === "period" && entry.when?.date)
+  const periods = weave.thread(weave.meId).filter((entry) => entry.kind === "period" && entry.when?.date && !hidden.includes(entry.periodKind ?? ""))
     .map((entry) => ({ entry, from: yearsOf(entry.when), going: !entry.until }))
     .map((p) => ({ ...p, to: p.going ? null : endOf(p.entry.until) }));
   if (!periods.length) return null;
@@ -62,6 +62,7 @@ export function drawPeriods(weave, width = 700, now = new Date(), colours = {}) 
   }
   periods.forEach((p, i) => {
     const top = TOP + i * ROW;
+    const colour = weave.kindColour(p.entry.periodKind);
     const x1 = x(p.from);
     const x2 = Math.max(x(p.to), x1 + 6);
     const said = `${p.entry.title} · ${p.entry.said}${p.entry.lasts ? ` · ${p.entry.lasts}` : ""}`;

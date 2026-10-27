@@ -10,13 +10,14 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=2abad7652e6f";
-import { heading, notice, problem } from "./parts.js?v=2abad7652e6f";
-import { AUDIENCES, CARD_PARTS, Weave } from "./weave.js?v=2abad7652e6f";
-import { SIGNS_OUT } from "./account.js?v=2abad7652e6f";
-import { copyOf } from "./keep.js?v=2abad7652e6f";
-import { parseWhen, sayWhen } from "./when.js?v=2abad7652e6f";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=2abad7652e6f";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=328f3a22fb80";
+import { heading, notice, problem } from "./parts.js?v=328f3a22fb80";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=328f3a22fb80";
+import { dotOf } from "./parts.js?v=328f3a22fb80";
+import { SIGNS_OUT } from "./account.js?v=328f3a22fb80";
+import { copyOf } from "./keep.js?v=328f3a22fb80";
+import { parseWhen, sayWhen } from "./when.js?v=328f3a22fb80";
+import { LINK, TEXT_SIZES } from "./look/look.js?v=328f3a22fb80";
 
 export const YOU = "you";
 
@@ -28,6 +29,9 @@ export const KEEPS_COPY = "keeps_a_copy";
 export const SETS_BIRTHDAY = "sets_my_birthday";
 export const SHOWS_ON_CARDS = "shows_or_hides_on_cards";
 export const SETS_EMAILS = "sets_whether_emailed";
+export const TYPES_YOUR_KIND = "types_a_kind_of_period_of_your_own";
+export const ADDS_YOUR_KIND = "adds_a_kind_of_period_of_your_own";
+export const TAKES_OFF_KIND = "takes_off_a_kind_of_period";
 export const OPENS_ADMIN = "opens_the_admin_area";
 export const OPENS_IMPORT = "opens_bringing_in_a_list";
 export const SAVES_BIRTHDAY = "saves_my_birthday";
@@ -42,6 +46,9 @@ export const WORDS = {
   [SAVES_BIRTHDAY]: ["Save my birthday"],
   [SHOWS_ON_CARDS]: ["Show it on cards"],
   [SETS_EMAILS]: ["Choose whether you are emailed"],
+  [TYPES_YOUR_KIND]: ["A kind of period"],
+  [ADDS_YOUR_KIND]: ["Add it"],
+  [TAKES_OFF_KIND]: ["Take off this kind"],
   [OPENS_ADMIN]: ["Admin"],
   [OPENS_IMPORT]: ["Bring in a list of memories"],
 };
@@ -76,6 +83,7 @@ export class You extends Controller {
     };
     this.name = this.value("");
     this.birthday = this.value("");
+    this.newKind = this.value("");
     this.busy = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
@@ -111,6 +119,15 @@ export class You extends Controller {
       this.sized(payload.size);
     }
     if (action === SETS_DEFAULT) this.change(() => this.loom.saveDefaults({ [`${payload.kind}_audience`]: payload.audience }), "Saved");
+    if (action === TYPES_YOUR_KIND) this.newKind.setValue(payload.line);
+    // a kind of period made or taken off: kept on them; a kind taken off stays on its periods, grey, until changed there
+    if (action === ADDS_YOUR_KIND) {
+      const kinds = this.account.weave.read().periodKinds;
+      const made = withKind(kinds, this.newKind.read());
+      this.newKind.setValue("");
+      if (made !== kinds) this.change(() => this.loom.saveDefaults({ period_kinds: made }), "Added");
+    }
+    if (action === TAKES_OFF_KIND) this.change(() => this.loom.saveDefaults({ period_kinds: withoutKind(this.account.weave.read().periodKinds, payload.name) }), "Taken off");
     if (action === SETS_EMAILS) this.change(() => this.loom.saveDefaults({ emails: payload.on }), payload.on ? "You'll be emailed what waits for you" : "No more emails");
     return null;
   }
@@ -193,6 +210,12 @@ export function describeYou(ui, you, account) {
     problem(ui, you.problem),
     notice(ui, you.notice),
     // emails (backend.sql, "emailed") are put away until the platform's mail is set up: no jobs.json runs tapestry_mail
+    heading(ui, "Kinds of period"),
+    ui.text(Phrase.of("What kinds of time your periods are, each its colour on the periods' chart. Make your own; taking one off leaves it on its periods, grey."), "Hint").wraps(),
+    ui.eachAcross(account.weave.map((w) => w.periodKinds), (held) => ui.pressable(TAKES_OFF_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
+      ui.image(ui.bound(() => dotOf(account.weave.read().kindColour(held.read()?.name))), "SmallDot", ""),
+      ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (k) => k.name, "Chips"),
+    ui.field(ADDS_YOUR_KIND, "", { changes: TYPES_YOUR_KIND, shows: you.newKind, placeholder: Phrase.of("A new kind - Enter adds it") }),
     heading(ui, "What cards show"),
     ui.text(Phrase.of("On your thread and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
     ui.row(CARD_PARTS.map(([part, said]) => ui.pressable(SHOWS_ON_CARDS, { part }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")

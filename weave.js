@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=2abad7652e6f";
-import { linksOf } from "./links.js?v=2abad7652e6f";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=328f3a22fb80";
+import { linksOf } from "./links.js?v=328f3a22fb80";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -16,7 +16,7 @@ const SPAN = { starts: null, starts_precision: null, starts_about: false, starts
 const NOTHING = {
   memories: { title: "", body: "", links: [], labels: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
   events: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
-  periods: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
+  periods: { title: "", notes: "", kind: null, ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
 };
 
 /** What was loaded, with each memory, event and period whole: what a light load left out put back as nothing. */
@@ -66,6 +66,32 @@ export function listed(names) {
 export const THREAD_COLOURS = Object.freeze(["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"]);
 export const OTHER_COLOUR = "#8e9ab8";
 
+/**
+ * The kinds of period a member starts with, each with its hue on the periods'
+ * chart: an index into the threads' validated colours, given once and kept,
+ * so a kind keeps its colour always (-1: the quiet grey). A member makes and
+ * takes off their own (tapestry_members.period_kinds).
+ */
+export const STARTING_KINDS = Object.freeze([{ name: "Location", hue: 0 }, { name: "Relationship", hue: 1 }, { name: "Education", hue: 2 },
+  { name: "Project", hue: 3 }, { name: "Work", hue: 4 }, { name: "Other", hue: -1 }]);
+
+/** A kind's colour among these kinds: its hue's, or the quiet grey for none, or one taken off. */
+export function kindColour(kinds, name) {
+  const hue = kinds.find((k) => k.name.toLowerCase() === String(name ?? "").toLowerCase())?.hue ?? -1;
+  return hue >= 0 ? THREAD_COLOURS[hue] ?? OTHER_COLOUR : OTHER_COLOUR;
+}
+
+/** These kinds and a new one, given the first hue none of them has (grey once all eight are given); the same if it is there already. */
+export function withKind(kinds, name) {
+  const named = String(name ?? "").trim().slice(0, 40);
+  if (!named || kinds.some((k) => k.name.toLowerCase() === named.toLowerCase())) return kinds;
+  const free = THREAD_COLOURS.findIndex((_, hue) => !kinds.some((k) => k.hue === hue));
+  return [...kinds, { name: named, hue: free }];
+}
+
+/** These kinds without one: its hue free for the next made. */
+export function withoutKind(kinds, name) { return kinds.filter((k) => k.name.toLowerCase() !== String(name ?? "").toLowerCase()); }
+
 const two = (n) => String(n).padStart(2, "0");
 
 /** The parts of a card a member may choose to see, as You names them, and that each is shown unless said not. */
@@ -109,6 +135,12 @@ export class Weave {
 
   /** What others did that touches the member, newest first (backend.sql, "notices"). */
   get notices() { return this.data.notices; }
+
+  /** The member's kinds of period: their own, or those they start with. */
+  get periodKinds() { return Array.isArray(this.data.me?.period_kinds) ? this.data.me.period_kinds : STARTING_KINDS; }
+
+  /** A period kind's colour, among the member's kinds. */
+  kindColour(name) { return kindColour(this.periodKinds, name); }
 
   /** The labels on the member's own memories, each once, in order: [{ label, count }]. */
   get labels() {
@@ -259,7 +291,7 @@ export class Weave {
         memoryCount: memories.length, pictures: memories.flatMap((m) => m.pictures).slice(0, 4),
         inside: sortEntries(memories.map((m) => this.entry("memory", m))) };
     }
-    return { ...base, when, until, said, title: item.title, text: item.notes };
+    return { ...base, when, until, said, title: item.title, text: item.notes, periodKind: kind === "period" ? item.kind ?? null : null };
   }
 
   /** Everything visible, as entries. */
