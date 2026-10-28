@@ -5,10 +5,10 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { heading, notice, problem } from "./parts.js?v=eba5a4f179db";
-import { CARD, DANGER, LINK } from "./look/look.js?v=eba5a4f179db";
-import { HOW_TO_INVITE } from "./people.js?v=eba5a4f179db";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { heading, notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { CARD, DANGER, LINK } from "./look/look.js?v=a72a3c00d32b";
+import { HOW_TO_INVITE } from "./people.js?v=a72a3c00d32b";
 
 export const ADMIN = "admin";
 
@@ -20,6 +20,8 @@ export const MAKES_ADMIN = "makes_them_an_admin";
 export const UNMAKES_ADMIN = "makes_them_not_an_admin";
 export const LOOKS_AGAIN = "looks_again";
 export const SETS_PLAN = "sets_their_plan";
+export const REMOVES_REPORTED = "removes_what_was_reported";
+export const LETS_REPORTED_BE = "lets_what_was_reported_be";
 
 export const WORDS = {
   [ASKS_TO_REMOVE_MEMBER]: ["Remove from Tapestry"],
@@ -30,6 +32,8 @@ export const WORDS = {
   [UNMAKES_ADMIN]: ["Not an admin"],
   [LOOKS_AGAIN]: ["Look again"],
   [SETS_PLAN]: ["Change their plan"],
+  [REMOVES_REPORTED]: ["Remove it"],
+  [LETS_REPORTED_BE]: ["Let it be"],
 };
 
 const when = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "");
@@ -39,7 +43,7 @@ export class Admin extends Controller {
     super(chimes);
     this.loom = loom;
     this.account = account;
-    this.view = this.value({ members: [], invitations: [] });
+    this.view = this.value({ members: [], invitations: [], reports: [] });
     this.server = this.value(null);
     this.removing = this.value(""); // the member being asked about before they are removed
     this.busy = this.value(false);
@@ -66,6 +70,8 @@ export class Admin extends Controller {
     if (action === MAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, true), "They are an admin now.");
     if (action === UNMAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, false), "They are not an admin now.");
     if (action === LOOKS_AGAIN) this.open();
+    if (action === REMOVES_REPORTED) this.change(() => this.loom.adminSettleReport(payload.id, true), "Removed, for breaking the terms.");
+    if (action === LETS_REPORTED_BE) this.change(() => this.loom.adminSettleReport(payload.id, false), "Let be: the report is gone.");
     if (action === SETS_PLAN) this.change(() => this.loom.adminSetPlan(payload.id, payload.plan), payload.plan === "paid" ? "On the paid plan: they keep a thread of their own." : "On the free plan: they see and comment.");
     return null;
   }
@@ -105,6 +111,7 @@ export function sayServer(server) {
 export function describeAdmin(ui, admin) {
   const members = admin.view.map((v) => v.members ?? []);
   const invitations = admin.view.map((v) => v.invitations ?? []);
+  const reports = admin.view.map((v) => v.reports ?? []);
   return ui.screen(ADMIN, [
     ui.text(Phrase.of("Admin"), "Title"),
     ui.text(Phrase.of("Running Tapestry. You see who is on it and the invitations waiting - never anyone's memories but as they share them with you."), "Hint").wraps(),
@@ -115,6 +122,19 @@ export function describeAdmin(ui, admin) {
       ui.text(admin.server.map((s) => sayServer(s)), "Words").wraps().grow(),
       ui.button(LOOKS_AGAIN, { style: LINK }),
     ], "AddRow"),
+    // what members reported as breaking the terms (terms.html): each removed, or let be
+    heading(ui, "Reported"),
+    ui.when(reports.map((l) => l.length === 0), ui.text(Phrase.of("Nothing reported."), "Quiet")),
+    ui.each(reports, (held) => ui.surface(CARD, [ui.column([
+      ui.text(held.map((r) => Phrase.with(r?.kind === "comment" ? "%s reported a comment by %s" : "%s reported a memory of %s's", [r?.reporter ?? "", r?.owner ?? ""])), "Words").wraps(),
+      ui.text(held.map((r) => r?.words ?? ""), "Words Body").wraps().hidesEmpty(),
+      ui.text(held.map((r) => (r?.reason ? Phrase.with("Why: %s", [r.reason]) : "")), "Meta").wraps().hidesEmpty(),
+      ui.text(held.map((r) => when(r?.created_at)), "Meta"),
+      ui.row([
+        ui.pressable(REMOVES_REPORTED, held.map((r) => ({ id: r?.id ?? "" })), [ui.text(ui.words(REMOVES_REPORTED), "Small")], DANGER),
+        ui.pressable(LETS_REPORTED_BE, held.map((r) => ({ id: r?.id ?? "" })), [ui.text(ui.words(LETS_REPORTED_BE), "Small")], LINK),
+      ], "Actions"),
+    ])]), (r) => r.id, "List"),
     heading(ui, "Who is on Tapestry"),
     ui.each(members, (held) => ui.surface(CARD, [ui.column([
       ui.row([

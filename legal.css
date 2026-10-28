@@ -1,0 +1,11 @@
+/* Tapestry's privacy policy and terms: plain pages, readable without the app, in the factory's colours. */
+:root { color-scheme: dark; }
+html { background: linear-gradient(180deg, #121829, #1c1540) fixed #121829; }
+body { margin: 0; color: #eef2fa; font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 42rem; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 2rem; margin: 0 0 4px; }
+h2 { font-size: 1.2rem; margin: 32px 0 8px; }
+p, li { color: #d8deec; }
+.when { color: #8e9ab8; margin: 0 0 24px; }
+a { color: #19c3b3; }
+.back { display: inline-block; margin-bottom: 24px; }

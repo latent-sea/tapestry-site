@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { notice, problem } from "./parts.js?v=eba5a4f179db";
-import { ACTION, LINK } from "./look/look.js?v=eba5a4f179db";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { ACTION, LINK } from "./look/look.js?v=a72a3c00d32b";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
@@ -24,6 +24,10 @@ export const MAKES_EVENT = "makes_it_an_event";
 export const NAMES_EVENT = "names_the_event_it_becomes";
 export const MAKES_NAMED_EVENT = "makes_the_named_event";
 export const KEEPS_AS_MEMORY = "keeps_it_a_memory";
+export const MAKES_PERIOD = "makes_it_a_period";
+export const NAMES_PERIOD = "names_the_period_it_becomes";
+export const CHOOSES_PERIOD_KIND = "chooses_the_kind_of_period_it_becomes";
+export const MAKES_NAMED_PERIOD = "makes_the_named_period";
 export const ASKS_SHARE_MEMORY = "says_i_was_there_too";
 export const LOOKS_FOR_TWIN = "looks_for_the_same_one";
 export const PICKS_TWIN = "picks_the_same_one";
@@ -40,6 +44,10 @@ export const WORDS = {
   [NAMES_EVENT]: ["The event's name"],
   [MAKES_NAMED_EVENT]: ["Make the event"],
   [KEEPS_AS_MEMORY]: ["Not now"],
+  [MAKES_PERIOD]: ["Make it a period"],
+  [NAMES_PERIOD]: ["The period's name"],
+  [CHOOSES_PERIOD_KIND]: ["Choose what kind of time it was"],
+  [MAKES_NAMED_PERIOD]: ["Make the period"],
   [ASKS_SHARE_MEMORY]: ["I was there too"],
   [LOOKS_FOR_TWIN]: ["Find the same one"],
   [PICKS_TWIN]: ["The same as this"],
@@ -47,7 +55,8 @@ export const WORDS = {
   [KEEPS_APART]: ["No, keep both"],
 };
 
-const ADDRESS = { event: "event", place: "place" };
+const ADDRESS = { event: "event", period: "period", place: "place" };
+const LISTS = { event: "events", period: "periods", place: "places" };
 
 export class Asking extends Controller {
   constructor(chimes, loom, account) {
@@ -61,6 +70,9 @@ export class Asking extends Controller {
     this.twin = this.value(null); // { kind, from, into }: a merge about to be asked
     this.naming = this.value(""); // the memory being made an event, while its name is asked
     this.eventName = this.value("");
+    this.periodNaming = this.value(""); // the memory being made a period, while its name and kind are asked
+    this.periodName = this.value("");
+    this.periodKind = this.value("");
   }
 
   answers() { return Object.keys(WORDS); }
@@ -75,6 +87,12 @@ export class Asking extends Controller {
     }
     if (action === ASKS_SHARE_MEMORY && !this.account.weave.read().mayShareMemory(payload?.id)) return Phrase.of("Yours, or you are at it, or have asked");
     if (action === MAKES_NAMED_EVENT && !this.eventName.read().trim()) return Phrase.of("Give the event a name");
+    if (action === MAKES_PERIOD) {
+      const memory = this.account.weave.read().memories.get(payload?.id);
+      if (!memory || memory.owner !== this.account.weave.read().meId) return Phrase.of("Only your own memory");
+      if (!memory.starts) return Phrase.of("First say when it was: a period has a time");
+    }
+    if (action === MAKES_NAMED_PERIOD && !this.periodName.read().trim()) return Phrase.of("Give the period a name");
     return null;
   }
 
@@ -85,11 +103,27 @@ export class Asking extends Controller {
     if (action === SAYS_NO || action === TAKES_BACK) this.ask(() => this.loom.answer(payload.id, false), "");
     // its name asked first: the memory's title if it has one, never its words
     if (action === MAKES_EVENT) {
+      this.periodNaming.setValue("");
       this.naming.setValue(payload.id);
       this.eventName.setValue(this.account.weave.read().memories.get(payload.id)?.title ?? "");
     }
     if (action === NAMES_EVENT) this.eventName.setValue(payload.line);
-    if (action === KEEPS_AS_MEMORY) this.naming.setValue("");
+    if (action === KEEPS_AS_MEMORY) { this.naming.setValue(""); this.periodNaming.setValue(""); }
+    // a period's name and kind asked first: the memory's title, or its first line, offered
+    if (action === MAKES_PERIOD) {
+      const memory = this.account.weave.read().memories.get(payload.id);
+      this.naming.setValue("");
+      this.periodNaming.setValue(payload.id);
+      this.periodName.setValue(memory?.title || (memory?.body ?? "").trim().split("\n")[0].slice(0, 200));
+      this.periodKind.setValue("");
+    }
+    if (action === NAMES_PERIOD) this.periodName.setValue(payload.line);
+    if (action === CHOOSES_PERIOD_KIND) this.periodKind.setValue(payload.type);
+    if (action === MAKES_NAMED_PERIOD) {
+      const memoryId = this.periodNaming.read();
+      this.periodNaming.setValue("");
+      this.makePeriod(memoryId, this.periodName.read().trim(), this.periodKind.read());
+    }
     if (action === MAKES_NAMED_EVENT) {
       const memoryId = this.naming.read();
       this.naming.setValue("");
@@ -110,15 +144,25 @@ export class Asking extends Controller {
     if (made?.ok && !this.disposed) location.hash = `#event/${made.data}`;
   }
 
+  /** One of the member's memories made a period, which opens: the memory gone into it, or kept during it. */
+  async makePeriod(memoryId, named, kind) {
+    let made = null;
+    await this.ask(async () => { made = await this.loom.periodOfMemory(memoryId, named, kind); return made; }, "");
+    if (!made?.ok || this.disposed) return;
+    this.notice.setValue(made.data.kept ? "It is a period now. The memory stays too, during it: a period can't hold its pictures, comments or links." : "It is a period now.");
+    location.hash = `#period/${made.data.period}`;
+  }
+
   /** The merge picked: one's own two at once, opening the one kept; into someone else's, asked. */
   async merge() {
     const { kind, from, into } = this.twin.read() ?? {};
     if (!kind) return;
     const weave = this.account.weave.read();
-    const theirs = (kind === "event" ? weave.events : weave.places).get(into)?.owner !== weave.meId;
+    const theirs = weave[LISTS[kind]].get(into)?.owner !== weave.meId;
     this.twin.setValue(null);
     this.twinSearch.setValue("");
-    await this.ask(() => (kind === "event" ? this.loom.askMergeEvent(from, into) : this.loom.askMergePlace(from, into)),
+    await this.ask(() => ({ event: () => this.loom.askMergeEvent(from, into), period: () => this.loom.askMergePeriod(from, into),
+      place: () => this.loom.askMergePlace(from, into) })[kind](),
       theirs ? "Asked. They are one when its owner says yes." : "Merged.");
     if (!theirs && !this.problem.read()) location.hash = `#${ADDRESS[kind]}/${into}`;
   }
@@ -146,10 +190,11 @@ export function sayRequest(request) {
     if (r.kind === "memory") return Phrase.with("%s was there too, at your “%s”, and asks to be at it: it becomes an event, and they add their own memories of it.", [r.asker ?? "", r.name ?? ""]);
     if (r.kind === "merge_event") return Phrase.with("%s says their event “%s” is your “%s”, and asks to merge it into yours: everyone at theirs who is among your people, and their memories, come to yours.", [r.asker ?? "", r.name ?? "", r.into_name ?? ""]);
     if (r.kind === "merge_place") return Phrase.with("%s says their place “%s” is your “%s”, and asks to merge it into yours: everything at theirs comes to yours.", [r.asker ?? "", r.name ?? "", r.into_name ?? ""]);
+    if (r.kind === "merge_period") return Phrase.with("%s says their period “%s” is your “%s”, and asks to merge it into yours: they, and everyone in theirs who is among your people, are in yours, and their memories of it with them.", [r.asker ?? "", r.name ?? "", r.into_name ?? ""]);
     return Phrase.with("%s says they were at %s, and asks to be on it.", [r.asker ?? "", r.event_title ?? ""]);
   }
   if (r.kind === "memory") return Phrase.with("You asked %s to be at their “%s”.", [r.decider ?? "", r.name ?? ""]);
-  if (r.kind === "merge_event" || r.kind === "merge_place") return Phrase.with("You asked %s to merge your “%s” into their “%s”.", [r.decider ?? "", r.name ?? "", r.into_name ?? ""]);
+  if (r.kind === "merge_event" || r.kind === "merge_place" || r.kind === "merge_period") return Phrase.with("You asked %s to merge your “%s” into their “%s”.", [r.decider ?? "", r.name ?? "", r.into_name ?? ""]);
   if (r.kind === "link") return Phrase.with("You asked %s whether they are your “%s”.", [r.decider ?? "", r.name ?? ""]);
   if (r.kind === "claim") return Phrase.with("You asked %s to link their “%s” to you.", [r.decider ?? "", r.name ?? ""]);
   return Phrase.with("You asked %s to put you at %s.", [r.decider ?? "", r.event_title ?? ""]);
@@ -230,24 +275,29 @@ export function describeMerge(ui, asking, account, kind, id) {
   const said = ui.bound(() => {
     const twin = picked.read();
     if (!twin) return "";
-    const list = kind === "event" ? weave().events : weave().places;
+    const list = weave()[LISTS[kind]];
     const from = list.get(twin.from);
     const into = list.get(twin.into);
-    const nameOf = (item) => (kind === "event" ? item?.title : item?.name) ?? "";
+    const nameOf = (item) => (kind === "place" ? item?.name : item?.title) ?? "";
     if (into?.owner === weave().meId) {
-      return kind === "event"
-        ? Phrase.with("Merge “%s” into “%s”? Everyone at it and every memory of it go to “%s”, and “%s” is gone.", [nameOf(from), nameOf(into), nameOf(into), nameOf(from)])
-        : Phrase.with("Merge “%s” into “%s”? Everything at it is at “%s”, and “%s” is gone.", [nameOf(from), nameOf(into), nameOf(into), nameOf(from)]);
+      return {
+        event: Phrase.with("Merge “%s” into “%s”? Everyone at it and every memory of it go to “%s”, and “%s” is gone.", [nameOf(from), nameOf(into), nameOf(into), nameOf(from)]),
+        period: Phrase.with("Merge “%s” into “%s”? Everyone in it and everything during it go to “%s”, and “%s” is gone.", [nameOf(from), nameOf(into), nameOf(into), nameOf(from)]),
+        place: Phrase.with("Merge “%s” into “%s”? Everything at it is at “%s”, and “%s” is gone.", [nameOf(from), nameOf(into), nameOf(into), nameOf(from)]),
+      }[kind];
     }
     const owner = weave().nameOf(into?.owner);
-    return kind === "event"
-      ? Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, everyone at yours who is among their people, and their memories, go to theirs, and yours is gone.", [owner, nameOf(from), nameOf(into)])
-      : Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, everything at yours is at theirs, and yours is gone.", [owner, nameOf(from), nameOf(into)]);
+    return {
+      event: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, everyone at yours who is among their people, and their memories, go to theirs, and yours is gone.", [owner, nameOf(from), nameOf(into)]),
+      period: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, you are in theirs - it is on your thread - with everyone in yours who is among their people, and your memories and events during yours are during theirs. Yours is gone.", [owner, nameOf(from), nameOf(into)]),
+      place: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, everything at yours is at theirs, and yours is gone.", [owner, nameOf(from), nameOf(into)]),
+    }[kind];
   });
   return ui.column([
-    ui.text(Phrase.of(kind === "event" ? "Set up twice?" : "The same place twice?"), "PartHeading"),
-    ui.text(Phrase.of(kind === "event" ? "If this event is one someone else set up too, or one you have twice, find it and merge them."
-      : "If this place is one you or someone else has set up again, find it and merge them."), "Hint").wraps(),
+    ui.text(Phrase.of(kind === "place" ? "The same place twice?" : "Set up twice?"), "PartHeading"),
+    ui.text(Phrase.of({ event: "If this event is one someone else set up too, or one you have twice, find it and merge them.",
+      period: "If someone else has this time of your life too - a home you shared, a job together - or you have it twice, find theirs and merge them: one period, on both your threads.",
+      place: "If this place is one you or someone else has set up again, find it and merge them." }[kind]), "Hint").wraps(),
     ui.when(picked, ui.column([
       ui.text(said, "Warn").wraps(),
       ui.row([
@@ -263,6 +313,30 @@ export function describeMerge(ui, asking, account, kind, id) {
 }
 
 /** Making one of the member's memories an event: its name asked, as the event is a grouping of everyone's memories, not this one's words. */
+/** A memory being made a period: its name, its kind, and what becomes of the memory, said first. */
+export function describeNamingPeriod(ui, asking, account, memoryId) {
+  const memory = ui.bound(() => account.weave.read().memories.get(memoryId.read()) ?? null);
+  // what a period can't hold keeps the memory too
+  const stays = ui.bound(() => {
+    const m = memory.read();
+    return !!m && (!!m.event_id || (m.links ?? []).length > 0 || (m.comments ?? []).length > 0 || (m.pictures ?? []).length > 0 || (m.body ?? "").length > 5000);
+  });
+  return ui.when(ui.bound(() => !!asking.periodNaming.read() && asking.periodNaming.read() === memoryId.read()), ui.column([
+    ui.text(ui.bound(() => Phrase.of(stays.read()
+      ? "It becomes a period over its time, with its place, its people and who sees it. A period can't hold its pictures, comments or links, so the memory stays too, during the period."
+      : "It becomes a period over its time, with its place, its people, its words and who sees it - and is no longer a memory.")), "Hint").wraps(),
+    ui.field(MAKES_NAMED_PERIOD, "", { changes: NAMES_PERIOD, shows: asking.periodName, label: Phrase.of("The period's name"), placeholder: Phrase.of("e.g. Living in Leeds") }),
+    ui.text(Phrase.of("What kind of time"), "FieldName"),
+    ui.eachAcross(account.weave.map((w) => [...w.periodKinds.map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }]),
+      (held) => ui.pressable(CHOOSES_PERIOD_KIND, held.map((k) => ({ type: k?.type ?? "" })), [ui.text(held.map((k) => k?.said ?? ""), "Small")], "Segment")
+        .currentWhile(ui.bound(() => asking.periodKind.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
+    ui.row([
+      ui.button(MAKES_NAMED_PERIOD),
+      ui.button(KEEPS_AS_MEMORY, { style: LINK }),
+    ], "Actions"),
+  ], "Part"));
+}
+
 export function describeNamingEvent(ui, asking, memoryId) {
   return ui.when(ui.bound(() => !!asking.naming.read() && asking.naming.read() === memoryId.read()), ui.column([
     ui.text(Phrase.of("What was it? Give the event a short name - a wedding, a holiday, a night out. Everyone at it hangs their own memories on it."), "Hint").wraps(),

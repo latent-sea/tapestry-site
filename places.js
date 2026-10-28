@@ -2,11 +2,17 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { heading, notice, problem } from "./parts.js?v=eba5a4f179db";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=eba5a4f179db";
-import { CARD, DANGER, LINK } from "./look/look.js?v=eba5a4f179db";
-import { describeMerge } from "./asking.js?v=eba5a4f179db";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { heading, notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=a72a3c00d32b";
+import { CARD, DANGER, LINK } from "./look/look.js?v=a72a3c00d32b";
+import { describeMerge } from "./asking.js?v=a72a3c00d32b";
+import { addressOf } from "./weave.js?v=a72a3c00d32b";
+
+// a place's address, part by part, each as a letter has it: every one may be left empty
+const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],
+  ["town", "Town or city", "Leeds", "address-level2"], ["region", "County, state or region", "West Yorkshire", "address-level1"],
+  ["postcode", "Postcode", "LS1 1AA", "postal-code"], ["country", "Country", "England", "country-name"]];
 
 export const PLACES = "places";
 export const PLACE = "place";
@@ -16,6 +22,7 @@ export const ADDS_PLACE = "adds_a_place";
 export const OPENS_PLACE = "opens_a_place";
 export const SETS_PLACE_NAME = "sets_the_places_name";
 export const SETS_PLACE_NOTES = "sets_the_places_notes";
+export const SETS_ADDRESS = "sets_a_part_of_the_places_address";
 export const SAVES_PLACE = "saves_the_place";
 export const REMOVES_PLACE = "removes_the_place";
 export const ASKS_TO_REMOVE_PLACE = "asks_before_removing_the_place";
@@ -27,6 +34,7 @@ export const WORDS = {
   [OPENS_PLACE]: ["Open"],
   [SETS_PLACE_NAME]: ["Its name"],
   [SETS_PLACE_NOTES]: ["Notes"],
+  [SETS_ADDRESS]: ["A part of its address"],
   [SAVES_PLACE]: ["Save the place"],
   [REMOVES_PLACE]: ["Yes, remove it"],
   [ASKS_TO_REMOVE_PLACE]: ["Remove the place"],
@@ -41,6 +49,7 @@ export class Places extends Controller {
     this.newName = this.value("");
     this.name = this.value("");
     this.notes = this.value("");
+    this.address = this.value({}); // its address as typed, part by part
     this.asking = this.value(false);
     this.busy = this.value(false);
     this.problem = this.value("");
@@ -54,6 +63,7 @@ export class Places extends Controller {
     this.newName.setValue("");
     this.name.setValue("");
     this.notes.setValue("");
+    this.address.setValue({});
     this.asking.setValue(false);
     this.problem.setValue("");
     this.notice.setValue("");
@@ -72,8 +82,9 @@ export class Places extends Controller {
     if (action === SETS_NEW_PLACE) this.newName.setValue(payload.line);
     if (action === SETS_PLACE_NAME) this.name.setValue(payload.line);
     if (action === SETS_PLACE_NOTES) this.notes.setValue(payload.line);
+    if (action === SETS_ADDRESS) this.address.update((typed) => ({ ...typed, [payload.part]: payload.line }));
     if (action === ADDS_PLACE) this.change(() => this.loom.addPlace(this.newName.read()), () => { this.newName.setValue(""); return "Added"; });
-    if (action === SAVES_PLACE) this.change(() => this.loom.savePlace(payload.id, { name: this.name.read(), notes: this.notes.read() }), () => "Saved");
+    if (action === SAVES_PLACE) this.change(() => this.loom.savePlace(payload.id, { name: this.name.read(), notes: this.notes.read(), ...this.address.read() }), () => "Saved");
     if (action === ASKS_TO_REMOVE_PLACE) this.asking.setValue(true);
     if (action === KEEPS_PLACE || action === REMOVES_PLACE) this.asking.setValue(false);
     if (action === REMOVES_PLACE) this.change(() => this.loom.deletePlace(payload.id), () => "Place removed; what was at it stays");
@@ -85,6 +96,7 @@ export class Places extends Controller {
     const place = this.account.weave.read().places.get(placeId);
     this.name.setValue(place?.name ?? "");
     this.notes.setValue(place?.notes ?? "");
+    this.address.setValue(Object.fromEntries(ADDRESS.map(([part]) => [part, place?.[part] ?? ""])));
     this.asking.setValue(false);
   }
 
@@ -112,7 +124,10 @@ export function describePlaces(ui, places, account) {
     notice(ui, places.notice),
     ui.when(list.map((l) => l.length === 0), ui.text(Phrase.of("No places yet."), "Quiet")),
     ui.each(list, (held) => ui.pressable(OPENS_PLACE, held.map((p) => ({ parameter: p?.id ?? "" })), [ui.row([
-      ui.text(held.map((p) => p?.name ?? ""), "PersonName").grow(),
+      ui.column([
+        ui.text(held.map((p) => p?.name ?? ""), "PersonName"),
+        ui.text(held.map((p) => [p?.town, p?.country].filter(Boolean).join(", ")), "Quiet").hidesEmpty(),
+      ]).grow(),
       ui.text(ui.bound(() => Phrase.counted("%d thing", "%d things", account.weave.read().atPlace(held.read()?.id).length)), "Quiet"),
     ], "PersonRow")], `${CARD} ListItem`).goesTo(PLACE), (p) => p.id, "List"),
   ]);
@@ -126,6 +141,7 @@ export function describePlace(ui, places, account, timeline, asking) {
   return ui.screen(PLACE, [
     ui.when(place, ui.column([
       ui.text(place.map((p) => p?.name ?? ""), "Title"),
+      ui.text(place.map((p) => addressOf(p)), "Meta").wraps().hidesEmpty(),
       ui.text(place.map((p) => p?.notes ?? ""), "Words").wraps().hidesEmpty(),
       ui.when(mine, ui.row([ui.button(ADDS_MEMORY, { with: placeId.map((id) => `memory:new:place:${id}`), goes_to: EDIT })], "Actions")),
       heading(ui, "Everything here"),
@@ -133,6 +149,10 @@ export function describePlace(ui, places, account, timeline, asking) {
       ui.when(mine, ui.column([
         heading(ui, "Change the place"),
         ui.field(SAVES_PLACE, "", { label: Phrase.of("Its name"), changes: SETS_PLACE_NAME, shows: places.name, carries: (line) => ({ line, id: placeId.read() }) }),
+        ui.text(Phrase.of("Its address"), "FieldName"),
+        ui.text(Phrase.of("As much of it as you like - every part may be left empty. Your people see only its town, region and country."), "Hint").wraps(),
+        ...ADDRESS.map(([part, said, example, autocomplete]) => ui.field(SETS_ADDRESS, "", { label: Phrase.of(said), changes: SETS_ADDRESS, placeholder: example, autocomplete,
+          shows: places.address.map((typed) => typed[part] ?? ""), carries: (line) => ({ line, part }) })),
         ui.text(Phrase.of("Notes"), "FieldName"),
         ui.area(SETS_PLACE_NOTES, places.notes, "TextArea"),
         problem(ui, places.problem),

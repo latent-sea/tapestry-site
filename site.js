@@ -13,29 +13,31 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { Loom } from "./loom.js?v=eba5a4f179db";
-import { Account, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=eba5a4f179db";
-import * as Edit from "./editor.js?v=eba5a4f179db";
-import * as Folk from "./people.js?v=eba5a4f179db";
-import * as Where from "./places.js?v=eba5a4f179db";
-import * as Me from "./you.js?v=eba5a4f179db";
-import * as Today from "./journal.js?v=eba5a4f179db";
-import * as Ask from "./asking.js?v=eba5a4f179db";
-import * as Run from "./admin.js?v=eba5a4f179db";
-import * as List from "./importing.js?v=eba5a4f179db";
-import * as Told from "./notices.js?v=eba5a4f179db";
-import * as Talk from "./comments.js?v=eba5a4f179db";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=eba5a4f179db";
-import { headingOf } from "./when.js?v=eba5a4f179db";
-import { dotOf, heading, mark, notice, problem } from "./parts.js?v=eba5a4f179db";
-import { drawWoven } from "./woven.js?v=eba5a4f179db";
-import { drawPeriods } from "./gantt.js?v=eba5a4f179db";
-import { linksOf } from "./links.js?v=eba5a4f179db";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=eba5a4f179db";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { Loom } from "./loom.js?v=a72a3c00d32b";
+import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=a72a3c00d32b";
+import * as Edit from "./editor.js?v=a72a3c00d32b";
+import * as Folk from "./people.js?v=a72a3c00d32b";
+import * as Where from "./places.js?v=a72a3c00d32b";
+import * as Me from "./you.js?v=a72a3c00d32b";
+import * as Today from "./journal.js?v=a72a3c00d32b";
+import * as Ask from "./asking.js?v=a72a3c00d32b";
+import * as Run from "./admin.js?v=a72a3c00d32b";
+import * as List from "./importing.js?v=a72a3c00d32b";
+import * as Told from "./notices.js?v=a72a3c00d32b";
+import * as Talk from "./comments.js?v=a72a3c00d32b";
+import * as Kind from "./safety.js?v=a72a3c00d32b";
+import * as Pay from "./paying.js?v=a72a3c00d32b";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=a72a3c00d32b";
+import { headingOf } from "./when.js?v=a72a3c00d32b";
+import { dotOf, heading, mark, notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { drawWoven } from "./woven.js?v=a72a3c00d32b";
+import { drawTimeline } from "./gantt.js?v=a72a3c00d32b";
+import { linksOf } from "./links.js?v=a72a3c00d32b";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=a72a3c00d32b";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=eba5a4f179db")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=a72a3c00d32b")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -45,7 +47,8 @@ const ITEM = "item"; // a memory, event or period, entered as "<kind>:<id>"
 const TODAY = "today";
 const EVENTS = "events";
 const PERIODS = "periods";
-const MORE = "more"; // on a phone: people, places, you and the admin area, behind one tab
+const TIMELINE = "timeline"; // the member's periods, events and memories drawn across the years
+const MENU = "menu"; // every screen's shortcut, one under another: opened from the menu button, always at the top
 const { ADMIN } = Run;
 const { IMPORT } = List;
 const { EDIT } = Edit;
@@ -56,7 +59,8 @@ const { YOU } = Me;
 const GOES_TODAY = "goes_to_today";
 const GOES_EVENTS = "goes_to_my_events";
 const GOES_PERIODS = "goes_to_my_periods";
-const GOES_MORE = "goes_to_more";
+const GOES_TIMELINE = "goes_to_my_timeline";
+const GOES_MENU = "opens_the_menu";
 const GOES_NOTICES = "goes_to_notices";
 const GOES_ADMIN = "goes_to_the_admin_area";
 const GOES_THREAD = "goes_to_my_thread";
@@ -75,30 +79,48 @@ const SHOWS_LATER = "shows_the_picture_after";
 const LEAVES_EVENT = "takes_me_off_this_event";
 const ASKS_TO_LEAVE = "asks_before_taking_me_off";
 const STAYS_ON = "keeps_me_on_this_event";
+const LEAVES_PERIOD = "takes_me_out_of_this_period";
+const ASKS_TO_LEAVE_PERIOD = "asks_before_taking_me_out_of_this_period";
 const SHOWS_MORE = "shows_more_of_the_list";
 const JUMPS_TO_YEAR = "jumps_to_a_year";
 const SHOWS_RANDOM_YEAR = "shows_a_random_year";
 const SHOWS_EVERYTHING = "shows_everything";
 const FILTERS_BY_LABEL = "shows_a_label";
 const OPENS_RANDOM_MEMORY = "opens_a_random_memory";
-const SHOWS_PERIODS_AS = "shows_periods_as";
 const TOGGLES_PERIOD_TYPE = "shows_or_hides_a_kind_of_period";
+const TOGGLES_EVENT_TYPE = "shows_or_hides_a_kind_of_event";
+const TOGGLES_PART = "shows_or_hides_a_part_of_the_timeline";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
 const PAGE = 50;
 
 const KIND_SAID = { memory: "Memory", event: "Event", period: "Period" };
+/** The privacy policy and the terms, each a page of its own: readable by anyone, signed in or not. */
+const legal = (ui) => ui.row([
+  ui.hyperlink("privacy.html", [ui.text(Phrase.of("Privacy"), "Small")], "LegalLink"),
+  ui.hyperlink("terms.html", [ui.text(Phrase.of("Terms"), "Small")], "LegalLink"),
+], "Legal");
+
+/** What an entry is, said on its card: "Memory", or an event's or period's kind beside it ("Event · Holiday"). */
+const kindSaid = (entry) => {
+  const said = Phrase.of(KIND_SAID[entry?.kind] ?? "Memory");
+  const named = entry?.kind === "event" ? entry.eventKind : entry?.kind === "period" ? entry.periodKind : null;
+  return named ? Phrase.with("%s · %s", [said, named]) : said;
+};
 const INVITE_KEPT = "tapestry_invitation";
 const ORDER_KEPT = "tapestry_order";
-const PERIODS_KEPT = "tapestry_periods_as"; // the periods shown as a list or a chart, on this device
+const PARTS_KEPT = "tapestry_timeline_hides"; // the parts of the timeline left out, on this device
 const SEEN_KEPT = "tapestry_seen_at";
 const NEW_SHOWN = 5;
+// the tabs, in their order along the bar and down the menu: [action, screen, for admins alone]
+const TABS = [[GOES_TODAY, TODAY], [GOES_THREAD, THREAD], [GOES_TIMELINE, TIMELINE], [GOES_EVENTS, EVENTS], [GOES_PERIODS, PERIODS], [GOES_WOVEN, WOVEN],
+  [GOES_NOTICES, Told.NOTICES], [GOES_PEOPLE, PEOPLE], [GOES_PLACES, PLACES], [GOES_YOU, YOU], [GOES_ADMIN, ADMIN, true]];
 
-/** The order timelines were last read in on this device: newest first unless turned around. */
-function keptPeriodsAs() {
-  try { return localStorage.getItem(PERIODS_KEPT) === "chart" ? "chart" : "list"; } catch { return "list"; }
+/** The parts of the timeline left out on this device: periods, events or memories. */
+function keptParts() {
+  try { return (localStorage.getItem(PARTS_KEPT) ?? "").split(",").filter((part) => ["periods", "events", "memories"].includes(part)); } catch { return []; }
 }
 
-function keptOrder() {
+/** The order timelines were last read in on this device: newest first unless turned around. */function keptOrder() {
   try { return localStorage.getItem(ORDER_KEPT) !== "oldest"; } catch { return true; }
 }
 
@@ -115,8 +137,9 @@ class Looking extends Controller {
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
     this.threadYear = this.value(""); // the one year (or decade) the member's thread is shown, picked at random; "" for every year
     this.threadLabel = this.value(""); // the one label the member's thread is shown for; "" for all
-    this.periodsAs = this.value(keptPeriodsAs()); // the periods as a list, or a chart across the years
-    this.hiddenTypes = this.value([]); // the kinds of period left out of the periods' list and chart ("" for none)
+    this.hiddenTypes = this.value([]); // the kinds of period left out of the periods' list and the timeline ("" for none)
+    this.hiddenEventTypes = this.value([]); // the kinds of event left out of the timeline ("" for none)
+    this.hiddenParts = this.value(keptParts()); // the parts of the timeline left out: periods, events, memories
     this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
     this.pages = new Map(); // each timeline's own: how many of it are shown
@@ -135,7 +158,7 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, SHOWS_PERIODS_AS, TOGGLES_PERIOD_TYPE]; }
+  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART]; }
 
   /** The member's thread: what a random year or memory is picked from. */
   thread() { const weave = this.account.weave.read(); return weave.thread(weave.meId); }
@@ -147,6 +170,11 @@ class Looking extends Controller {
       const weave = this.account.weave.read();
       const event = weave.events.get(payload?.id);
       if (!event || event.owner === weave.meId || !weave.isAt(event, weave.meId)) return Phrase.of("Only someone tagged there by another takes themselves off");
+    }
+    if (action === LEAVES_PERIOD || action === ASKS_TO_LEAVE_PERIOD) {
+      const weave = this.account.weave.read();
+      const period = weave.periods.get(payload?.id);
+      if (!period || period.owner === weave.meId || !weave.isAtPeriod(period, weave.meId)) return Phrase.of("Only someone put in it by another takes themselves out");
     }
     return null;
   }
@@ -161,9 +189,10 @@ class Looking extends Controller {
     // a year with memories in it, picked at random - another each press - and the thread shown for it alone
     if (action === SHOWS_RANDOM_YEAR) this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? "");
     if (action === TOGGLES_PERIOD_TYPE) this.hiddenTypes.update((hidden) => (hidden.includes(payload.type) ? hidden.filter((t) => t !== payload.type) : [...hidden, payload.type]));
-    if (action === SHOWS_PERIODS_AS) {
-      this.periodsAs.setValue(payload.as);
-      try { localStorage.setItem(PERIODS_KEPT, payload.as); } catch { /* this visit only */ }
+    if (action === TOGGLES_EVENT_TYPE) this.hiddenEventTypes.update((hidden) => (hidden.includes(payload.type) ? hidden.filter((t) => t !== payload.type) : [...hidden, payload.type]));
+    if (action === TOGGLES_PART) {
+      this.hiddenParts.update((hidden) => (hidden.includes(payload.part) ? hidden.filter((t) => t !== payload.part) : [...hidden, payload.part]));
+      try { localStorage.setItem(PARTS_KEPT, this.hiddenParts.read().join(",")); } catch { /* this visit only */ }
     }
     if (action === SHOWS_EVERYTHING) { this.threadYear.setValue(""); this.threadLabel.setValue(""); }
     // a label: the thread shown for its memories alone; pressed again, all of it
@@ -179,7 +208,8 @@ class Looking extends Controller {
       try { localStorage.setItem(ORDER_KEPT, this.newestFirst.read() ? "newest" : "oldest"); } catch { /* this visit only */ }
     }
     if (action === TOGGLES_THREAD) this.hidden.update((hidden) => (hidden.includes(payload.account) ? hidden.filter((a) => a !== payload.account) : [...hidden, payload.account]));
-    if (action === ASKS_TO_LEAVE) this.leaving.setValue(payload.id);
+    if (action === ASKS_TO_LEAVE || action === ASKS_TO_LEAVE_PERIOD) this.leaving.setValue(payload.id);
+    if (action === LEAVES_PERIOD) { this.leaving.setValue(""); this.leave(payload.id, true); }
     if (action === STAYS_ON) this.leaving.setValue("");
     if (action === LEAVES_EVENT) { this.leaving.setValue(""); this.leave(payload.id); }
     return null;
@@ -206,8 +236,8 @@ class Looking extends Controller {
     this.problem.setValue("");
   }
 
-  async leave(eventId) {
-    const left = await this.loom.leaveEvent(eventId);
+  async leave(id, period = false) {
+    const left = await (period ? this.loom.leavePeriod(id) : this.loom.leaveEvent(id));
     await this.account.load();
     this.problem.setValue(left.ok ? "" : left.error);
   }
@@ -235,11 +265,14 @@ export class Tapestry extends ChimeApp {
       ...List.WORDS,
       ...Told.WORDS,
       ...Talk.WORDS,
+      ...Kind.WORDS,
+      ...Pay.WORDS,
       [GOES_TODAY]: ["Today"],
       [GOES_NOTICES]: ["Notices"],
       [GOES_EVENTS]: ["Events"],
       [GOES_PERIODS]: ["Periods"],
-      [GOES_MORE]: ["More"],
+      [GOES_TIMELINE]: ["Timeline"],
+      [GOES_MENU]: ["Menu"],
       [GOES_ADMIN]: ["Admin"],
       [GOES_THREAD]: ["My thread"],
       [GOES_WOVEN]: ["Tapestry"],
@@ -256,8 +289,9 @@ export class Tapestry extends ChimeApp {
       [SHOWS_EVERYTHING]: ["Show everything"],
       [FILTERS_BY_LABEL]: ["Show the memories with this label"],
       [OPENS_RANDOM_MEMORY]: ["A random memory"],
-      [SHOWS_PERIODS_AS]: ["Show the periods so"],
       [TOGGLES_PERIOD_TYPE]: ["Show or hide this kind"],
+      [TOGGLES_EVENT_TYPE]: ["Show or hide this kind"],
+      [TOGGLES_PART]: ["Show or hide these"],
       [SEARCHES_THREAD]: ["Find on my thread"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
       [FLIPS_ORDER]: ["Turn the order around"],
@@ -265,6 +299,8 @@ export class Tapestry extends ChimeApp {
       [LEAVES_EVENT]: ["Yes, take me off it"],
       [ASKS_TO_LEAVE]: ["Take me off this event"],
       [STAYS_ON]: ["No, keep me on it"],
+      [LEAVES_PERIOD]: ["Yes, take me out of it"],
+      [ASKS_TO_LEAVE_PERIOD]: ["Take me out of this period"],
     });
   }
 
@@ -285,45 +321,55 @@ export class Tapestry extends ChimeApp {
     this.importer = this.model(new List.Importer(this.chimes, LOOM, this.account));
     this.notices = this.model(new Told.Notices(this.chimes, LOOM, this.account));
     this.comments = this.model(new Talk.Comments(this.chimes, LOOM, this.account));
+    this.safety = this.model(new Kind.Safety(this.chimes, LOOM, this.account));
+    this.paying = this.model(new Pay.Paying(this.chimes, LOOM, this.account));
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
       this.nav(),
       ui.stack([
-        this.door(), this.todayScreen(), this.threadScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
-        this.moreScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM), Run.describeAdmin(ui, this.admin), List.describeImport(ui, this.importer, this.account),
+        this.door(), this.todayScreen(), this.threadScreen(), this.timelineScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
+        this.menuScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM), Run.describeAdmin(ui, this.admin), List.describeImport(ui, this.importer, this.account),
         Edit.describeEditor(ui, this.editor, this.account),
         Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
         Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
-        Me.describeYou(ui, this.you, this.account),
+        Me.describeYou(ui, this.you, this.account, this.safety),
+        Pay.describePaying(ui, this.paying, this.account),
       ]),
     ]);
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=eba5a4f179db").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=a72a3c00d32b").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
-    this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepWoven(); this.keepPeriods(); } });
+    this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepWoven(); this.keepTimeline(); this.keepTabs(); } });
     return this;
   }
 
   // --- the shell ---
 
-  /** The tabs: every one along the top; on a phone, along the bottom, with people, places and you behind More. */
+  /**
+   * The menu button, always at the top, and the tabs: along the top beside it; on a phone, along the
+   * bottom, a row swiped left and right for those past the edge. The menu has every one, one under another.
+   */
   nav() {
     const ui = this.ui;
-    const links = [[GOES_TODAY, TODAY], [GOES_THREAD, THREAD], [GOES_EVENTS, EVENTS], [GOES_PERIODS, PERIODS], [GOES_WOVEN, WOVEN], [GOES_NOTICES, Told.NOTICES],
-      [GOES_PEOPLE, PEOPLE, "Wide"], [GOES_PLACES, PLACES, "Wide"], [GOES_YOU, YOU, "Wide"], [GOES_MORE, MORE, "Narrow"]];
+    const admin = this.account.weave.map((w) => !!w.me?.admin);
     // the notices' tab says how many wait to be seen
     const waiting = ui.bound(() => { const n = this.notices.count(); return n ? String(n > 99 ? "99+" : n) : ""; });
     const words = (action) => (action === GOES_NOTICES
       ? [ui.text(ui.words(action), "NavWords"), ui.text(waiting, "NavCount").hidesEmpty()]
       : [ui.text(ui.words(action), "NavWords")]);
+    const tab = ([action, screen, onlyAdmin]) => {
+      const made = ui.pressable(action, {}, words(action), "NavLink").goesTo(screen);
+      return onlyAdmin ? ui.when(admin, made) : made;
+    };
     return ui.when(this.account.state.map((s) => s === "in"), ui.row([
+      ui.pressable(GOES_MENU, {}, [ui.text("☰", "MenuMark"), ui.text(ui.words(GOES_MENU), "MenuWords")], "MenuButton").goesTo(MENU),
       ui.text("Tapestry", "Wordmark"),
-      ui.row(links.map(([action, screen, only]) => ui.pressable(action, {}, words(action), `NavLink${only ? ` ${only}` : ""}`).goesTo(screen)), "Nav"),
+      ui.row(TABS.map(tab), "Nav").named("tabs"),
     ], "TopNav"));
   }
 
@@ -358,44 +404,76 @@ export class Tapestry extends ChimeApp {
     const all = ui.bound(() => { const w = account.weave.read(); return w.thread(w.meId).filter((e) => e.kind === "period"); });
     const hidden = this.looking.hiddenTypes;
     const entries = ui.bound(() => all.read().filter((e) => !hidden.read().includes(e.periodKind ?? "")));
-    // the kinds there are among them, in their fixed order, none last: each its colour, pressed to hide or show it
-    const kinds = ui.bound(() => {
-      const there = new Set(all.read().map((e) => e.periodKind ?? ""));
-      const own = account.weave.read().periodKinds.map((k) => k.name);
-      // the member's kinds first, in their order; a kind taken off but still on a period after; none last
-      const names = [...own, ...[...there].filter((name) => name && !own.includes(name)).sort()];
-      return [...names.filter((name) => there.has(name)).map((name) => ({ type: name, said: name })), ...(there.has("") ? [{ type: "", said: "No kind" }] : [])];
-    });
     return ui.screen(PERIODS, [
       ui.text(Phrase.of("Periods"), "Title"),
-      ui.text(Phrase.of("Spans of your life - where you lived, a job, school - overlapping as lives do. Each holds the memories during it; open one to add to it, or change it."), "Hint").wraps(),
+      ui.text(Phrase.of("Spans of your life - where you lived, a job, school - overlapping as lives do. Each holds the memories during it; open one to add to it, or change it. Your Timeline draws them across the years."), "Hint").wraps(),
       this.freePlan(),
       ui.row([ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT }).absentWhenRefused()], "Actions"),
-      ui.row([["list", "List"], ["chart", "Chart"]].map(([as, said]) => ui.pressable(SHOWS_PERIODS_AS, { as }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
-        .currentWhile(this.looking.periodsAs.map((a) => a === as))), "Segments"),
-      ui.when(kinds.map((k) => k.length > 1 || (k.length === 1 && k[0].type !== "")), ui.eachAcross(kinds, (held) => ui.pressable(TOGGLES_PERIOD_TYPE,
-        held.map((k) => ({ type: k?.type ?? "" })), [ui.image(ui.bound(() => dotOf(account.weave.read().kindColour(held.read()?.type ?? ""))), "SmallDot", ""),
-          ui.text(held.map((k) => k?.said ?? ""), "Small")], "Segment KindChip").currentWhile(ui.bound(() => !hidden.read().includes(held.read()?.type ?? ""))),
-        (k) => k.type || "none", "Labels")),
-      // as a chart: each period a bar across the years, drawn to the width there is (keepPeriods); each bar opens it
-      ui.when(this.looking.periodsAs.map((a) => a === "chart"), ui.column([
-        ui.surface("PeriodsChart", []).named("periods-chart"),
-        ui.when(entries.map((list) => !list.some((e) => e.when?.date)), ui.text(ui.bound(() => Phrase.of(all.read().some((e) => e.when?.date)
-          ? "Every kind is hidden: press one above to show it." : "No periods with a time yet.")), "Quiet").wraps()),
-        ui.text(Phrase.of("Each period is a bar across the years, an arrow where it is still going. Press one to open it."), "Hint").wraps(),
-      ])),
-      ui.when(this.looking.periodsAs.map((a) => a === "list"), this.timeline(entries, Phrase.of("No periods yet."))),
+      this.kindChips(all.map((list) => list.map((e) => e.periodKind ?? "")), (w) => w.periodKinds, (w, name) => w.kindColour(name), TOGGLES_PERIOD_TYPE, hidden),
+      this.timeline(entries, ui.bound(() => Phrase.of(all.read().length ? "Every kind is hidden: press one above to show it." : "No periods yet."))),
     ]);
   }
 
-  /** On a phone, the rest: people, places, you, and the admin area for an admin. */
-  moreScreen() {
+  /**
+   * The kinds there are among these (names, "" for none), in the member's order, none last: each its colour,
+   * pressed to hide or show it. Shown only when there is more than none.
+   */
+  kindChips(names, kindsOf, colourOf, action, hidden) {
+    const ui = this.ui;
+    const account = this.account;
+    const kinds = ui.bound(() => {
+      const there = new Set(names.read());
+      const own = kindsOf(account.weave.read()).map((k) => k.name);
+      // the member's kinds first, in their order; a kind taken off but still on something after; none last
+      const named = [...own, ...[...there].filter((name) => name && !own.includes(name)).sort()];
+      return [...named.filter((name) => there.has(name)).map((name) => ({ type: name, said: name })), ...(there.has("") ? [{ type: "", said: "No kind" }] : [])];
+    });
+    return ui.when(kinds.map((k) => k.length > 1 || (k.length === 1 && k[0].type !== "")), ui.eachAcross(kinds, (held) => ui.pressable(action,
+      held.map((k) => ({ type: k?.type ?? "" })), [ui.image(ui.bound(() => dotOf(colourOf(account.weave.read(), held.read()?.type ?? ""))), "SmallDot", ""),
+        ui.text(held.map((k) => k?.said ?? ""), "Small")], "Segment KindChip").currentWhile(ui.bound(() => !hidden.read().includes(held.read()?.type ?? ""))),
+    (k) => k.type || "none", "Labels"));
+  }
+
+  /**
+   * The member's timeline: their periods, events and memories drawn across the years (keepTimeline), each
+   * mark opening what it is. Each part, and each kind of period and of event, shown or hidden by a chip.
+   */
+  timelineScreen() {
+    const ui = this.ui;
+    const account = this.account;
+    const looking = this.looking;
+    const thread = ui.bound(() => { const w = account.weave.read(); return w.thread(w.meId).filter((e) => e.when?.date); });
+    const parts = looking.hiddenParts;
+    const of = (kind) => thread.map((list) => list.filter((e) => e.kind === kind));
+    const shown = (part) => parts.map((hidden) => !hidden.includes(part));
+    return ui.screen(TIMELINE, [
+      ui.text(Phrase.of("Your timeline"), "Title"),
+      ui.text(Phrase.of("Your periods, events and memories across the years. Press any of them to open it."), "Hint").wraps(),
+      ui.row([["periods", "Periods"], ["events", "Events"], ["memories", "Memories"]].map(([part, said]) => ui.pressable(TOGGLES_PART, { part },
+        [ui.text(Phrase.of(said), Themes.FACE)], "Segment").currentWhile(shown(part))), "Segments"),
+      ui.when(shown("periods"), this.kindChips(of("period").map((list) => list.map((e) => e.periodKind ?? "")), (w) => w.periodKinds, (w, name) => w.kindColour(name),
+        TOGGLES_PERIOD_TYPE, looking.hiddenTypes)),
+      ui.when(shown("events"), this.kindChips(of("event").map((list) => list.map((e) => e.eventKind ?? "")), (w) => w.eventKinds, (w, name) => w.eventKindColour(name),
+        TOGGLES_EVENT_TYPE, looking.hiddenEventTypes)),
+      ui.surface("PeriodsChart", []).named("timeline-chart"),
+      ui.when(ui.bound(() => !thread.read().length), ui.text(Phrase.of("Nothing with a time yet: add a period, an event or a memory, and say when."), "Quiet").wraps()),
+      ui.text(Phrase.of("Periods are bars, an arrow where one is still going; events are shorter bars; memories are dots, on a faint bar where you guessed between two times."), "Hint").wraps(),
+    ]);
+  }
+
+  /** The menu: a shortcut to every screen, one under another - the admin area's for an admin. */
+  menuScreen() {
     const ui = this.ui;
     const admin = this.account.weave.map((w) => !!w.me?.admin);
-    const go = (action, screen) => ui.pressable(action, {}, [ui.text(ui.words(action), "PersonName")], `${CARD} ListItem`).goesTo(screen);
-    return ui.screen(MORE, [
-      ui.text(Phrase.of("More"), "Title"),
-      ui.column([go(GOES_PEOPLE, PEOPLE), go(GOES_PLACES, PLACES), go(GOES_YOU, YOU), ui.when(admin, go(GOES_ADMIN, ADMIN))], "List"),
+    const go = ([action, screen, onlyAdmin]) => {
+      const made = ui.pressable(action, {}, [ui.text(ui.words(action), "PersonName"),
+        ...(action === GOES_NOTICES ? [ui.text(ui.bound(() => { const n = this.notices.count(); return n ? Phrase.counted("%d new", "%d new", n) : ""; }), "Quiet").hidesEmpty()] : [])],
+      `${CARD} ListItem MenuItem`).goesTo(screen);
+      return onlyAdmin ? ui.when(admin, made) : made;
+    };
+    return ui.screen(MENU, [
+      ui.text(Phrase.of("Menu"), "Title"),
+      ui.column(TABS.map(go), "List"),
     ]);
   }
 
@@ -422,8 +500,15 @@ export class Tapestry extends ChimeApp {
         ui.when(state.map((s) => s === "joining"), ui.column([
           ui.text(Phrase.of("Welcome. What should your people call you?"), "Words").wraps(),
           ui.field(JOINS, "", { changes: SETS_JOIN_NAME, shows: account.joinName, autocomplete: "name", label: Phrase.of("Your name") }),
+          ui.text(Phrase.of("Starting your thread, you agree to Tapestry's terms, and to its privacy policy."), "Hint").wraps(),
           ui.button(JOINS),
         ])),
+        ui.when(state.map((s) => s === "agreeing"), ui.column([
+          ui.text(Phrase.of("Tapestry has terms now: what is and isn't allowed on it, and how to report something or block someone. Please read them, and the privacy policy, and agree to go on."), "Words").wraps(),
+          ui.button(AGREES),
+          ui.button(SIGNS_OUT, { style: LINK }),
+        ])),
+        legal(ui),
         problem(ui, account.problem),
         ui.when(account.problem, ui.button(RELOADS, { style: LINK })),
       ], "Door"),
@@ -433,7 +518,10 @@ export class Tapestry extends ChimeApp {
   /** On the free plan: what it is, said where a thread would be kept. */
   freePlan(words = "You're on the free plan: you see what your people share with you, and comment on it. Keeping your own thread - memories, events and periods - is part of the paid plan.") {
     const ui = this.ui;
-    return ui.when(this.account.weave.map((w) => !w.writes), ui.text(Phrase.of(words), "Notice").wraps());
+    return ui.when(this.account.weave.map((w) => !w.writes), ui.column([
+      ui.text(Phrase.of(words), "Notice").wraps(),
+      ui.row([ui.pressable(Pay.GOES_PAID, {}, [ui.text(ui.words(Pay.GOES_PAID), Themes.FACE)], "FactoryAction").goesTo(Pay.PAID)], "Actions"),
+    ], "FreePlan"));
   }
 
   threadScreen() {
@@ -458,8 +546,9 @@ export class Tapestry extends ChimeApp {
       this.freePlan(),
       ui.row([
         ui.button(Edit.ADDS_MEMORY, { with: "memory:new", goes_to: EDIT }).absentWhenRefused(),
-        ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT, style: LINK }).absentWhenRefused(),
-        ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT, style: LINK }).absentWhenRefused(),
+        // all three alike: each makes something, none is lesser
+        ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT }).absentWhenRefused(),
+        ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT }).absentWhenRefused(),
       ], "Actions"),
       this.finder(SEARCHES_THREAD, this.looking.threadSearch),
       ui.row([
@@ -594,7 +683,7 @@ export class Tapestry extends ChimeApp {
       ui.column([mark(ui, held.map((e) => e?.colour ?? ""))], "ThreadMark"),
       ui.column([
         ui.row([
-          ui.text(held.map((e) => Phrase.of(KIND_SAID[e?.kind] ?? "Memory")), "Kind"),
+          ui.text(held.map((e) => kindSaid(e)), "Kind"),
           ui.text(held.map((e) => e?.said ?? ""), "When").hidesEmpty(),
           ui.text(shown("lengths", (e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(shown("ages", (e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
@@ -678,7 +767,7 @@ export class Tapestry extends ChimeApp {
       ui.when(entry, ui.column([
         ui.row([
           mark(ui, entry.map((e) => e?.colour ?? "")),
-          ui.text(entry.map((e) => Phrase.of(KIND_SAID[e?.kind] ?? "Memory")), "Kind"),
+          ui.text(entry.map((e) => kindSaid(e)), "Kind"),
           ui.text(entry.map((e) => e?.said ?? ""), "When").hidesEmpty(),
           ui.text(entry.map((e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(entry.map((e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
@@ -714,15 +803,28 @@ export class Tapestry extends ChimeApp {
         ui.row([
           ui.button(Edit.EDITS, { with: key, goes_to: EDIT }).absentWhenRefused(),
           ui.button(Edit.ADDS_MEMORY_TO, { with: ui.bound(() => `memory:new:event:${kindOf() === "event" ? idOf() : ""}`), goes_to: EDIT }).absentWhenRefused(),
-          ui.when(ui.bound(() => kindOf() === "period" && mine.read()),
+          // a period the member is in - theirs, or one they were put in - holds their memories too
+          ui.when(ui.bound(() => kindOf() === "period" && account.weave.read().isAtPeriod(item.read(), account.weave.read().meId)),
             ui.button(Edit.ADDS_MEMORY, { with: ui.bound(() => `memory:new:period:${idOf()}`), goes_to: EDIT, style: LINK })),
           ui.when(ui.bound(() => this.looking.leaving.read() !== idOf()),
             ui.button(ASKS_TO_LEAVE, { payload: ui.bound(() => ({ id: kindOf() === "event" ? idOf() : "" })), style: LINK }).absentWhenRefused()),
+          ui.when(ui.bound(() => this.looking.leaving.read() !== idOf()),
+            ui.button(ASKS_TO_LEAVE_PERIOD, { payload: ui.bound(() => ({ id: kindOf() === "period" ? idOf() : "" })), style: LINK }).absentWhenRefused()),
           ui.button(Ask.ASKS_AT_EVENT, { payload: ui.bound(() => ({ id: kindOf() === "event" ? idOf() : "" })), style: LINK }).absentWhenRefused(),
           ui.button(Ask.MAKES_EVENT, { payload: ui.bound(() => ({ id: kindOf() === "memory" ? idOf() : "" })), style: LINK }).absentWhenRefused(),
+          ui.button(Ask.MAKES_PERIOD, { payload: ui.bound(() => ({ id: kindOf() === "memory" ? idOf() : "" })), style: LINK }).absentWhenRefused(),
           ui.button(Ask.ASKS_SHARE_MEMORY, { payload: ui.bound(() => ({ id: kindOf() === "memory" ? idOf() : "" })), style: LINK }).absentWhenRefused(),
         ], "Actions"),
+        // someone else's: reported to the admins as breaking the terms, or its owner blocked
+        ui.when(ui.bound(() => !!entry.read() && !mine.read()), ui.row([
+          ui.when(is("memory"), ui.pressable(Kind.REPORTS, ui.bound(() => ({ memory: idOf() })), [ui.text(ui.words(Kind.REPORTS), "Small")], LINK)),
+          ui.pressable(Kind.BLOCKS, ui.bound(() => ({ account: entry.read()?.owner ?? "" })),
+            [ui.text(ui.bound(() => Phrase.with("Block %s", [entry.read()?.ownerName ?? ""])), "Small")], LINK),
+        ], "Actions SafetyRow")),
+        Kind.describeReporting(ui, this.safety, ui.bound(() => (kindOf() === "memory" ? idOf() : ""))),
+        Kind.describeBlocking(ui, this.safety, account, ui.bound(() => entry.read()?.owner ?? "")),
         Ask.describeNamingEvent(ui, this.asking, ui.bound(() => (kindOf() === "memory" ? idOf() : ""))),
+        Ask.describeNamingPeriod(ui, this.asking, account, ui.bound(() => (kindOf() === "memory" ? idOf() : ""))),
         problem(ui, this.asking.problem),
         notice(ui, this.asking.notice),
         ui.when(ui.bound(() => kindOf() === "event" && this.looking.leaving.read() === idOf()), ui.column([
@@ -732,7 +834,15 @@ export class Tapestry extends ChimeApp {
             ui.button(STAYS_ON, { style: LINK }),
           ], "Actions"),
         ])),
+        ui.when(ui.bound(() => kindOf() === "period" && this.looking.leaving.read() === idOf()), ui.column([
+          ui.text(Phrase.of("Take yourself out of this period? It leaves your thread for good, and your memories and events go out of it - they stay yours."), "Warn").wraps(),
+          ui.row([
+            ui.button(LEAVES_PERIOD, { payload: ui.bound(() => ({ id: idOf() })), style: DANGER }),
+            ui.button(STAYS_ON, { style: LINK }),
+          ], "Actions"),
+        ])),
         ui.when(ui.bound(() => kindOf() === "event" && mine.read()), Ask.describeMerge(ui, this.asking, account, "event", ui.bound(() => idOf()))),
+        ui.when(ui.bound(() => kindOf() === "period" && mine.read()), Ask.describeMerge(ui, this.asking, account, "period", ui.bound(() => idOf()))),
         ui.when(is("event"), ui.column([heading(ui, "Everyone's memories of it"), this.timeline(memories, Phrase.of("No memories of it yet."), true)])),
         ui.when(is("period"), ui.column([heading(ui, "During this time"), this.timeline(during, Phrase.of("Nothing else on this thread falls in this time yet."))])),
       ]), ui.text(Phrase.of("This isn't here, or isn't shared with you."), "Quiet")),
@@ -750,7 +860,8 @@ export class Tapestry extends ChimeApp {
       const [wanted, parameter = ""] = hash.replace(/^#/, "").split("/");
       if (["memory", "event", "period"].includes(wanted) && parameter) return [ITEM, `${wanted}:${parameter}`];
       if ([PERSON, PLACE, JOIN].includes(wanted) && parameter) return [wanted, parameter];
-      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT, Told.NOTICES].includes(wanted)) return [wanted, null];
+      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID].includes(wanted)) return [wanted, null];
+      if (wanted === "more") return [MENU, null]; // the menu's address before it was the menu
       return [THREAD, null];
     };
     const go = (screen, parameter) => {
@@ -804,7 +915,7 @@ export class Tapestry extends ChimeApp {
         }
         return;
       }
-      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, MORE, ADMIN, IMPORT, Told.NOTICES].find((screen) => top.includes(screen));
+      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID].find((screen) => top.includes(screen));
       if (!at) return;
       const parameter = this.driver.getParameter(at);
       const address = at === THREAD ? "" : at === ITEM ? `#${String(parameter).replace(":", "/")}` : parameter ? `#${at}/${parameter}` : `#${at}`;
@@ -839,19 +950,27 @@ export class Tapestry extends ChimeApp {
     });
   }
 
-  /** The periods' chart drawn whenever it is shown, to the width it has - again as that changes. */
-  keepPeriods() {
+  /** The timeline's chart drawn whenever it is shown, to the width it has - again as that changes. */
+  keepTimeline() {
     let draw = () => {};
-    this.chimes.follow({ region: Chimes.GLOBAL }, "periods-chart", () => {
-      const open = this.driver.getTop().includes(PERIODS) && this.looking.periodsAs.read() === "chart";
+    this.chimes.follow({ region: Chimes.GLOBAL }, "timeline-chart", () => {
+      const open = this.driver.getTop().includes(TIMELINE);
       const weave = this.account.weave.read();
-      const hidden = this.looking.hiddenTypes.read();
-      draw = () => this.drawInto("periods-chart", open, (place) => drawPeriods(weave, Math.max(Math.round(place.clientWidth) || 700, 280), new Date(),
-        { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit }, hidden));
+      const hidden = { periods: this.looking.hiddenTypes.read(), events: this.looking.hiddenEventTypes.read(), parts: this.looking.hiddenParts.read() };
+      draw = () => this.drawInto("timeline-chart", open, (place) => drawTimeline(weave, Math.max(Math.round(place.clientWidth) || 700, 280), new Date(),
+        { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, memory: PALETTE.accent }, hidden));
       draw();
     });
     let waiting = null;
     addEventListener("resize", () => { clearTimeout(waiting); waiting = setTimeout(() => draw(), 150); });
+  }
+
+  /** On a phone, the tab of the screen shown swiped into sight along the bottom, wherever the row was left. */
+  keepTabs() {
+    this.chimes.follow({ region: Chimes.GLOBAL }, "tabs", () => {
+      this.driver.getTop();
+      Frames.defer(() => document.querySelector("#tabs .chime-current")?.scrollIntoView?.({ inline: "nearest", block: "nearest" }));
+    });
   }
 
   /**

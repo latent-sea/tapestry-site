@@ -10,9 +10,12 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=eba5a4f179db";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=eba5a4f179db";
-import { shrinkPicture } from "./backend/pictures.js?v=eba5a4f179db";
+import { Backend } from "./backend/backend.js?v=a72a3c00d32b";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=a72a3c00d32b";
+import { shrinkPicture } from "./backend/pictures.js?v=a72a3c00d32b";
+
+// the parts of a place's address, each its own column (backend.sql, "places")
+const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
 
 // public: the platform's address and its publishable key belong in the page
 const PLATFORM = "https://api.latent-sea.com";
@@ -132,6 +135,9 @@ export class Loom {
   /** Taken off an event someone else tagged the member at. */
   async leaveEvent(id) { return answer(await this.backend.callRpc("tapestry_leave_event", { event: id })); }
 
+  /** The member taken off a period someone else put them in. */
+  async leavePeriod(id) { return answer(await this.backend.callRpc("tapestry_leave_period", { period: id })); }
+
   // --- pictures ---
 
   /** A picture shrunk, kept privately and added to one of the member's memories. */
@@ -198,6 +204,34 @@ export class Loom {
   /** Someone made an admin, or not one. */
   async adminSetPlan(member, plan) { return answer(await this.backend.callRpc("tapestry_admin_set_plan", { member, plan })); }
 
+  /** A report dealt with by an admin: what was reported taken off (removed), or let be. */
+  async adminSettleReport(report, removed) { return answer(await this.backend.callRpc("tapestry_admin_settle_report", { report, removed })); }
+
+  // --- keeping Tapestry kind, and leaving it ---
+
+  /** Tapestry's terms agreed to: on joining, or once by everyone here before there were terms. */
+  async agree() { return answer(await this.backend.callRpc("tapestry_agree")); }
+
+  /** Another member blocked (blocking), or no longer: neither sees anything of the other's. */
+  async block(member, blocking) { return answer(await this.backend.callRpc("tapestry_block", { member, blocking })); }
+
+  /** A memory, or a comment, reported to Tapestry's admins as breaking its terms, and why. */
+  async report(memory, comment, reason) {
+    return answer(await this.backend.callRpc("tapestry_report", { the_memory: memory || null, the_comment: comment || null, reason }));
+  }
+
+  /** The member's own account deleted - everything of theirs - then their pictures' files, then signed out. */
+  async deleteMe(paths = []) {
+    const gone = answer(await this.backend.callRpc("tapestry_delete_me"));
+    if (!gone.ok) return gone;
+    for (let at = 0; at < paths.length; at += 100) await this.backend.removePrivatePictures(paths.slice(at, at + 100));
+    await this.signOut();
+    return gone;
+  }
+
+  /** What a store gave the page for a purchase, handed over to wait until the platform confirms it with the store. */
+  async purchased(store, product, token) { return answer(await this.backend.callRpc("tapestry_purchased", { store, product, token })); }
+
   /** A comment on a memory the member sees: { ok, data: its id }. */
   async comment(memoryId, words) { return answer(await this.backend.callRpc("tapestry_comment", { the_memory: memoryId, words })); }
 
@@ -229,6 +263,13 @@ export class Loom {
 
   /** One's own place folded into another: at once into one's own, else asked of its owner. */
   async askMergePlace(from, into) { return answer(await this.backend.callRpc("tapestry_ask_merge_place", { from_place: from, into_place: into })); }
+
+  async askMergePeriod(from, into) { return answer(await this.backend.callRpc("tapestry_ask_merge_period", { from_period: from, into_period: into })); }
+
+  /** One of the member's memories made a period, named and of the kind they say: answers { period, kept }, kept when the memory stays too. */
+  async periodOfMemory(memoryId, named = "", kind = "") {
+    return answer(await this.backend.callRpc("tapestry_period_of_memory", { the_memory: memoryId, named, kind }));
+  }
 
   /** An event made of one of the member's own memories (or the one it is of): its id. */
   /** One of the member's memories made an event, named as they say: { ok, data: the event's id }. A platform from before names it itself. */
@@ -262,7 +303,11 @@ export class Loom {
     return answer(reply);
   }
 
-  async savePlace(id, { name, notes }) { return answer(await this.backend.update("tapestry_places", by(id), { name: name.trim(), notes })); }
+  /** A place's name, notes and address: { name, notes, street, street_2, town, region, postcode, country }, every part of its address as typed. */
+  async savePlace(id, place) {
+    const parts = Object.fromEntries(ADDRESS.map((part) => [part, String(place[part] ?? "").trim()]));
+    return answer(await this.backend.update("tapestry_places", by(id), { name: place.name.trim(), notes: place.notes ?? "", ...parts }));
+  }
 
   async deletePlace(id) { return answer(await this.backend.delete("tapestry_places", by(id))); }
 }

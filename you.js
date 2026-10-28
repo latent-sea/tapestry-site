@@ -10,14 +10,15 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { heading, notice, problem } from "./parts.js?v=eba5a4f179db";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=eba5a4f179db";
-import { dotOf } from "./parts.js?v=eba5a4f179db";
-import { SIGNS_OUT } from "./account.js?v=eba5a4f179db";
-import { copyOf } from "./keep.js?v=eba5a4f179db";
-import { parseWhen, sayWhen } from "./when.js?v=eba5a4f179db";
-import { LINK, TEXT_SIZES } from "./look/look.js?v=eba5a4f179db";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { heading, notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=a72a3c00d32b";
+import { dotOf } from "./parts.js?v=a72a3c00d32b";
+import { SIGNS_OUT } from "./account.js?v=a72a3c00d32b";
+import { copyOf } from "./keep.js?v=a72a3c00d32b";
+import { parseWhen, sayWhen } from "./when.js?v=a72a3c00d32b";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=a72a3c00d32b";
+import { UNBLOCKS } from "./safety.js?v=a72a3c00d32b";
 
 export const YOU = "you";
 
@@ -32,9 +33,15 @@ export const SETS_EMAILS = "sets_whether_emailed";
 export const TYPES_YOUR_KIND = "types_a_kind_of_period_of_your_own";
 export const ADDS_YOUR_KIND = "adds_a_kind_of_period_of_your_own";
 export const TAKES_OFF_KIND = "takes_off_a_kind_of_period";
+export const TYPES_EVENT_KIND = "types_a_kind_of_event_of_your_own";
+export const ADDS_EVENT_KIND = "adds_a_kind_of_event_of_your_own";
+export const TAKES_OFF_EVENT_KIND = "takes_off_a_kind_of_event";
 export const OPENS_ADMIN = "opens_the_admin_area";
 export const OPENS_IMPORT = "opens_bringing_in_a_list";
 export const SAVES_BIRTHDAY = "saves_my_birthday";
+export const ASKS_TO_DELETE_ME = "asks_before_deleting_my_account";
+export const DELETES_ME = "deletes_my_account";
+export const KEEPS_ME = "keeps_my_account";
 
 export const WORDS = {
   [SETS_MY_NAME]: ["Your name"],
@@ -49,8 +56,14 @@ export const WORDS = {
   [TYPES_YOUR_KIND]: ["A kind of period"],
   [ADDS_YOUR_KIND]: ["Add it"],
   [TAKES_OFF_KIND]: ["Take off this kind"],
+  [TYPES_EVENT_KIND]: ["A kind of event"],
+  [ADDS_EVENT_KIND]: ["Add this kind"],
+  [TAKES_OFF_EVENT_KIND]: ["Take off this kind"],
   [OPENS_ADMIN]: ["Admin"],
   [OPENS_IMPORT]: ["Bring in a list of memories"],
+  [ASKS_TO_DELETE_ME]: ["Delete my account"],
+  [DELETES_ME]: ["Yes, delete everything"],
+  [KEEPS_ME]: ["No, keep it"],
 };
 
 /** A birthday typed: { date } ("YYYY-MM-DD", or null for none), or { error }. */
@@ -84,6 +97,8 @@ export class You extends Controller {
     this.name = this.value("");
     this.birthday = this.value("");
     this.newKind = this.value("");
+    this.newEventKind = this.value("");
+    this.deleting = this.value(false); // asked, before the member's account is deleted
     this.busy = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
@@ -103,6 +118,9 @@ export class You extends Controller {
     if (action === SETS_MY_NAME) this.name.setValue(payload.line);
     if (action === SAVES_MY_NAME) this.change(() => this.loom.join(this.name.read().trim()), "Saved: this is the name your people see");
     if (action === KEEPS_COPY) this.keepCopy();
+    if (action === ASKS_TO_DELETE_ME) this.deleting.setValue(true);
+    if (action === KEEPS_ME) this.deleting.setValue(false);
+    if (action === DELETES_ME) { this.deleting.setValue(false); this.deleteMe(); }
     if (action === SETS_BIRTHDAY) this.birthday.setValue(payload.line);
     if (action === SHOWS_ON_CARDS) {
       const shows = { ...(this.account.weave.read().me?.card_shows ?? {}) };
@@ -128,6 +146,15 @@ export class You extends Controller {
       if (made !== kinds) this.change(() => this.loom.saveDefaults({ period_kinds: made }), "Added");
     }
     if (action === TAKES_OFF_KIND) this.change(() => this.loom.saveDefaults({ period_kinds: withoutKind(this.account.weave.read().periodKinds, payload.name) }), "Taken off");
+    // and so for kinds of event
+    if (action === TYPES_EVENT_KIND) this.newEventKind.setValue(payload.line);
+    if (action === ADDS_EVENT_KIND) {
+      const kinds = this.account.weave.read().eventKinds;
+      const made = withKind(kinds, this.newEventKind.read());
+      this.newEventKind.setValue("");
+      if (made !== kinds) this.change(() => this.loom.saveDefaults({ event_kinds: made }), "Added");
+    }
+    if (action === TAKES_OFF_EVENT_KIND) this.change(() => this.loom.saveDefaults({ event_kinds: withoutKind(this.account.weave.read().eventKinds, payload.name) }), "Taken off");
     if (action === SETS_EMAILS) this.change(() => this.loom.saveDefaults({ emails: payload.on }), payload.on ? "You'll be emailed what waits for you" : "No more emails");
     return null;
   }
@@ -136,6 +163,19 @@ export class You extends Controller {
     const me = this.account.weave.read().me;
     this.name.setValue(me?.name ?? "");
     this.birthday.setValue(me?.birthday ? sayWhen({ date: me.birthday, precision: "day" }) : "");
+  }
+
+  /** The member's own account deleted, everything of theirs with it, and their pictures' files: then signed out. */
+  async deleteMe() {
+    const weave = this.account.weave.read();
+    const paths = weave.data.memories.filter((m) => m.owner === weave.meId).flatMap((m) => m.pictures.map((p) => p.path));
+    this.busy.setValue(true);
+    this.problem.setValue("");
+    const gone = await this.loom.deleteMe(paths);
+    if (this.disposed) return;
+    this.busy.setValue(false);
+    if (!gone.ok) { this.problem.setValue(gone.error); return; }
+    this.account.signedOut();
   }
 
   /** A copy of the member's thread, with its pictures inside it, handed over as one page to keep. */
@@ -186,7 +226,7 @@ export class You extends Controller {
   }
 }
 
-export function describeYou(ui, you, account) {
+export function describeYou(ui, you, account, safety) {
   const me = account.weave.map((w) => w.me);
   return ui.screen(YOU, [
     ui.text(Phrase.of("You"), "Title"),
@@ -211,11 +251,17 @@ export function describeYou(ui, you, account) {
     notice(ui, you.notice),
     // emails (backend.sql, "emailed") are put away until the platform's mail is set up: no jobs.json runs tapestry_mail
     heading(ui, "Kinds of period"),
-    ui.text(Phrase.of("What kinds of time your periods are, each its colour on the periods' chart. Make your own; taking one off leaves it on its periods, grey."), "Hint").wraps(),
+    ui.text(Phrase.of("What kinds of time your periods are, each its colour on your timeline. Make your own; taking one off leaves it on its periods, grey."), "Hint").wraps(),
     ui.eachAcross(account.weave.map((w) => w.periodKinds), (held) => ui.pressable(TAKES_OFF_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
       ui.image(ui.bound(() => dotOf(account.weave.read().kindColour(held.read()?.name))), "SmallDot", ""),
       ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (k) => k.name, "Chips"),
     ui.field(ADDS_YOUR_KIND, "", { changes: TYPES_YOUR_KIND, shows: you.newKind, placeholder: Phrase.of("A new kind - Enter adds it") }),
+    heading(ui, "Kinds of event"),
+    ui.text(Phrase.of("What kinds your events are, each its colour on your timeline. Make your own; taking one off leaves it on its events, grey."), "Hint").wraps(),
+    ui.eachAcross(account.weave.map((w) => w.eventKinds), (held) => ui.pressable(TAKES_OFF_EVENT_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
+      ui.image(ui.bound(() => dotOf(account.weave.read().eventKindColour(held.read()?.name))), "SmallDot", ""),
+      ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (k) => k.name, "Chips"),
+    ui.field(ADDS_EVENT_KIND, "", { changes: TYPES_EVENT_KIND, shows: you.newEventKind, placeholder: Phrase.of("A new kind - Enter adds it") }),
     heading(ui, "What cards show"),
     ui.text(Phrase.of("On your thread and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
     ui.row(CARD_PARTS.map(([part, said]) => ui.pressable(SHOWS_ON_CARDS, { part }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
@@ -232,8 +278,30 @@ export function describeYou(ui, you, account) {
     ui.text(Phrase.of("Everything on your thread, with its pictures, as one page that opens in any browser - to keep, print or pass on."), "Hint").wraps(),
     ui.button(KEEPS_COPY, { style: LINK }),
     ui.divider(),
+    // whom the member blocked: neither sees anything of the other's, until unblocked here
+    ui.when(me.map((m) => (m?.blocked ?? []).length > 0), ui.column([
+      heading(ui, "Blocked"),
+      ui.text(Phrase.of("You see nothing of theirs, and they nothing of yours."), "Hint").wraps(),
+      ui.each(me.map((m) => m?.blocked ?? []), (held) => ui.row([
+        ui.text(held.map((b) => b?.name ?? ""), "PersonName").grow(),
+        ui.pressable(UNBLOCKS, held.map((b) => ({ account: b?.account ?? "" })), [ui.text(ui.words(UNBLOCKS), "Small")], LINK),
+      ], "PersonRow"), (b) => b.account, "List"),
+      problem(ui, safety.problem),
+      notice(ui, safety.notice),
+    ])),
+    ui.divider(),
     ui.when(me.map((m) => !!m?.admin), ui.pressable(OPENS_ADMIN, {}, [ui.text(ui.words(OPENS_ADMIN), Themes.FACE)], LINK).goesTo("admin")),
     ui.button(SIGNS_OUT, { style: LINK }),
+    ui.row([
+      ui.hyperlink("privacy.html", [ui.text(Phrase.of("Privacy"), "Small")], "LegalLink"),
+      ui.hyperlink("terms.html", [ui.text(Phrase.of("Terms"), "Small")], "LegalLink"),
+    ], "Legal"),
+    heading(ui, "Delete my account"),
+    ui.text(Phrase.of("Everything of yours - memories, pictures, events, periods, places, people, comments - deleted for good, straight away. Keep a copy first, above, if you'd like one."), "Hint").wraps(),
+    ui.when(you.deleting, ui.column([
+      ui.text(Phrase.of("Delete your account and everything on it, for good? This can't be undone."), "Warn").wraps(),
+      ui.row([ui.button(DELETES_ME, { style: DANGER }), ui.button(KEEPS_ME, { style: LINK })], "Actions"),
+    ]), ui.row([ui.button(ASKS_TO_DELETE_ME, { style: DANGER })], "Actions")),
   ], null, { on_fill: () => you.open() });
 }
 

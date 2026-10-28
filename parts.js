@@ -2,8 +2,8 @@
 // chooser (type to find, press to pick, or add what was typed), and the
 // little rows of names.
 
-import { Phrase, Themes } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { LINK } from "./look/look.js?v=eba5a4f179db";
+import { Phrase, Themes } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { LINK } from "./look/look.js?v=a72a3c00d32b";
 
 /** A thread's mark: a dot in its colour, as a picture, since a colour is the thread's own. */
 export function dotOf(colour) {
@@ -31,7 +31,7 @@ export function names(ui, list, style = "Names") {
  * pick, create, placeholder.
  */
 export function chooser(ui, options) {
-  const { label, chosen = null, unpick = null, search, looks, matches, pick, create = null, placeholder = null } = options;
+  const { label, chosen = null, unpick = null, search, looks, matches, pick, create = null, placeholder = null, offered = null, offeredSaid = null } = options;
   const chips = chosen
     ? ui.eachAcross(chosen, (held) => ui.pressable(unpick, held.map((c) => ({ id: c?.id ?? "" })), [
       ui.text(held.map((c) => c?.label ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (c) => c.id, "Chips")
@@ -44,6 +44,11 @@ export function chooser(ui, options) {
     chips,
     ui.field(create ?? looks, "", { changes: looks, shows: search, placeholder: placeholder ?? Phrase.of("Type to find") }),
     ui.when(typed, ui.column([found, create ? ui.button(create, { style: LINK }) : null].filter(Boolean), "Found")),
+    // offered before anything is typed: those that fit already, pressed to pick
+    offered ? ui.when(ui.bound(() => !typed.read() && offered.read().length > 0), ui.column([
+      offeredSaid ? ui.text(offeredSaid, "Hint").wraps() : null,
+      ui.each(offered, (held) => ui.pressable(pick, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(held.map((m) => m?.label ?? ""), "MatchWords")], "Match"), (m) => m.id, "Matches"),
+    ].filter(Boolean), "Found")) : null,
   ].filter(Boolean), "Chooser");
 }
 

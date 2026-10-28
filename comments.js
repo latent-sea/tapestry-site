@@ -3,10 +3,11 @@
 // seen by whoever sees the memory, oldest first, and taken off by its writer
 // or the memory's owner.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { CARD, LINK } from "./look/look.js?v=eba5a4f179db";
-import { notice, problem } from "./parts.js?v=eba5a4f179db";
-import { sayAgo } from "./notices.js?v=eba5a4f179db";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { CARD, LINK } from "./look/look.js?v=a72a3c00d32b";
+import { notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { sayAgo } from "./notices.js?v=a72a3c00d32b";
+import { REPORTS } from "./safety.js?v=a72a3c00d32b";
 
 export const WRITES_COMMENT = "writes_a_comment";
 export const COMMENTS = "comments_on_it";
@@ -70,7 +71,12 @@ export function describeComments(ui, comments, account, memory) {
         ui.text(held.map((c) => sayAgo(c?.created_at)), "Meta"),
       ], "PersonRow"),
       ui.text(held.map((c) => c?.body ?? ""), "Words Body").wraps(),
-      ui.when(mayTakeOff(held), ui.pressable(TAKES_OFF_COMMENT, held.map((c) => ({ id: c?.id ?? "" })), [ui.text(ui.words(TAKES_OFF_COMMENT), "Small")], LINK)),
+      ui.row([
+        ui.when(mayTakeOff(held), ui.pressable(TAKES_OFF_COMMENT, held.map((c) => ({ id: c?.id ?? "" })), [ui.text(ui.words(TAKES_OFF_COMMENT), "Small")], LINK)),
+        // someone else's comment: reported to the admins as breaking the terms
+        ui.when(ui.bound(() => held.read()?.author !== account.weave.read().meId),
+          ui.pressable(REPORTS, held.map((c) => ({ comment: c?.id ?? "" })), [ui.text(ui.words(REPORTS), "Small")], LINK)),
+      ], "Actions"),
     ])], "Comment"), (c) => c.id, "List"),
     ui.area(WRITES_COMMENT, comments.draft, "TextArea CommentText"),
     ui.row([ui.button(COMMENTS, { payload: memory.map((m) => ({ memory: m?.id ?? "" })) })], "Actions"),

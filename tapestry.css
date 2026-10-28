@@ -8,35 +8,36 @@
 #app .chime-screen { gap: 14px; }
 #app .chime-text.Title { font-size: calc(var(--chime-size-face) * 1.9); }
 
-/* the navigation: along the top, and on a phone along the bottom */
-#app .TopNav { justify-content: space-between; flex-wrap: wrap; border-bottom: 1px solid var(--chime-lit); padding-bottom: 8px; }
+/* the navigation: the menu button and the tabs along the top; on a phone, the menu button stays at the
+   top and the tabs go along the bottom, a row swiped left and right for those past the edge */
+#app .TopNav { justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--chime-lit); padding-bottom: 8px; }
 #app .Wordmark { font-size: calc(var(--chime-size-face) * 1.375); font-weight: 800; overflow: visible; background: linear-gradient(90deg, var(--chime-accent-end), var(--chime-accent-2-end)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-#app .Nav { gap: 4px; flex-wrap: wrap; }
-#app .chime-pressable.NavLink { background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; box-shadow: none; padding: 6px 10px; min-height: 40px; color: var(--chime-ink-soft); }
+#app .chime-pressable.MenuButton { background: none; border: 1px solid var(--chime-lit); border-radius: 999px; box-shadow: none; padding: 4px 12px; min-height: 36px; gap: 6px; align-items: center; color: var(--chime-ink); }
+#app .MenuMark { font-size: calc(var(--chime-size-face) * 1.125); line-height: 1; }
+#app .MenuWords { font-size: calc(var(--chime-size-face) * 0.875); font-weight: 600; }
+#app .Nav { gap: 4px; flex-wrap: wrap; flex: 1 1 auto; }
+#app .chime-pressable.NavLink { background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; box-shadow: none; padding: 6px 10px; min-height: 40px; color: var(--chime-ink-soft); flex: 0 0 auto; }
 #app .chime-pressable.NavLink.chime-current { border-bottom-color: var(--chime-accent); color: var(--chime-accent); }
-#app .NavWords { font-size: calc(var(--chime-size-face) * 0.938); font-weight: 600; }
+#app .NavWords { font-size: calc(var(--chime-size-face) * 0.938); font-weight: 600; white-space: nowrap; }
 /* how many notices wait: a small count beside the tab's name */
 #app .chime-pressable.NavLink { gap: 5px; align-items: center; }
 #app .NavCount { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--chime-accent); color: var(--chime-ground, #fff);
   font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; box-sizing: border-box; }
-/* every tab along the top; on a phone, people, places and you are behind More */
-#app .chime-pressable.NavLink.Narrow { display: none; }
+#app .MenuItem { justify-content: space-between; align-items: center; }
 #app .TitleRow { align-items: center; gap: 12px; flex-wrap: wrap; }
 #app .HowTo { padding: 14px 16px; }
 #app .InEvent { gap: 2px; padding-left: 10px; border-left: 2px solid var(--chime-lit); }
 #app .InEventLine { font-size: calc(var(--chime-size-face) * 0.875); color: var(--chime-ink); }
 @media (max-width: 40rem) {
-  #app .TopNav .Wordmark { display: none; }
-  #app .TopNav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--chime-raised) 92%, transparent);
-    backdrop-filter: blur(10px); border-top: 1px solid var(--chime-lit); border-bottom: none;
-    padding: 2px 4px calc(2px + env(safe-area-inset-bottom)); justify-content: center; }
-  #app .Nav { flex-wrap: nowrap; width: 100%; justify-content: space-around; }
-  #app .chime-pressable.NavLink { border-bottom: none; border-top: 2px solid transparent; padding: 6px 2px; gap: 3px; }
+  #app .TopNav { position: sticky; top: 0; z-index: 5; padding: 6px 0; background: var(--chime-ground); }
+  #app .Nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--chime-raised) 92%, transparent);
+    backdrop-filter: blur(10px); border-top: 1px solid var(--chime-lit); padding: 2px 4px calc(2px + env(safe-area-inset-bottom));
+    flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  #app .Nav::-webkit-scrollbar { display: none; }
+  #app .chime-pressable.NavLink { border-bottom: none; border-top: 2px solid transparent; padding: 6px 12px; gap: 3px; scroll-snap-align: start; }
   #app .chime-pressable.NavLink.chime-current { border-top-color: var(--chime-accent); }
-  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.688); }
+  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.75); }
   #app .NavCount { min-width: 16px; height: 16px; line-height: 16px; font-size: 10px; padding: 0 4px; }
-  #app .chime-pressable.NavLink.Wide { display: none; }
-  #app .chime-pressable.NavLink.Narrow { display: flex; }
 }
 
 /* the door */
@@ -200,3 +201,7 @@
 /* comments: each quiet, its taking off small */
 #app .Comment .chime-pressable { min-height: 28px; padding: 2px 12px; align-self: flex-start; font-size: calc(var(--chime-size-face) * 0.812); }
 #app .CommentText { min-height: 72px; }
+
+/* the privacy policy and the terms, at the door and in You */
+#app .Legal { gap: 18px; justify-content: center; flex-wrap: wrap; }
+#app .chime-hyperlink.LegalLink { color: var(--chime-ink-soft); text-decoration: underline; }

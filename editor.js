@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { EXAMPLES, parseSpan, sayWhen, saySpan } from "./when.js?v=eba5a4f179db";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=eba5a4f179db";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=eba5a4f179db";
-import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=eba5a4f179db";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=eba5a4f179db";
-import { DANGER, LINK } from "./look/look.js?v=eba5a4f179db";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=a72a3c00d32b";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=a72a3c00d32b";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=a72a3c00d32b";
+import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=a72a3c00d32b";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=a72a3c00d32b";
+import { DANGER, LINK } from "./look/look.js?v=a72a3c00d32b";
 
 export const EDIT = "edit";
 
@@ -55,6 +55,8 @@ export const SETS_AUDIENCE = "sets_who_sees_it";
 export const SETS_PERIOD_TYPE = "sets_the_kind_of_period";
 export const ADDS_PERIOD_KIND = "adds_a_kind_of_period";
 export const SETS_NEW_KIND = "types_a_new_kind_of_period";
+export const SETS_WHO_ADDS = "sets_who_adds_memories_to_it";
+export const SETS_WHO_ASKS = "sets_whether_others_may_ask_to_be_at_it";
 export const LOOKS_FOR_SHARE = "looks_for_someone_to_let_in_or_keep_out";
 export const LETS_IN = "lets_them_in";
 export const KEEPS_OUT = "keeps_them_out";
@@ -106,6 +108,8 @@ export const WORDS = {
   [SETS_PERIOD_TYPE]: ["Choose what kind of time it was"],
   [ADDS_PERIOD_KIND]: ["Add this kind"],
   [SETS_NEW_KIND]: ["A kind of your own"],
+  [SETS_WHO_ADDS]: ["Choose who adds memories to it"],
+  [SETS_WHO_ASKS]: ["Choose whether others may ask to be at it"],
   [LOOKS_FOR_SHARE]: ["Find someone or a circle"],
   [LETS_IN]: ["Let in"],
   [KEEPS_OUT]: ["Keep out"],
@@ -165,7 +169,9 @@ export class Editor extends Controller {
     this.linkText = this.value("");
     this.newKind = this.value("");
     this.searches = { event: this.value(""), period: this.value(""), place: this.value(""), person: this.value(""), share: this.value(""), label: this.value("") };
-    this.periodType = this.value(""); // a period's kind, as the member names their kinds, or "" for none
+    this.periodType = this.value(""); // a period's or an event's kind, as the member names their kinds of each, or "" for none
+    this.adds = this.value("there"); // an event's: who adds memories to it - everyone at it, or its maker alone ("me")
+    this.asks = this.value("anyone"); // an event's: whether someone who sees it but isn't at it may ask to be ("anyone") or not ("none")
     this.labels = this.value([]); // a memory's labels, its owner's own: school, music, holidays
     this.busy = this.value(false);
     this.fetching = this.value(false); // a long memory's words being fetched in full: nothing is saved until they are
@@ -218,6 +224,7 @@ export class Editor extends Controller {
       // on the free plan: what others share, and comments on it - no thread of their own
       if (!weave.writes) return Phrase.of("Keeping your own thread is part of the paid plan");
       if (action === ADDS_MEMORY_TO && !weave.isAt(weave.events.get(tiedId), weave.meId)) return Phrase.of("Only someone who was there adds to it");
+      if (action === ADDS_MEMORY_TO && !weave.mayAddTo(tiedId)) return Phrase.of("Its maker alone adds memories to it");
       if (action === EDITS && id !== "new" && ({ memory: weave.memories, event: weave.events, period: weave.periods }[kind]?.get(id)?.owner !== weave.meId)) {
         return Phrase.of("Only its owner edits it");
       }
@@ -302,6 +309,8 @@ export class Editor extends Controller {
     if (action === ADDS_NEW_PERSON) this.addPerson(this.searches.person.read().trim());
     if (action === SETS_AUDIENCE) this.audience.setValue(payload.audience);
     if (action === SETS_PERIOD_TYPE) this.periodType.setValue(payload.type);
+    if (action === SETS_WHO_ADDS) this.adds.setValue(payload.adds);
+    if (action === SETS_WHO_ASKS) this.asks.setValue(payload.asks);
     if (action === SETS_NEW_KIND) this.newKind.setValue(payload.line);
     if (action === ADDS_PERIOD_KIND) this.addKind(this.newKind.read());
     if (action === LETS_IN || action === KEEPS_OUT) {
@@ -371,11 +380,13 @@ export class Editor extends Controller {
     this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "");
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
     this.eventTitle.setValue("");
-    this.periodIds.setValue(item ? periodsOf(item) : tied === "period" ? [tiedId] : []);
+    this.periodIds.setValue(item ? (kind === "event" ? [...(item.period_ids ?? [])] : periodsOf(item)) : tied === "period" ? [tiedId] : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
     this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
     this.labels.setValue(kind === "memory" && item ? [...(item.labels ?? [])] : []);
-    this.periodType.setValue(kind === "period" ? item?.kind ?? "" : "");
+    this.periodType.setValue(kind !== "memory" ? item?.kind ?? "" : "");
+    this.adds.setValue(kind === "event" ? item?.adds ?? "there" : "there");
+    this.asks.setValue(kind === "event" ? item?.asks ?? "anyone" : "anyone");
     this.newKind.setValue("");
     this.searches.label.setValue("");
     this.audience.setValue(item?.audience ?? weave.defaultAudience(kind));
@@ -455,15 +466,16 @@ export class Editor extends Controller {
     this.notice.setValue(Phrase.with("Made the period “%s”, over this memory's time for now: open it in Periods to say when it began and ended.", [title]));
   }
 
-  /** A kind of period of the member's own made, kept on them, and chosen for this one. */
+  /** A kind of period (or of event) of the member's own made, kept on them, and chosen for this one. */
   async addKind(name) {
     const named = String(name ?? "").trim().slice(0, 40);
     if (!named) return;
-    const kinds = this.weave().periodKinds;
+    const ofEvents = this.kind.read() === "event";
+    const kinds = ofEvents ? this.weave().eventKinds : this.weave().periodKinds;
     const made = withKind(kinds, named);
     this.newKind.setValue("");
     if (made !== kinds) {
-      const kept = await this.loom.saveDefaults({ period_kinds: made });
+      const kept = await this.loom.saveDefaults({ [ofEvents ? "event_kinds" : "period_kinds"]: made });
       if (!kept.ok) { this.problem.setValue(kept.error); return; }
       await this.account.load();
     }
@@ -485,7 +497,7 @@ export class Editor extends Controller {
       // the first as period_id too, which a platform from before there could be more keeps
       period_id: this.periodIds.read()[0] ?? "" };
     if (kind === "period") return { ...common, notes: this.text.read(), kind: this.periodType.read() };
-    return { ...common, notes: this.text.read() };
+    return { ...common, notes: this.text.read(), kind: this.periodType.read(), adds: this.adds.read(), asks: this.asks.read(), period_ids: this.periodIds.read() };
   }
 
   async save() {
@@ -564,7 +576,24 @@ export class Editor extends Controller {
     const weave = this.weave();
     const looked = this.searches.period.read();
     const chosen = this.periodIds.read();
-    return weave.data.periods.filter((p) => p.owner === weave.meId && !chosen.includes(p.id) && matching(looked, p.title)).slice(0, MOST).map((p) => ({ id: p.id, label: p.title }));
+    return weave.data.periods.filter((p) => this.mayUse(p) && !chosen.includes(p.id) && matching(looked, p.title)).slice(0, MOST)
+      .map((p) => ({ id: p.id, label: `${p.title} · ${weave.entry("period", p).said}` }));
+  }
+
+  /** Whether a period is one this may be put in: one the member is in - their own, or one they were put in. */
+  mayUse(period) { return this.weave().isAtPeriod(period, this.weave().meId); }
+
+  /** Every period of the member's that overlaps the time said, not chosen yet, oldest first: offered before anything is typed. */
+  overlapping() {
+    const weave = this.weave();
+    const { starts, ends, error } = this.span();
+    const { starts: eventStarts, ends: eventEnds } = this.kind.read() === "memory" && !starts && this.eventId.read() && weave.events.get(this.eventId.read())
+      ? weave.spanOf("event", weave.events.get(this.eventId.read())) : { starts, ends };
+    if (error || !eventStarts) return [];
+    const chosen = this.periodIds.read();
+    return weave.data.periods.filter((p) => this.mayUse(p) && !chosen.includes(p.id) && within(eventStarts, timeOf(p, "starts"), timeOf(p, "ends"), eventEnds))
+      .map((p) => weave.entry("period", p)).sort((a, b) => (a.when?.date ?? "").localeCompare(b.when?.date ?? ""))
+      .map((p) => ({ id: p.id, label: `${p.title} · ${p.said}` }));
   }
 
   chosenLabels() { return this.labels.read().map((label) => ({ id: label, label: `#${label}` })); }
@@ -653,13 +682,18 @@ export function describeEditor(ui, editor, account) {
     ui.field(SETS_WHEN, "", { changes: SETS_WHEN, shows: editor.whenText, placeholder: Phrase.of("e.g. June 1998, about 1995, 2004 – now") }),
     ui.text(said("whenHint"), "Hint").wraps(),
     ui.text(whenSaid, "Hint").wraps().hidesEmpty(),
-    // a period's kind: its colour on the periods' chart, and what it is filtered by
-    ui.when(kind.map((k) => k === "period"), ui.column([
-      ui.text(Phrase.of("What kind of time"), "FieldName"),
-      ui.eachAcross(account.weave.map((w) => [...w.periodKinds.map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }]),
-        (held) => ui.pressable(SETS_PERIOD_TYPE, held.map((k) => ({ type: k?.type ?? "" })),
-          [ui.image(ui.bound(() => dotOf(account.weave.read().kindColour(held.read()?.type))), "SmallDot", ""), ui.text(held.map((k) => k?.said ?? ""), Themes.FACE)], "Segment")
-          .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
+    // a period's or an event's kind: its colour on the timeline, and what it is filtered by
+    ui.when(kind.map((k) => k !== "memory"), ui.column([
+      ui.text(kind.map((k) => Phrase.of(k === "event" ? "What kind of event" : "What kind of time")), "FieldName"),
+      ui.eachAcross(ui.bound(() => {
+        const w = account.weave.read();
+        return [...(kind.read() === "event" ? w.eventKinds : w.periodKinds).map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }];
+      }), (held) => ui.pressable(SETS_PERIOD_TYPE, held.map((k) => ({ type: k?.type ?? "" })),
+        [ui.image(ui.bound(() => {
+          const w = account.weave.read();
+          return dotOf(kind.read() === "event" ? w.eventKindColour(held.read()?.type) : w.kindColour(held.read()?.type));
+        }), "SmallDot", ""), ui.text(held.map((k) => k?.said ?? ""), Themes.FACE)], "Segment")
+        .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
       ui.field(ADDS_PERIOD_KIND, "", { changes: SETS_NEW_KIND, shows: editor.newKind, placeholder: Phrase.of("Or a kind of your own - Enter adds it") }),
     ], "Part")),
     // an event is a grouping of memories: what is written goes in its memories, not on it
@@ -667,13 +701,23 @@ export function describeEditor(ui, editor, account) {
       ui.text(said("text"), "FieldName"),
       ui.area(SETS_TEXT, editor.text, "TextArea Words"),
     ], "Part"), ui.text(Phrase.of("An event holds memories: once it is saved, add yours - and everyone at it adds theirs."), "Hint").wraps()),
-    ui.when(isMemory, ui.column([
-      chooser(ui, { label: Phrase.of("Of an event - one you were at, or name a new one"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
-        search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
-        create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") }),
-      chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()), unpick: DROPS_PERIOD,
-        search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD,
-        create: ADDS_NEW_PERIOD, placeholder: Phrase.of("Type to find a period, or name a new one") }),
+    ui.when(isMemory, chooser(ui, { label: Phrase.of("Of an event - one you were at, or name a new one"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
+      search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
+      create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") })),
+    // the periods it was during: every one of the member's overlapping its time offered at once, or one found or named
+    ui.when(kind.map((k) => k !== "period"), chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()),
+      unpick: DROPS_PERIOD, search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD,
+      create: ADDS_NEW_PERIOD, placeholder: Phrase.of("Type to find a period, or name a new one"),
+      offered: ui.bound(() => editor.overlapping()), offeredSaid: Phrase.of("Your periods overlapping its time - press one to add it:") })),
+    // an event's maker says who adds memories to it, and whether someone who sees it may ask to be at it
+    ui.when(kind.map((k) => k === "event"), ui.column([
+      ui.text(Phrase.of("Who adds memories to it"), "FieldName"),
+      ui.row([["there", "Everyone at it"], ["me", "Only me"]].map(([value, words]) => ui.pressable(SETS_WHO_ADDS, { adds: value }, [ui.text(Phrase.of(words), Themes.FACE)], "Segment")
+        .currentWhile(editor.adds.map((a) => a === value))), "Segments"),
+      ui.text(Phrase.of("Asking to be at it"), "FieldName"),
+      ui.row([["anyone", "Anyone who sees it may ask"], ["none", "No one may ask"]].map(([value, words]) => ui.pressable(SETS_WHO_ASKS, { asks: value },
+        [ui.text(Phrase.of(words), Themes.FACE)], "Segment").currentWhile(editor.asks.map((a) => a === value))), "Segments"),
+      ui.text(Phrase.of("Someone who sees it but wasn't put at it asks you, from the event; you say yes or no in Notices. You put people at it yourself by tagging them under Who was there."), "Hint").wraps(),
     ], "Part")),
     chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,
       search: editor.searches.place, looks: LOOKS_FOR_PLACE, matches: ui.bound(() => editor.placeMatches()), pick: PICKS_PLACE,

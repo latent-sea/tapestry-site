@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=eba5a4f179db";
-import { linksOf } from "./links.js?v=eba5a4f179db";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=a72a3c00d32b";
+import { linksOf } from "./links.js?v=a72a3c00d32b";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -15,9 +15,15 @@ export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles:
 const SPAN = { starts: null, starts_precision: null, starts_about: false, starts_time: null, ends: null, ends_precision: null, ends_about: false, ends_time: null };
 const NOTHING = {
   memories: { title: "", body: "", links: [], labels: [], comments: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
-  events: { title: "", notes: "", ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
+  events: { title: "", notes: "", kind: null, adds: "there", asks: "anyone", period_ids: [], ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
   periods: { title: "", notes: "", kind: null, ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
+  places: { notes: "", street: "", street_2: "", town: "", region: "", postcode: "", country: "" },
 };
+
+/** A place's address as one line: as much of it as there is, in the order a letter has it. */
+export function addressOf(place) {
+  return ["street", "street_2", "town", "region", "postcode", "country"].map((part) => String(place?.[part] ?? "").trim()).filter(Boolean).join(", ");
+}
 
 /** What was loaded, with each memory, event and period whole: what a light load left out put back as nothing. */
 export function filled(data) {
@@ -74,6 +80,10 @@ export const OTHER_COLOUR = "#8e9ab8";
  */
 export const STARTING_KINDS = Object.freeze([{ name: "Location", hue: 0 }, { name: "Relationship", hue: 1 }, { name: "Education", hue: 2 },
   { name: "Project", hue: 3 }, { name: "Work", hue: 4 }, { name: "Other", hue: -1 }]);
+
+/** The kinds of event a member starts with, as their kinds of period: each its hue, given once and kept. */
+export const STARTING_EVENT_KINDS = Object.freeze([{ name: "Celebration", hue: 0 }, { name: "Holiday", hue: 1 }, { name: "Trip", hue: 2 },
+  { name: "Gathering", hue: 3 }, { name: "Milestone", hue: 4 }, { name: "Other", hue: -1 }]);
 
 /** A kind's colour among these kinds: its hue's, or the quiet grey for none, or one taken off. */
 export function kindColour(kinds, name) {
@@ -145,6 +155,12 @@ export class Weave {
   /** A period kind's colour, among the member's kinds. */
   kindColour(name) { return kindColour(this.periodKinds, name); }
 
+  /** The member's kinds of event: their own, or those they start with. */
+  get eventKinds() { return Array.isArray(this.data.me?.event_kinds) ? this.data.me.event_kinds : STARTING_EVENT_KINDS; }
+
+  /** An event kind's colour, among the member's kinds of event. */
+  eventKindColour(name) { return kindColour(this.eventKinds, name); }
+
   /** The labels on the member's own memories, each once, in order: [{ label, count }]. */
   get labels() {
     return this.kept("labels", () => {
@@ -190,6 +206,9 @@ export class Weave {
   /** Whether an account is at an event: its maker, or tagged there. */
   isAt(event, account) { return !!event && (event.owner === account || event.tags.some((tag) => tag.account === account)); }
 
+  /** Whether an account is in a period: its owner, or put in it (tagged, linked, and not taken off it). */
+  isAtPeriod(period, account) { return !!period && (period.owner === account || period.tags.some((tag) => tag.account === account)); }
+
   /** Every account an event's threads come from: its maker's and everyone tagged there, linked. */
   threadsAt(event) {
     return [...new Set([event.owner, ...event.tags.map((tag) => tag.account).filter(Boolean)])];
@@ -211,18 +230,18 @@ export class Weave {
    * they see: those named as looked for; else those sharing a word of its name, or an event's time.
    */
   twinsOf(kind, id, looked = "") {
-    const list = kind === "event" ? this.data.events : this.data.places;
+    const list = { event: this.data.events, period: this.data.periods, place: this.data.places }[kind];
     const self = list.find((item) => item.id === id);
     if (!self) return [];
-    const nameOf = (item) => (kind === "event" ? item.title : item.name) ?? "";
+    const nameOf = (item) => (kind === "place" ? item.name : item.title) ?? "";
     const words = (text) => lower(text).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2);
     const own = new Set(words(nameOf(self)));
     const wanted = lower(looked).trim();
-    const span = kind === "event" ? this.spanOf("event", self) : null;
+    const span = kind !== "place" ? this.spanOf(kind, self) : null;
     return list.filter((item) => item.id !== id).filter((item) => (wanted ? lower(nameOf(item)).includes(wanted)
       : words(nameOf(item)).some((w) => own.has(w)) || (span && within(timeOf(item, "starts"), span.starts, span.ends ?? span.starts, timeOf(item, "ends")))))
       .slice(0, 8)
-      .map((item) => ({ id: item.id, label: [nameOf(item), kind === "event" ? this.entry("event", item).said : "",
+      .map((item) => ({ id: item.id, label: [nameOf(item), kind !== "place" ? this.entry(kind, item).said : "",
         item.owner === this.meId ? "yours" : `${this.nameOf(item.owner)}'s`].filter(Boolean).join(" · ") }));
   }
 
@@ -234,11 +253,17 @@ export class Weave {
     return !this.requests.some((r) => r.mine && r.kind === "memory" && r.memory === memoryId);
   }
 
-  /** Whether the member may ask to be at an event: someone else's, they aren't at it, and haven't asked. */
+  /** Whether the member may ask to be at an event: someone else's, taking asks, they aren't at it, and haven't asked. */
   mayAskAt(eventId) {
     const event = this.events.get(eventId);
-    return !!event && event.owner !== this.meId && !this.isAt(event, this.meId)
+    return !!event && event.owner !== this.meId && event.asks !== "none" && !this.isAt(event, this.meId)
       && !this.requests.some((r) => r.mine && r.kind === "event" && r.event === eventId);
+  }
+
+  /** Whether the member may add a memory to an event: they are at it, and its maker lets everyone at it add (or it is theirs). */
+  mayAddTo(eventId) {
+    const event = this.events.get(eventId);
+    return !!event && this.isAt(event, this.meId) && (event.owner === this.meId || event.adds !== "me");
   }
 
   /** The accounts whose threads the member can follow: their own, then their linked people's, in their colours' order. */
@@ -256,13 +281,14 @@ export class Weave {
   /** What an entry is, worked out (entry() keeps it). */
   makeEntry(kind, item) {
     const mine = item.owner === this.meId;
-    const place = this.places.get(item.place_id) ?? null;
+    const found = this.places.get(item.place_id) ?? null;
+    const place = found ? { id: found.id, name: found.name, where: [found.town, found.region, found.country].filter(Boolean).join(", ") } : null;
     const people = item.tags.map((tag) => this.tagName(tag));
     // names of someone else's, linked to no one: the member may ask to be one of them
     const unlinked = item.tags.filter((tag) => tag.unlinked).map((tag) => ({ id: tag.unlinked, name: tag.name }));
     const base = {
       key: `${kind}:${item.id}`, kind, id: item.id, owner: item.owner, ownerName: this.nameOf(item.owner), mine,
-      colour: this.colourOf(item.owner), place: place ? { id: place.id, name: place.name } : null, people, unlinked,
+      colour: this.colourOf(item.owner), place, people, unlinked,
       pictures: [], event: null, periods: [], threads: [item.owner],
     };
     const { starts: when, ends: until } = this.spanOf(kind, item);
@@ -290,11 +316,14 @@ export class Weave {
     if (kind === "event") {
       const memories = this.data.memories.filter((m) => m.event_id === item.id);
       // a grouping of memories: everyone's of it the member sees, inside it
-      return { ...base, when, until, said, title: item.title, text: item.notes, threads: this.threadsAt(item),
+      return { ...base, when, until, said, title: item.title, text: item.notes, threads: this.threadsAt(item), eventKind: item.kind ?? null,
+        periods: (item.period_ids ?? []).map((id) => this.periods.get(id)).filter(Boolean).map((p) => ({ id: p.id, title: p.title })),
         memoryCount: memories.length, pictures: memories.flatMap((m) => m.pictures).slice(0, 4),
         inside: sortEntries(memories.map((m) => this.entry("memory", m))) };
     }
-    return { ...base, when, until, said, title: item.title, text: item.notes, periodKind: kind === "period" ? item.kind ?? null : null };
+    // a period: its owner's, and everyone else in it - a time lived through together
+    return { ...base, when, until, said, title: item.title, text: item.notes, periodKind: kind === "period" ? item.kind ?? null : null,
+      threads: kind === "period" ? [...new Set([item.owner, ...item.tags.map((tag) => tag.account).filter(Boolean)])] : base.threads };
   }
 
   /** Everything visible, as entries. */
@@ -314,14 +343,14 @@ export class Weave {
 
   /** An account's thread: what they own, and the events they are at. */
   thread(account) {
-    return this.kept(`thread:${account}`, () => this.everything().filter((entry) => entry.owner === account || (entry.kind === "event" && entry.threads.includes(account))));
+    return this.kept(`thread:${account}`, () => this.everything().filter((entry) => entry.owner === account || (entry.kind !== "memory" && entry.threads.includes(account))));
   }
 
   /** The threads of these accounts woven together: each thing once, events where any of them is. */
   woven(accounts) {
     const wanted = new Set(accounts);
     return this.kept(`woven:${[...wanted].sort().join(",")}`,
-      () => this.everything().filter((entry) => wanted.has(entry.owner) || (entry.kind === "event" && entry.threads.some((a) => wanted.has(a)))));
+      () => this.everything().filter((entry) => wanted.has(entry.owner) || (entry.kind !== "memory" && entry.threads.some((a) => wanted.has(a)))));
   }
 
   /** Who of these accounts crossed at an entry: for an event, every one of them at it. */
@@ -350,7 +379,7 @@ export class Weave {
   findIn(entries, words, also = null) {
     return entries.filter((entry) => {
       // what it is found by, worked out once for the entry
-      entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people,
+      entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.place?.where, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people,
         ...(entry.labels ?? []).flatMap((label) => [label, `#${label}`])].join(" "));
       return words.every((word) => entry.hay.includes(word)) || (entry.kind === "memory" && !!also?.has(entry.id));
     });
@@ -383,7 +412,8 @@ export class Weave {
     if (!period) return [];
     const { starts, ends } = this.spanOf("period", period);
     return sortEntries(this.thread(period.owner).filter((entry) => entry.key !== `period:${periodId}`
-      && ((entry.kind === "memory" && periodsOf(this.memories.get(entry.id)).includes(periodId)) || within(entry.when, starts, ends, entry.until))));
+      && ((entry.kind === "memory" && periodsOf(this.memories.get(entry.id)).includes(periodId))
+        || (entry.kind === "event" && (this.events.get(entry.id).period_ids ?? []).includes(periodId)) || within(entry.when, starts, ends, entry.until))));
   }
 
   // --- coming back ---

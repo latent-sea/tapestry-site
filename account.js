@@ -6,19 +6,21 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { Weave } from "./weave.js?v=eba5a4f179db";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { Weave } from "./weave.js?v=a72a3c00d32b";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
 export const JOINS = "joins_tapestry";
 export const RELOADS = "loads_again";
+export const AGREES = "agrees_to_the_terms";
 
 export const WORDS = {
   [SIGNS_OUT]: ["Sign out"],
   [SETS_JOIN_NAME]: ["Your name"],
   [JOINS]: ["Start my thread"],
   [RELOADS]: ["Try again"],
+  [AGREES]: ["I agree"],
 };
 
 /** How long pictures' addresses (good for an hour) are kept before asked for again: with the half-hourly look again, never older than the hour. */
@@ -29,7 +31,7 @@ export class Account extends Controller {
   constructor(chimes, loom) {
     super(chimes);
     this.loom = loom;
-    this.state = this.value("checking"); // checking, out, uninvited, joining or in
+    this.state = this.value("checking"); // checking, out, uninvited, joining, agreeing (to the terms, once) or in
     /** The token of the invitation they came by, or "" (the page's, kept through signing in). */
     this.invitation = () => "";
     this.weave = this.value(new Weave());
@@ -56,6 +58,7 @@ export class Account extends Controller {
 
   would(action) {
     if (action === SIGNS_OUT && ["checking", "out"].includes(this.state.read())) return Phrase.of("Not signed in");
+    if (action === AGREES && this.busy.read()) return Phrase.of("Saving");
     if (action === JOINS) {
       if (this.busy.read()) return Phrase.of("Joining");
       if (!this.joinName.read().trim()) return Phrase.of("First say what others should call you");
@@ -66,6 +69,7 @@ export class Account extends Controller {
   told(action, payload) {
     if (action === SETS_JOIN_NAME) this.joinName.setValue(payload.line);
     if (action === JOINS) this.join();
+    if (action === AGREES) this.agree();
     if (action === RELOADS) this.again();
     if (action === SIGNS_OUT) {
       this.loom.signOut();
@@ -88,7 +92,8 @@ export class Account extends Controller {
   async signedIn() {
     const loaded = await this.load();
     if (this.disposed || !loaded) return;
-    if (this.weave.read().me) { this.state.setValue("in"); return; }
+    // here before there were terms: agreed to once, before anything else
+    if (this.weave.read().me) { this.state.setValue(this.weave.read().me.agreed === false ? "agreeing" : "in"); return; }
     const may = await this.loom.mayJoin(this.invitation());
     if (this.disposed) return;
     if (!may.ok) { this.problem.setValue(may.error); return; }
@@ -100,9 +105,28 @@ export class Account extends Controller {
     this.busy.setValue(true);
     this.problem.setValue("");
     const joined = await this.loom.join(this.joinName.read().trim(), this.invitation());
+    // joining is agreeing to the terms, as its button says
+    if (joined.ok) await this.loom.agree();
     this.busy.setValue(false);
     if (!joined.ok) { this.problem.setValue(joined.error); return; }
     if (await this.load()) this.state.setValue("in");
+  }
+
+  /** The terms agreed to, by someone here before there were any: then in. */
+  async agree() {
+    this.busy.setValue(true);
+    this.problem.setValue("");
+    const agreed = await this.loom.agree();
+    this.busy.setValue(false);
+    if (!agreed.ok) { this.problem.setValue(agreed.error); return; }
+    if (await this.load()) this.state.setValue("in");
+  }
+
+  /** Signed out from elsewhere (their account deleted): nothing of theirs stays, and the door opens. */
+  signedOut() {
+    this.weave.setValue(new Weave());
+    this.forget();
+    this.state.setValue("out");
   }
 
   /** After a failure: whoever is signed in, found again, as when the page opened. */

@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=eba5a4f179db";
-import { CARD } from "./look/look.js?v=eba5a4f179db";
-import { describeAsked } from "./asking.js?v=eba5a4f179db";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
+import { CARD } from "./look/look.js?v=a72a3c00d32b";
+import { describeAsked } from "./asking.js?v=a72a3c00d32b";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -37,6 +37,7 @@ export function sayNotice(notice) {
       memory: [Phrase.with("%s said yes: you were there too, at “%s”", [who, about]), Phrase.with("%s said no to you being at “%s”", [who, about])],
       merge_event: [Phrase.with("%s said yes: your “%s” is merged into theirs", [who, about]), Phrase.with("%s kept your “%s” apart from theirs", [who, about])],
       merge_place: [Phrase.with("%s said yes: your place “%s” is merged into theirs", [who, about]), Phrase.with("%s kept your place “%s” apart from theirs", [who, about])],
+      merge_period: [Phrase.with("%s said yes: your period “%s” is merged into theirs", [who, about]), Phrase.with("%s kept your period “%s” apart from theirs", [who, about])],
     }[n.what] ?? [Phrase.with("%s said yes", [who]), Phrase.with("%s said no", [who])];
     return said[n.yes ? 0 : 1];
   }
