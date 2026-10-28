@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=97f2a9aaf774";
-import { linksOf } from "./links.js?v=97f2a9aaf774";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=0f4719403046";
+import { linksOf } from "./links.js?v=0f4719403046";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -183,6 +183,13 @@ export class Weave {
   }
 
   /** A tag's name, as the member knows them. */
+  /** The member's own person a tag names, to open: none for the member themself, or someone of another's they don't know. */
+  personOf(tag) {
+    if (tag.account && tag.account === this.meId) return null;
+    if (tag.person && this.people.has(tag.person)) return tag.person;
+    return (tag.account && this.linked.get(tag.account)?.id) || null;
+  }
+
   tagName(tag) {
     if (tag.account === this.meId && this.meId) return "You";
     if (tag.person && this.people.has(tag.person)) return this.people.get(tag.person).name;
@@ -284,11 +291,13 @@ export class Weave {
     const found = this.places.get(item.place_id) ?? null;
     const place = found ? { id: found.id, name: found.name, where: [found.town, found.region, found.country].filter(Boolean).join(", ") } : null;
     const people = item.tags.map((tag) => this.tagName(tag));
+    // each name with the member's own person for it, to open: theirs by name, or the one linked to that account
+    const folk = item.tags.map((tag) => ({ name: this.tagName(tag), person: this.personOf(tag) }));
     // names of someone else's, linked to no one: the member may ask to be one of them
     const unlinked = item.tags.filter((tag) => tag.unlinked).map((tag) => ({ id: tag.unlinked, name: tag.name }));
     const base = {
       key: `${kind}:${item.id}`, kind, id: item.id, owner: item.owner, ownerName: this.nameOf(item.owner), mine,
-      colour: this.colourOf(item.owner), place, people, unlinked,
+      colour: this.colourOf(item.owner), place, people, folk, unlinked, ownerPerson: mine ? null : this.linked.get(item.owner)?.id ?? null,
       pictures: [], event: null, periods: [], threads: [item.owner],
     };
     const { starts: when, ends: until } = this.spanOf(kind, item);

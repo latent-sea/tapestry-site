@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
-import { Weave } from "./weave.js?v=97f2a9aaf774";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=0f4719403046";
+import { Weave } from "./weave.js?v=0f4719403046";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -35,6 +35,7 @@ export class Account extends Controller {
   constructor(chimes, loom) {
     super(chimes);
     this.loom = loom;
+    this.leaving = []; // what goes while still signed in, on signing out: each an async function
     this.state = this.value("checking"); // checking, out, uninvited, joining, agreeing (to the terms, once) or in
     /** The token of the invitation they came by, or "" (the page's, kept through signing in). */
     this.invitation = () => "";
@@ -78,12 +79,7 @@ export class Account extends Controller {
     if (action === AGREES) this.agree();
     if (action === STOPS_SEEING) this.stopSeeing();
     if (action === RELOADS) this.again();
-    if (action === SIGNS_OUT) {
-      this.loom.signOut();
-      this.weave.setValue(new Weave());
-      this.forget();
-      this.state.setValue("out");
-    }
+    if (action === SIGNS_OUT) this.signOut();
     return null;
   }
 
@@ -163,6 +159,15 @@ export class Account extends Controller {
   get seeing() { return this.loom.seeing ? { ...this.loom.seeing, masked: !!this.weave.read().data.seen_as?.masked } : null; }
 
   /** Signed out from elsewhere (their account deleted): nothing of theirs stays, and the door opens. */
+  /** Signing out: what must go while still signed in goes first (this device's notifications, phone.js) - for three seconds at most. */
+  async signOut() {
+    await Promise.race([Promise.all(this.leaving.map((go) => go().catch(() => {}))), new Promise((done) => setTimeout(done, 3000))]);
+    this.loom.signOut();
+    this.weave.setValue(new Weave());
+    this.forget();
+    this.state.setValue("out");
+  }
+
   signedOut() {
     this.weave.setValue(new Weave());
     this.forget();
@@ -193,6 +198,8 @@ export class Account extends Controller {
     this.found.setValue({ key: "", ids: null });
     this.finding = "";
     this.weave.setValue(new Weave(found.data.tapestry));
+    // the member's own pictures from before small copies, given one each, a few at a time, unhurried
+    if (!this.loom.seeing) setTimeout(() => this.makeThumbs(), 3000);
     // terms there were none of when the page opened: agreed to before going on, whenever it loads again
     if (this.state.read() === "in" && this.weave.read().me?.agreed === false) { this.readTerms(); this.state.setValue("agreeing"); }
     return true;
@@ -249,6 +256,21 @@ export class Account extends Controller {
     // asked for once a load: one that couldn't be fetched shows its first 2000 until the next
     if (known === undefined && !this.asked.has(memory.id)) { this.asked.add(memory.id); this.fetchTexts([memory.id]); }
     return known ?? memory.body;
+  }
+
+  /** A few of the member's own pictures with no small copy yet given one: the next load shows them. */
+  async makeThumbs(most = 4) {
+    if (this.making || this.disposed) return;
+    const weave = this.weave.read();
+    const waiting = weave.data.memories.filter((m) => m.owner === weave.meId).flatMap((m) => m.pictures).filter((p) => !p.thumb && !String(p.path).startsWith("masked:")).slice(0, most);
+    if (!waiting.length) return;
+    this.making = true;
+    const addresses = await this.addressesFor(waiting.map((p) => p.path));
+    for (const picture of waiting) {
+      if (this.disposed || this.loom.seeing) break;
+      if (addresses[picture.path]) await this.loom.makeThumb(picture.id, picture.path, addresses[picture.path]);
+    }
+    this.making = false;
   }
 
   /** Memories' words in full, fetched, for those cut short: whether they were. */

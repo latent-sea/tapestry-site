@@ -7,11 +7,12 @@
 // a knot opens what it is; in select mode a box drawn over it catches the
 // lives through it. The browser's alone: lives.js works out what it draws.
 
-import { caught, placeAt } from "./lives.js?v=97f2a9aaf774";
+import { caught, placeAt } from "./lives.js?v=0f4719403046";
 
 const YEAR = 0.6; // a year along the time's way, in the space's units
 const PLACE = 1.6; // a place apart (layOut), in them
 const FOV = 0.9; // how wide the camera sees, as a share of the canvas's width
+const FOUND = "#f2c14e"; // what a search found, picked out: as on the flat tapestry (lives.js)
 
 export class Space {
   /** In this element; open(key) opens a knot pressed, select(caught) is told what a box caught; settings() says { joysticks, invertY }. */
@@ -41,9 +42,10 @@ export class Space {
   }
 
   /** What is drawn: the lives (livesOf), where they are (layOut, in two), their colours, and those hidden. */
-  set(drawn, laid, colours, hidden = [], focus = null) {
+  set(drawn, laid, colours, hidden = [], focus = null, found = null) {
     const first = !this.drawn;
     this.focus = focus;
+    this.found = found; // what a search found: { keys, lives }, picked out - or null
     this.drawn = drawn;
     this.laid = laid;
     this.colours = colours;
@@ -120,7 +122,8 @@ export class Space {
           const fade = life.faded ? Math.max(0, Math.min(1, (t - life.from) / 2)) : 1;
           const picked = this.focus === life.id;
           g.strokeStyle = life.colour;
-          g.globalAlpha = (this.focus && !picked ? 0.18 : life.grey ? 0.7 : 1) * fade;
+          const faint = (this.focus && !picked) || (this.found && !this.found.lives.has(life.id));
+          g.globalAlpha = (faint ? 0.18 : life.grey ? 0.7 : 1) * fade;
           g.lineWidth = Math.max(1, Math.min(5, 40 / p.depth)) * (life.grey ? 0.7 : 1) * (picked ? 2 : 1);
           g.beginPath();
           g.moveTo(last.x, last.y);
@@ -144,17 +147,20 @@ export class Space {
       const on = thing.lives.filter((id) => !this.hidden.includes(id))
         .map((id) => ({ id, p: this.point(id, thing.from) })).filter((o) => o.p).map((o) => ({ ...o, s: this.project(o.p, axes) })).filter((o) => o.s);
       if (on.length < 2) continue;
-      g.strokeStyle = ink;
-      g.globalAlpha = 0.45;
-      g.lineWidth = 1;
+      const hit = !!this.found?.keys.has(thing.key);
+      const faint = this.found && !hit;
+      g.strokeStyle = hit ? FOUND : ink;
+      g.globalAlpha = faint ? 0.15 : hit ? 0.9 : 0.45;
+      g.lineWidth = hit ? 3 : 1;
       g.beginPath();
       on.forEach((o, i) => (i ? g.lineTo(o.s.x, o.s.y) : g.moveTo(o.s.x, o.s.y)));
       g.stroke();
-      g.globalAlpha = 1;
+      g.globalAlpha = faint ? 0.25 : 1;
       for (const o of on) {
-        const r = Math.max(2.5, Math.min(7, 60 / o.s.depth));
+        const r = Math.max(2.5, Math.min(7, 60 / o.s.depth)) + (hit ? 2 : 0);
         g.fillStyle = this.drawn.lives.find((l) => l.id === o.id)?.colour ?? soft;
-        g.strokeStyle = ground;
+        g.strokeStyle = hit ? FOUND : ground;
+        g.lineWidth = hit ? 3 : 1;
         g.beginPath();
         g.arc(o.s.x, o.s.y, r, 0, Math.PI * 2);
         g.fill();

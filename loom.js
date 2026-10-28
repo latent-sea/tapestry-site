@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=97f2a9aaf774";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=97f2a9aaf774";
-import { shrinkPicture } from "./backend/pictures.js?v=97f2a9aaf774";
+import { Backend } from "./backend/backend.js?v=0f4719403046";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=0f4719403046";
+import { shrinkPicture } from "./backend/pictures.js?v=0f4719403046";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -28,6 +28,8 @@ const GOOGLE_CLIENT = "400837578052-jqnhh565es3a92k58u5r2oggdcf7mrkr.apps.google
 const SIGNS_IN_VIA = { address: "https://latent-sea.github.io/thehatch.tech/", as: "tapestry" };
 
 const APP = "tapestry";
+// a picture's small copy, for cards and lists: its longest side at most this
+const THUMB = 400;
 
 /** A failure's words for a person: the platform's own for one it raised, else plain ones. */
 export function said(reply) {
@@ -43,7 +45,8 @@ const by = (id) => `id=eq.${encodeURIComponent(id)}`;
 // what may still be asked while seeing Tapestry as someone else: nothing that changes anything, nor anything of
 // the one looking's own (their texts, their finding) that would show through
 const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "signOut", "mayJoin",
-  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation"]);
+  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation",
+  "pushKey", "addDevice", "removeDevice"]); // a device's notifications are the one signed in's own, whoever they are seeing as
 
 /**
  * The loom, or a stand-in for it, kept from changing anything while seeing as someone else: guarded.seeing is
@@ -170,16 +173,33 @@ export class Loom {
 
   /** A picture shrunk, kept privately and added to one of the member's memories. */
   async addPicture(memoryId, file, position = 0, caption = "") {
-    const kept = await this.backend.uploadPrivatePicture(APP, `${crypto.randomUUID()}.jpg`, await shrinkPicture(file, 1600));
+    const name = crypto.randomUUID();
+    const kept = await this.backend.uploadPrivatePicture(APP, `${name}.jpg`, await shrinkPicture(file, 1600));
     if (kept.status === 413) return { ok: false, data: null, error: "That picture is too big. Please choose one under 10 MB." };
     if (!kept.ok) return answer(kept);
-    return answer(await this.backend.insert("tapestry_pictures", { memory_id: memoryId, path: kept.data.path, position, caption: caption.trim() }));
+    // and a small copy, for cards and lists: without it, the picture is shown there whole
+    const small = await this.backend.uploadPrivatePicture(APP, `${name}-thumb.jpg`, await shrinkPicture(file, THUMB, 0.8));
+    return answer(await this.backend.insert("tapestry_pictures", { memory_id: memoryId, path: kept.data.path, position, caption: caption.trim(),
+      ...(small.ok ? { thumb_path: small.data.path } : {}) }));
+  }
+
+  /** A small copy made of one of the member's pictures from before there were any: from its address, kept beside it. */
+  async makeThumb(id, path, address) {
+    try {
+      const got = await fetch(address);
+      if (!got.ok) return { ok: false, data: null, error: "The picture couldn't be fetched" };
+      const small = await this.backend.uploadPrivatePicture(APP, `${crypto.randomUUID()}-thumb.jpg`, await shrinkPicture(await got.blob(), THUMB, 0.8));
+      if (!small.ok) return answer(small);
+      return answer(await this.backend.update("tapestry_pictures", by(id), { thumb_path: small.data.path }));
+    } catch {
+      return { ok: false, data: null, error: "The picture couldn't be fetched" };
+    }
   }
 
   /** A picture taken off its memory, then its file: never a picture gone from a memory that keeps it. */
-  async removePicture(id, path) {
+  async removePicture(id, path, thumb = null) {
     const gone = answer(await this.backend.delete("tapestry_pictures", by(id)));
-    if (gone.ok) await this.backend.removePrivatePictures([path]);
+    if (gone.ok) await this.backend.removePrivatePictures([path, thumb].filter(Boolean));
     return gone;
   }
 
@@ -212,6 +232,9 @@ export class Loom {
   }
 
   async renamePerson(id, name) { return answer(await this.backend.update("tapestry_people", by(id), { name: name.trim() })); }
+
+  /** Two of the member's people found to be one: everything of the first folded into the second, the first gone. */
+  async mergePeople(from, into) { return answer(await this.backend.callRpc("tapestry_merge_people", { from_person: from, into_person: into })); }
 
   async deletePerson(id) { return answer(await this.backend.delete("tapestry_people", by(id))); }
 
@@ -310,6 +333,23 @@ export class Loom {
   async adminSet(member, admin) { return answer(await this.backend.callRpc("tapestry_admin_set", { member, admin })); }
 
   /** How the server is: { result, commit, at } (platform/bin/deploy's status, open to anyone). */
+  /** The platform's public key for phone notifications (platform/bin/send-push): a device subscribes with it. */
+  async pushKey() {
+    try {
+      const reply = await fetch(`${PLATFORM}/platform/push-key`);
+      const key = reply.ok ? (await reply.json()).key : "";
+      return key ? { ok: true, data: key, error: "" } : { ok: false, data: null, error: "Notifications aren't ready on the server yet. Try again in a few minutes." };
+    } catch {
+      return { ok: false, data: null, error: "The server didn't answer" };
+    }
+  }
+
+  /** This device, to be sent what is new for the member (backend.sql, "phone notifications"). */
+  async addDevice(endpoint, p256dh, auth) { return answer(await this.backend.callRpc("tapestry_add_device", { endpoint, p256dh, auth })); }
+
+  /** This device, sent nothing more. */
+  async removeDevice(endpoint) { return answer(await this.backend.callRpc("tapestry_remove_device", { endpoint })); }
+
   async platformStatus() {
     try {
       const reply = await fetch(`${PLATFORM}/platform/status`, { cache: "no-store" });

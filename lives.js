@@ -9,8 +9,8 @@
 // up and down) or in space (3D: time along, each life free in the other
 // two). Plain data in, plain data out, tested by tests/test_lives.mjs.
 
-import { lastDayOf } from "./when.js?v=97f2a9aaf774";
-import { yearsOf } from "./woven.js?v=97f2a9aaf774";
+import { lastDayOf } from "./when.js?v=0f4719403046";
+import { yearsOf } from "./woven.js?v=0f4719403046";
 
 export const GREY = "#7d869c";
 const FADE = 2; // years a line fades in over, before the first thing with someone whose birth isn't known
@@ -247,10 +247,11 @@ const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g,
  * { svg, width, height, points, from, to } - points each life's drawn places
  * (caught() reads them), or null with nothing to draw.
  */
-export function drawLives(drawn, laid, width = 700, colours = {}, range = null, hidden = [], focus = null) {
+export function drawLives(drawn, laid, width = 700, colours = {}, range = null, hidden = [], focus = null, found = null) {
   const ink = colours.ink ?? "#eef2fa";
   const soft = colours.soft ?? "#8e9ab8";
   const grid = colours.grid ?? "#34426a";
+  const lit = colours.found ?? "#f2c14e";
   const lives = drawn.lives.filter((l) => !hidden.includes(l.id));
   if (!lives.length || !laid.times.length) return null;
   const from = range?.from ?? Math.floor(Math.min(...lives.map((l) => l.from)));
@@ -290,7 +291,8 @@ export function drawLives(drawn, laid, width = 700, colours = {}, range = null, 
       stroke = `url(#${fade})`;
     }
     const picked = focus === life.id;
-    const faint = focus && !picked;
+    // faint behind the one picked out, or behind what a search found
+    const faint = (focus && !picked) || (found && !found.lives.has(life.id));
     const width_ = picked ? 5 : life.grey ? 2 : 3;
     const opacity = faint ? 0.2 : life.grey ? 0.75 : 1;
     // the line, and a wider one unseen over it, so a finger finds it: pressed, it is picked out
@@ -309,10 +311,11 @@ export function drawLives(drawn, laid, width = 700, colours = {}, range = null, 
     const cx = x(t);
     const cy = on.map((o) => y(o.p[0])).sort((a, b) => a - b);
     const colourOf = (id) => drawn.lives.find((l) => l.id === id)?.colour ?? GREY;
-    const dim = focus && !thing.lives.includes(focus) ? ' opacity="0.25"' : "";
-    out.push(`<a class="mark"${dim} data-key="${escape(thing.key)}" href="#${escape(thing.key.replace(":", "/"))}" aria-label="${escape(said)}"><title>${escape(said)}</title>`
-      + `<line x1="${cx}" y1="${cy[0]}" x2="${cx}" y2="${cy[cy.length - 1]}" stroke="${ink}" stroke-width="1.5" opacity="0.5"/>`
-      + on.map((o) => `<circle cx="${cx}" cy="${y(o.p[0])}" r="${thing.kind === "event" ? 5 : 4}" fill="${colourOf(o.id)}" stroke="${ink}" stroke-width="1.5"/>`).join("") + "</a>");
+    const hit = !!found?.keys.has(thing.key);
+    const dim = (focus && !thing.lives.includes(focus)) || (found && !hit) ? ' opacity="0.25"' : "";
+    out.push(`<a class="mark"${dim}${hit ? ' data-found="yes"' : ""} data-key="${escape(thing.key)}" href="#${escape(thing.key.replace(":", "/"))}" aria-label="${escape(said)}"><title>${escape(said)}</title>`
+      + `<line x1="${cx}" y1="${cy[0]}" x2="${cx}" y2="${cy[cy.length - 1]}" stroke="${hit ? lit : ink}" stroke-width="${hit ? 3 : 1.5}" opacity="${hit ? 0.9 : 0.5}"/>`
+      + on.map((o) => `<circle cx="${cx}" cy="${y(o.p[0])}" r="${(thing.kind === "event" ? 5 : 4) + (hit ? 2 : 0)}" fill="${colourOf(o.id)}" stroke="${hit ? lit : ink}" stroke-width="${hit ? 3 : 1.5}"/>`).join("") + "</a>");
   }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="Lives from ${Math.floor(from)} to ${Math.ceil(to)}" font-family="inherit"><defs>${defs.join("")}</defs>${out.join("")}</svg>`;
   return { svg, width, height, points, from, to };

@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
-import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=97f2a9aaf774";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=97f2a9aaf774";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=97f2a9aaf774";
-import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=97f2a9aaf774";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=97f2a9aaf774";
-import { DANGER, LINK } from "./look/look.js?v=97f2a9aaf774";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=0f4719403046";
+import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=0f4719403046";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=0f4719403046";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=0f4719403046";
+import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=0f4719403046";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=0f4719403046";
+import { DANGER, LINK } from "./look/look.js?v=0f4719403046";
 
 export const EDIT = "edit";
 
@@ -365,7 +365,7 @@ export class Editor extends Controller {
     this.fetching.setValue(false);
   }
 
-  /** A draft opened: "memory:new", "memory:new:event:<id>" (or :period:, :place:), "event:<id>"... */
+  /** A draft opened: "memory:new", "memory:new:event:<id>" (or :period:, :place:, :person:), "event:<id>"... */
   open(parameter) {
     const [kind, id, tied, tiedId] = parameter.split(":");
     const weave = this.weave();
@@ -382,7 +382,7 @@ export class Editor extends Controller {
     this.eventTitle.setValue("");
     this.periodIds.setValue(item ? (kind === "event" ? [...(item.period_ids ?? [])] : periodsOf(item)) : tied === "period" ? [tiedId] : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
-    this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : []);
+    this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : tied === "person" ? [tiedId] : []);
     this.labels.setValue(kind === "memory" && item ? [...(item.labels ?? [])] : []);
     this.periodType.setValue(kind !== "memory" ? item?.kind ?? "" : "");
     this.adds.setValue(kind === "event" ? item?.adds ?? "there" : "there");
@@ -391,7 +391,7 @@ export class Editor extends Controller {
     this.searches.label.setValue("");
     this.audience.setValue(item?.audience ?? weave.defaultAudience(kind));
     this.shares.setValue(item ? item.shares.map((s) => (s.person ? { person: s.person, allowed: s.allowed } : { circle: s.circle, allowed: s.allowed })) : []);
-    this.pictures.setValue(item?.pictures ? item.pictures.map(({ id: pid, path, caption }) => ({ id: pid, path, caption: caption ?? "" })) : []);
+    this.pictures.setValue(item?.pictures ? item.pictures.map(({ id: pid, path, thumb, caption }) => ({ id: pid, path, thumb: thumb ?? null, caption: caption ?? "" })) : []);
     this.captions.setValue({});
     this.links.setValue(item?.links ? item.links.map((l) => ({ url: l.url })) : []);
     this.linkText.setValue("");
@@ -507,7 +507,7 @@ export class Editor extends Controller {
     const save = { memory: (g) => this.loom.saveMemory(g), event: (g) => this.loom.saveEvent(g), period: (g) => this.loom.savePeriod(g) }[kind];
     const saved = await save(this.given());
     if (saved.ok && kind === "memory") {
-      for (const gone of this.removed.read()) await this.loom.removePicture(gone.id, gone.path);
+      for (const gone of this.removed.read()) await this.loom.removePicture(gone.id, gone.path, gone.thumb);
       const typed = this.captions.read();
       for (const kept of this.pictures.read()) {
         if (kept.id in typed && typed[kept.id].trim() !== kept.caption) await this.loom.captionPicture(kept.id, typed[kept.id]);
@@ -535,7 +535,7 @@ export class Editor extends Controller {
     const kind = this.kind.read();
     const id = this.id.read();
     this.busy.setValue(true);
-    const gone = kind === "memory" ? await this.loom.deleteMemory(id, this.pictures.read().map((p) => p.path))
+    const gone = kind === "memory" ? await this.loom.deleteMemory(id, this.pictures.read().flatMap((p) => [p.path, p.thumb].filter(Boolean)))
       : kind === "event" ? await this.loom.deleteEvent(id) : await this.loom.deletePeriod(id);
     await this.account.load();
     if (this.disposed) return;
@@ -737,7 +737,7 @@ export function describeEditor(ui, editor, account) {
     ], "Part")),
     ui.when(isMemory, ui.column([
       ui.text(Phrase.of("Pictures"), "FieldName"),
-      ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.path) : ""))), (p) => p.id, "EditPictures"),
+      ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.thumb || p.path) : ""))), (p) => p.id, "EditPictures"),
       ui.eachAcross(editor.added, (held) => thumbnail(held, held.map((p) => p?.address ?? "")), (p) => p.key, "EditPictures"),
       ui.file(ADDS_PICTURE, Phrase.of("Add pictures"), { accept: "image/*", multiple: true }),
       ui.when(ui.bound(() => !!editor.photoSpan()), ui.row([

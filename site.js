@@ -13,35 +13,39 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
-import { Loom, guarded } from "./loom.js?v=97f2a9aaf774";
-import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=97f2a9aaf774";
-import * as Edit from "./editor.js?v=97f2a9aaf774";
-import * as Folk from "./people.js?v=97f2a9aaf774";
-import * as Where from "./places.js?v=97f2a9aaf774";
-import * as Me from "./you.js?v=97f2a9aaf774";
-import * as Today from "./journal.js?v=97f2a9aaf774";
-import * as Ask from "./asking.js?v=97f2a9aaf774";
-import * as Run from "./admin.js?v=97f2a9aaf774";
-import * as List from "./importing.js?v=97f2a9aaf774";
-import * as Told from "./notices.js?v=97f2a9aaf774";
-import * as Talk from "./comments.js?v=97f2a9aaf774";
-import * as Kind from "./safety.js?v=97f2a9aaf774";
-import * as Pay from "./paying.js?v=97f2a9aaf774";
-import * as Say from "./feedback.js?v=97f2a9aaf774";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=97f2a9aaf774";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=97f2a9aaf774";
-import { yearsOf } from "./woven.js?v=97f2a9aaf774";
-import { dotOf, heading, mark, notice, problem } from "./parts.js?v=97f2a9aaf774";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=97f2a9aaf774";
-import { Space } from "./space.js?v=97f2a9aaf774";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=97f2a9aaf774";
-import { linksOf } from "./links.js?v=97f2a9aaf774";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=97f2a9aaf774";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=0f4719403046";
+import { Loom, guarded } from "./loom.js?v=0f4719403046";
+import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=0f4719403046";
+import * as Edit from "./editor.js?v=0f4719403046";
+import * as Folk from "./people.js?v=0f4719403046";
+import * as Where from "./places.js?v=0f4719403046";
+import * as Me from "./you.js?v=0f4719403046";
+import * as Today from "./journal.js?v=0f4719403046";
+import * as Ask from "./asking.js?v=0f4719403046";
+import * as Run from "./admin.js?v=0f4719403046";
+import * as List from "./importing.js?v=0f4719403046";
+import * as Told from "./notices.js?v=0f4719403046";
+import * as Talk from "./comments.js?v=0f4719403046";
+import * as Kind from "./safety.js?v=0f4719403046";
+import * as Pay from "./paying.js?v=0f4719403046";
+import * as Say from "./feedback.js?v=0f4719403046";
+import * as Hello from "./welcome.js?v=0f4719403046";
+import * as Ring from "./phone.js?v=0f4719403046";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=0f4719403046";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=0f4719403046";
+import { yearsOf } from "./woven.js?v=0f4719403046";
+import { dotOf, heading, mark, notice, problem } from "./parts.js?v=0f4719403046";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=0f4719403046";
+import { Space } from "./space.js?v=0f4719403046";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=0f4719403046";
+import { linksOf } from "./links.js?v=0f4719403046";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=0f4719403046";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=97f2a9aaf774")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=0f4719403046")).StandIn() : new Loom());
+// the browser's notifications, stood in for when probing: headless, it has none to give
+const PUSH = probing ? new (await import("./tests/standin.js?v=0f4719403046")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -77,6 +81,7 @@ const GOES_YOU = "goes_to_me";
 const OPENS_ITEM = "opens_it";
 const SEARCHES_THREAD = "searches_my_thread";
 const SEARCHES_WOVEN = "searches_the_tapestry";
+const SEARCHES_TIMELINE = "searches_my_timeline";
 const FLIPS_ORDER = "turns_the_order_around";
 const TOGGLES_THREAD = "shows_or_hides_a_thread";
 const TOGGLES_GREY = "shows_or_hides_named_people";
@@ -172,6 +177,7 @@ class Looking extends Controller {
     this.account = account;
     this.threadSearch = this.value("");
     this.wovenSearch = this.value("");
+    this.timelineSearch = this.value(""); // what is looked for on the timeline's chart: found, it is picked out there
     this.newestFirst = this.value(keptOrder()); // a journal reads newest first; a life story may be read either way
     this.hidden = this.value([]); // the lives the tapestry leaves out, by id ("account:<id>", "person:<id>")
     this.hiddenGrey = this.value(false); // whether the people the member only named (grey) are left out
@@ -180,6 +186,7 @@ class Looking extends Controller {
     this.selection = this.value(null); // what a box caught: a map of life id -> { from, to }, or null
     this.livesRange = this.value(null); // the stretch of years the flat tapestry shows, or null for all of it
     this.picked = this.value(null); // the life picked out on the tapestry - pressed on its line - or null
+    this.laidAt = this.value(0); // counts each settling of the lives finished, so the tapestry is drawn again
     this.tuning = this.value(keptTuning()); // how the lives settle (lives.js, TUNING)
     this.tuningOpen = this.value(false); // whether how the lives are drawn is open over the picture
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
@@ -209,9 +216,33 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
+  answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, SEARCHES_TIMELINE, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
     ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, SHOWS_ALL_TIME, SHOWS_IN_TIMELINE,
     TOGGLES_GREY, SHOWS_LIVES_IN, SELECTS, CLEARS_SELECTION, ZOOMS_LIVES, SHOWS_ALL_LIVES, OPENS_LIVES_SETTINGS, TUNES_LIVES, RESETS_LIVES]; }
+
+  /** The keys of what the timeline's search finds on the member's own life, or null while nothing is looked for. */
+  timelineFound() {
+    const looked = this.timelineSearch.read();
+    if (!looked.trim()) return null;
+    const w = this.account.weave.read();
+    return new Set(w.find(w.thread(w.meId), looked, this.account.foundInTexts(looked)).map((e) => e.key));
+  }
+
+  /**
+   * What the tapestry's search finds, to pick out on its lines - or null while nothing is looked for: the knots found
+   * (by key), and the lives found - by name, or through a knot found.
+   */
+  livesFound() {
+    const looked = this.wovenSearch.read();
+    if (!looked.trim()) return null;
+    const w = this.account.weave.read();
+    const drawn = this.drawnLives();
+    const keys = new Set(w.find(w.everything(), looked, this.account.foundInTexts(looked)).map((e) => e.key));
+    const words = looked.toLowerCase().trim().split(/\s+/);
+    const lives = new Set(drawn.lives.filter((l) => words.every((word) => l.name.toLowerCase().includes(word))).map((l) => l.id));
+    for (const thing of drawn.shared) if (keys.has(thing.key)) for (const id of thing.lives) lives.add(id);
+    return { keys, lives };
+  }
 
   /** The lives of the tapestry, worked out once for each load. */
   drawnLives() { const weave = this.account.weave.read(); return weave.kept("lives", () => livesOf(weave)); }
@@ -220,7 +251,47 @@ class Looking extends Controller {
   laidLives(dims) {
     const weave = this.account.weave.read();
     const tuning = this.tuning.read();
-    return weave.kept(`lives:${dims}:${JSON.stringify(tuning)}`, () => layOut(this.drawnLives(), dims, undefined, tuning));
+    this.laidAt.read();
+    const key = `${dims}:${JSON.stringify(tuning)}`;
+    if (this.laidFor?.weave !== weave) this.laidFor = { weave, results: new Map() };
+    const results = this.laidFor.results;
+    if (results.has(key)) return results.get(key);
+    // worked out away from the page; null - "working it out" - until then, and drawn again when it is
+    results.set(key, null);
+    this.layOutAside(this.drawnLives(), dims, tuning).then((laid) => {
+      if (this.disposed || this.laidFor?.weave !== weave) return;
+      results.set(key, laid);
+      this.laidAt.update((n) => n + 1);
+    });
+    return null;
+  }
+
+  /** The lives settled in a worker, off the page's own thread; where workers can't be, on it, after the page has drawn. */
+  layOutAside(drawn, dims, tuning) {
+    const here = () => new Promise((done) => setTimeout(() => done(layOut(drawn, dims, undefined, tuning)), 0));
+    // walked (?probe), the page runs on headless Chrome's virtual time, which a worker's answer never arrives in
+    if (probing) return here();
+    try {
+      if (!this.worker) {
+        this.worker = new Worker(new URL(`./lives-worker.js${new URL(import.meta.url).search}`, import.meta.url), { type: "module" });
+        this.waiting = new Map();
+        this.worker.onmessage = ({ data }) => {
+          const done = this.waiting.get(data.id);
+          this.waiting.delete(data.id);
+          done?.({ times: data.times, at: new Map(data.at) });
+        };
+        this.worker.onerror = () => { this.worker = false; for (const [, done] of this.waiting) done(null); this.waiting.clear(); this.laidFor = null; this.laidAt.update((n) => n + 1); };
+      }
+      if (this.worker === false) return here();
+      const id = (this.asked = (this.asked ?? 0) + 1);
+      return new Promise((done) => {
+        this.waiting.set(id, done);
+        this.worker.postMessage({ id, drawn: { lives: drawn.lives, shared: drawn.shared }, dims, tuning });
+      });
+    } catch {
+      this.worker = false;
+      return here();
+    }
   }
 
   /** The lives left out, by id: those hidden, and the grey ones while they are. */
@@ -358,6 +429,7 @@ class Looking extends Controller {
     }
     if (action === SEARCHES_THREAD) this.threadSearch.setValue(payload.line);
     if (action === SEARCHES_WOVEN) this.wovenSearch.setValue(payload.line);
+    if (action === SEARCHES_TIMELINE) this.timelineSearch.setValue(payload.line);
     if (action === FLIPS_ORDER) {
       this.newestFirst.update((newest) => !newest);
       try { localStorage.setItem(ORDER_KEPT, this.newestFirst.read() ? "newest" : "oldest"); } catch { /* this visit only */ }
@@ -401,6 +473,7 @@ class Looking extends Controller {
   reset() {
     this.threadSearch.setValue("");
     this.wovenSearch.setValue("");
+    this.timelineSearch.setValue("");
     this.hidden.setValue([]);
     this.selection.setValue(null);
     this.selecting.setValue(false);
@@ -440,6 +513,8 @@ export class Tapestry extends ChimeApp {
       ...Kind.WORDS,
       ...Pay.WORDS,
       ...Say.WORDS,
+      ...Hello.WORDS,
+      ...Ring.WORDS,
       [GOES_TODAY]: ["Today"],
       [GOES_NOTICES]: ["Notices"],
       [GOES_EVENTS]: ["Events"],
@@ -474,6 +549,7 @@ export class Tapestry extends ChimeApp {
       [SHOWS_IN_TIMELINE]: ["Show in timeline"],
       [SEARCHES_THREAD]: ["Find in my life"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
+      [SEARCHES_TIMELINE]: ["Find on my timeline"],
       [FLIPS_ORDER]: ["Turn the order around"],
       [TOGGLES_THREAD]: ["Show their life"],
       [TOGGLES_GREY]: ["Show the people you named"],
@@ -513,6 +589,8 @@ export class Tapestry extends ChimeApp {
     this.safety = this.model(new Kind.Safety(this.chimes, LOOM, this.account));
     this.paying = this.model(new Pay.Paying(this.chimes, LOOM, this.account));
     this.feedback = this.model(new Say.Feedback(this.chimes, LOOM, this.account));
+    this.welcome = this.model(new Hello.Welcome(this.chimes, LOOM, this.account));
+    this.phone = this.model(new Ring.Phone(this.chimes, LOOM, this.account, PUSH ?? Ring.browserPush()));
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
@@ -522,17 +600,19 @@ export class Tapestry extends ChimeApp {
         this.door(), this.todayScreen(), this.threadScreen(), this.timelineScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
         this.menuScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM, Say.FEEDBACK_ITEM, ADMIN), Run.describeAdmin(ui, this.admin, this.account), List.describeImport(ui, this.importer, this.account),
         Edit.describeEditor(ui, this.editor, this.account),
-        Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
+        Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people,
+          ui.when(ui.bound(() => !!this.people.invitation.read()?.accepted && this.welcome.needed()), ui.button(Hello.BEGINS, { goes_to: Hello.WELCOME }))),
         Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
-        Me.describeYou(ui, this.you, this.account, this.safety),
+        Me.describeYou(ui, this.you, this.account, this.safety, this.phone),
         Pay.describePaying(ui, this.paying, this.account),
         Say.describeFeedback(ui, this.feedback, this.account), Say.describeFeedbackItem(ui, this.feedback, this.account),
+        Hello.describeWelcome(ui, this.welcome, THREAD, WOVEN),
       ]),
     ]);
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=97f2a9aaf774").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=0f4719403046").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -680,6 +760,11 @@ export class Tapestry extends ChimeApp {
         if (!range) return "";
         const said = (years) => { const y = Math.floor(years); const m = Math.min(11, Math.floor((years - y) * 12)); return range.to - range.from > 3 ? String(y) : `${MONTH_NAMES[m]} ${y}`; };
         return Phrase.with("Showing %s to %s", [said(range.from), said(range.to - 1 / 365)]);
+      }), "Hint").hidesEmpty(),
+      ui.field(SEARCHES_TIMELINE, "", { changes: SEARCHES_TIMELINE, shows: looking.timelineSearch, placeholder: Phrase.of("Find: words, people, places") }),
+      ui.text(ui.bound(() => {
+        const found = looking.timelineFound();
+        return !found ? "" : found.size ? Phrase.counted("%d found, picked out below", "%d found, picked out below", found.size) : Phrase.of("Nothing found.");
       }), "Hint").hidesEmpty(),
       ui.surface("PeriodsChart", []).named("timeline-chart"),
       ui.when(ui.bound(() => !thread.read().length), ui.text(Phrase.of("Nothing with a time yet: add a period, an event or a memory, and say when."), "Quiet").wraps()),
@@ -831,6 +916,13 @@ export class Tapestry extends ChimeApp {
         ui.when(lives.map((l) => l.some((life) => life.grey)), ui.pressable(TOGGLES_GREY, {}, [ui.text(Phrase.of("Named people"), Themes.FACE)], "Segment")
           .currentWhile(looking.hiddenGrey.map((h) => !h))),
       ], "Segments"),
+      // what is looked for: found, its knots and the lives through them are picked out on the picture
+      ui.field(SEARCHES_WOVEN, "", { changes: SEARCHES_WOVEN, shows: looking.wovenSearch, placeholder: Phrase.of("Find: words, people, places") }),
+      ui.text(ui.bound(() => {
+        const found = looking.livesFound();
+        const n = found ? found.keys.size || found.lives.size : 0;
+        return !found ? "" : n ? Phrase.counted("%d found, picked out on the lines", "%d found, picked out on the lines", n) : Phrase.of("Nothing found.");
+      }), "Hint").hidesEmpty(),
       ui.row([
         ui.pressable(SELECTS, {}, [ui.text(Phrase.of("Select"), Themes.FACE)], "Segment").currentWhile(looking.selecting),
         ui.pressable(CLEARS_SELECTION, {}, [ui.text(ui.words(CLEARS_SELECTION), "Small")], LINK).absentWhenRefused(),
@@ -856,6 +948,7 @@ export class Tapestry extends ChimeApp {
         ], "TuningPanel")),
       ], "LivesFrame"),
       ui.when(lives.map((l) => !l.length), ui.text(Phrase.of("No lives to draw yet: say your birthday in You, or add a memory."), "Quiet").wraps()),
+      ui.when(ui.bound(() => lives.read().length > 0 && !looking.laidLives(flat.read() ? 1 : 2)), ui.text(Phrase.of("Working out where the lines go…"), "Quiet")),
       ui.text(ui.bound(() => Phrase.of(looking.selecting.read() ? "Draw a box over the lines to select them, for the time it spans."
         : flat.read() ? "Press a line to pick it out; a knot to open it. Pinch to zoom. Press Select, then draw a box over lines to list what you were in with them, then."
           : "Press a line to pick it out; a knot to open it. Drag to turn it, pinch to zoom; walk with the joysticks (in You) or W A S D and the arrows.")), "Hint").wraps(),
@@ -865,7 +958,7 @@ export class Tapestry extends ChimeApp {
       }), "Notice").wraps().hidesEmpty(),
       ui.when(looking.selection, ui.column([
         heading(ui, "What you were in, there"),
-        this.finder(SEARCHES_WOVEN, looking.wovenSearch),
+        this.ordering(),
         this.timeline(entries, ui.bound(() => (looking.wovenSearch.read().trim() ? Phrase.of("Nothing found.")
           : Phrase.of("Nothing you were in with them, then."))), true),
       ])),
@@ -897,9 +990,19 @@ export class Tapestry extends ChimeApp {
     const ui = this.ui;
     return ui.row([
       ui.field(action, "", { changes: action, shows, placeholder: Phrase.of("Find: words, people, places") }).grow(),
+      ...this.orders(),
+    ], "Finder");
+  }
+
+  /** The order to see a list in, and how full its cards are, on their own: a list found by a line above it. */
+  ordering() { return this.ui.row(this.orders(), "Finder"); }
+
+  orders() {
+    const ui = this.ui;
+    return [
       ui.pressable(FLIPS_ORDER, {}, [ui.text(this.looking.newestFirst.map((n) => Phrase.of(n ? "Newest first" : "Oldest first")), "Small")], LINK),
       ui.pressable(Me.SHOWS_ON_CARDS, { part: "light" }, [ui.text(this.account.weave.map((w) => Phrase.of(w.cardShows.light ? "Full cards" : "Light cards")), "Small")], LINK),
-    ], "Finder");
+    ];
   }
 
   /**
@@ -986,7 +1089,7 @@ export class Tapestry extends ChimeApp {
           }), "Meta").hidesEmpty(),
         ], "MetaRow"),
         ui.eachAcross(held.map((e) => e?.labels ?? []), (l) => ui.text(l.map((x) => `#${x ?? ""}`), "LabelTag"), null, "LabelTags"),
-        ui.eachAcross(pictures, (pic) => ui.image(pic.map((p) => (p ? account.address(p.path) : "")), "Thumb",
+        ui.eachAcross(pictures, (pic) => ui.image(pic.map((p) => (p ? account.address(p.thumb || p.path) : "")), "Thumb",
           pic.map((p) => p?.caption || Phrase.of("A picture"))),
           (p) => p.id, "Thumbs"),
         ui.eachAcross(shownList("pictures", (e) => (e?.videos ?? []).slice(0, 2)), (poster) => ui.image(poster, "Thumb VideoThumb", Phrase.of("A video")), null, "Thumbs"),
@@ -1054,7 +1157,11 @@ export class Tapestry extends ChimeApp {
           ui.text(entry.map((e) => e?.said ?? ""), "When").hidesEmpty(),
           ui.text(entry.map((e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(entry.map((e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
-          ui.text(entry.map((e) => (e?.mine ? Phrase.of("Your life") : Phrase.with("%s's life", [e?.ownerName ?? ""]))), "Whose"),
+          // whose it is: someone of the member's opens their page
+          ui.when(entry.map((e) => !!e?.ownerPerson),
+            ui.pressable(Folk.OPENS_PERSON, entry.map((e) => ({ parameter: e?.ownerPerson ?? "" })),
+              [ui.text(entry.map((e) => Phrase.with("%s's life", [e?.ownerName ?? ""])), "Whose LinkWords")], "Link").goesTo(PERSON),
+            ui.text(entry.map((e) => (e?.mine ? Phrase.of("Your life") : Phrase.with("%s's life", [e?.ownerName ?? ""]))), "Whose")),
         ], "CardTop"),
         ui.text(entry.map((e) => e?.title ?? ""), "Title").wraps(),
         ui.text(words, "Words Body").wraps().hidesEmpty(),
@@ -1075,7 +1182,11 @@ export class Tapestry extends ChimeApp {
           [ui.text(l.map((x) => `#${x ?? ""}`), "Small")], "Segment LabelChip").goesTo(THREAD), null, "Labels"),
         ui.when(people.map((p) => p.length > 0), ui.column([
           ui.text(ui.bound(() => Phrase.of(kindOf() === "event" ? "Who was there" : "With")), "FieldName"),
-          ui.text(people.map((p) => listed(p)), "Words").wraps(),
+          // each name the member knows opens their page; the rest are names
+          ui.eachAcross(entry.map((e) => e?.folk ?? []), (held) => ui.when(held.map((f) => !!f?.person),
+            ui.pressable(Folk.OPENS_PERSON, held.map((f) => ({ parameter: f?.person ?? "" })), [ui.text(held.map((f) => f?.name ?? ""), "LinkWords")], "Link PersonLink")
+              .goesTo(PERSON),
+            ui.text(held.map((f) => f?.name ?? ""), "Words")), (f, i) => `${f.person ?? f.name}:${i}`, "PeopleLinks"),
         ])),
         Ask.describeThatsMe(ui, this.asking, account, entry),
         Talk.describeComments(ui, this.comments, account, ui.bound(() => (kindOf() === "memory" ? item.read() : null))),
@@ -1144,7 +1255,7 @@ export class Tapestry extends ChimeApp {
       const [wanted, parameter = ""] = hash.replace(/^#/, "").split("/");
       if (["memory", "event", "period"].includes(wanted) && parameter) return [ITEM, `${wanted}:${parameter}`];
       if ([PERSON, PLACE, JOIN].includes(wanted) && parameter) return [wanted, parameter];
-      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID, Say.FEEDBACK].includes(wanted)) return [wanted, null];
+      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID, Say.FEEDBACK, Hello.WELCOME].includes(wanted)) return [wanted, null];
       if (wanted === Say.FEEDBACK && parameter) return [Say.FEEDBACK_ITEM, parameter];
       if (wanted === "more") return [MENU, null]; // the menu's address before it was the menu
       return [THREAD, null];
@@ -1172,6 +1283,8 @@ export class Tapestry extends ChimeApp {
       if (this.account.state._held !== "in") { go(DOOR, null); return; }
       const waiting = this.pendingInvite._held;
       if (waiting) { this.keepInvite(""); go(JOIN, waiting); return; }
+      // a first time in, with nothing yet: welcomed, rather than shown an empty life
+      if (screen === THREAD && !location.hash && this.welcome.needed()) { go(Hello.WELCOME, null); return; }
       go(screen, parameter);
     };
     open();
@@ -1182,7 +1295,7 @@ export class Tapestry extends ChimeApp {
       if (now !== state) {
         state = now;
         if (now === "out") Frames.defer(() => { this.looking.reset(); this.people.reset(); this.places.reset(); this.asking.reset(); });
-        if (now === "in") Frames.defer(() => this.looking.arrived());
+        if (now === "in") Frames.defer(() => { this.looking.arrived(); this.phone.check(); });
         Frames.defer(open);
       }
     });
@@ -1200,7 +1313,7 @@ export class Tapestry extends ChimeApp {
         }
         return;
       }
-      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID, Say.FEEDBACK_ITEM, Say.FEEDBACK].find((screen) => top.includes(screen));
+      const at = [THREAD, WOVEN, ITEM, PERSON, PLACE, PEOPLE, PLACES, YOU, JOIN, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID, Say.FEEDBACK_ITEM, Say.FEEDBACK, Hello.WELCOME].find((screen) => top.includes(screen));
       if (!at) return;
       const parameter = this.driver.getParameter(at);
       const address = at === THREAD ? "" : at === ITEM ? `#${String(parameter).replace(":", "/")}`
@@ -1238,13 +1351,15 @@ export class Tapestry extends ChimeApp {
       const range = looking.livesRange.read();
       const selecting = looking.selecting.read();
       const picked = looking.picked.read();
+      const found = looking.livesFound();
       looking.tuning.read();
       looking.selection.read();
       const colours = { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, ground: PALETTE.ground };
       if (!open) return;
       if (mode === "2d") {
         draw = () => this.drawInto("lives-picture", true, (place) => {
-          const drawn = drawLives(looking.drawnLives(), looking.laidLives(1), Math.max(Math.round(place.clientWidth) || 700, 280), colours, range, hidden, picked);
+          const laid = looking.laidLives(1);
+          const drawn = laid ? drawLives(looking.drawnLives(), laid, Math.max(Math.round(place.clientWidth) || 700, 280), colours, range, hidden, picked, found) : null;
           this.livesPoints = drawn?.points ?? [];
           place.classList.toggle("Selecting", selecting);
           return drawn;
@@ -1266,7 +1381,8 @@ export class Tapestry extends ChimeApp {
           });
         }
         this.space.setSelecting(selecting);
-        this.space.set(looking.drawnLives(), looking.laidLives(2), colours, hidden, picked);
+        const laid = looking.laidLives(2);
+        if (laid) this.space.set(looking.drawnLives(), laid, colours, hidden, picked, found);
       });
       inSpace(40);
     });
@@ -1324,8 +1440,9 @@ export class Tapestry extends ChimeApp {
       const weave = this.account.weave.read();
       const hidden = this.looking.timelineHides();
       const range = this.looking.timelineRange.read();
+      const found = this.looking.timelineFound();
       draw = () => this.drawInto("timeline-chart", open, (place) => drawTimeline(weave, Math.max(Math.round(place.clientWidth) || 700, 280), new Date(),
-        { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, memory: PALETTE.accent }, hidden, range));
+        { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, memory: PALETTE.accent }, hidden, range, found));
       draw();
     });
     let waiting = null;

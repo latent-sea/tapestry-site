@@ -9,11 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
-import { heading, mark, notice, problem } from "./parts.js?v=97f2a9aaf774";
-import { CARD, DANGER, LINK } from "./look/look.js?v=97f2a9aaf774";
-import { describeIsThisYou } from "./asking.js?v=97f2a9aaf774";
-import { parseWhen, sayWhen } from "./when.js?v=97f2a9aaf774";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=0f4719403046";
+import { heading, mark, notice, problem } from "./parts.js?v=0f4719403046";
+import { CARD, DANGER, LINK } from "./look/look.js?v=0f4719403046";
+import { describeIsThisYou } from "./asking.js?v=0f4719403046";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=0f4719403046";
+import { parseWhen, sayWhen } from "./when.js?v=0f4719403046";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -31,6 +32,8 @@ export const SETS_BORN = "sets_when_they_were_born";
 export const SETS_DIED = "sets_when_they_died";
 export const SAVES_LIFE = "saves_when_they_lived";
 export const REMOVES_PERSON = "removes_them";
+export const PICKS_TWIN = "picks_who_else_they_are";
+export const MERGES = "merges_them";
 export const SETS_CIRCLE_NAME = "sets_a_new_circles_name";
 export const ADDS_CIRCLE = "adds_a_circle";
 export const TOGGLES_IN_CIRCLE = "puts_them_in_or_out_of_a_circle";
@@ -61,6 +64,8 @@ export const WORDS = {
   [SETS_DIED]: ["Died"],
   [SAVES_LIFE]: ["Save when they lived"],
   [REMOVES_PERSON]: ["Remove them from your people"],
+  [PICKS_TWIN]: ["The same person"],
+  [MERGES]: ["Merge them"],
   [SETS_CIRCLE_NAME]: ["Circle name"],
   [ADDS_CIRCLE]: ["Add a circle"],
   [TOGGLES_IN_CIRCLE]: ["In this circle"],
@@ -82,6 +87,7 @@ export class People extends Controller {
     this.died = this.value(""); // and when they died, as typed: it ends there
     this.link = this.value({ person: "", address: "" }); // the invitation shown, for one person
     this.invitation = this.value(null); // the one being opened: { token, from, expired } once found, or null
+    this.twin = this.value(""); // another of the member's people picked as this same person, to merge into this one
     this.asking = this.value(""); // what is asked about before it is removed: "person:<id>" or "circle:<id>"
     this.busy = this.value(false);
     this.problem = this.value("");
@@ -100,6 +106,7 @@ export class People extends Controller {
     this.link.setValue({ person: "", address: "" });
     this.invitation.setValue(null);
     this.asking.setValue("");
+    this.twin.setValue("");
     this.problem.setValue("");
     this.notice.setValue("");
   }
@@ -109,6 +116,7 @@ export class People extends Controller {
     if (action === ADDS_PERSON && !this.newName.read().trim()) return Phrase.of("Type their name first");
     if (action === ADDS_CIRCLE && !this.circleName.read().trim()) return Phrase.of("Name the circle first");
     if (action === RENAMES && !this.rename.read().trim()) return Phrase.of("A name can't be empty");
+    if (action === MERGES && !this.twin.read()) return Phrase.of("Pick who else they are first");
     if (action === SAVES_LIFE) {
       for (const typed of [this.born.read(), this.died.read()]) if (typed.trim() && !parseWhen(typed).when) return Phrase.of("Say when, as a time is: 12 June 1932, June 1932, 1932");
     }
@@ -138,6 +146,12 @@ export class People extends Controller {
       this.change(() => this.loom.savePersonLife(payload.id, { born: born?.date ?? null, born_precision: born?.precision ?? "day",
         died: died?.date ?? null, died_precision: died?.precision ?? "day" }), () => "Saved");
     }
+    if (action === PICKS_TWIN) this.twin.setValue(this.twin.read() === payload.id ? "" : payload.id);
+    if (action === MERGES) {
+      const gone = this.twin.read();
+      this.twin.setValue("");
+      this.change(() => this.loom.mergePeople(gone, payload.id), () => "Merged: one person now, with everything of both");
+    }
     if (action === RENAMES) this.change(() => this.loom.renamePerson(payload.id, this.rename.read()), () => "Name saved");
     if (action === ASKS_TO_REMOVE) this.asking.setValue(payload.key);
     if (action === KEEPS) this.asking.setValue("");
@@ -165,6 +179,7 @@ export class People extends Controller {
     this.born.setValue(known?.born ? sayWhen({ date: known.born, precision: known.born_precision }) : "");
     this.died.setValue(known?.died ? sayWhen({ date: known.died, precision: known.died_precision }) : "");
     this.asking.setValue("");
+    this.twin.setValue("");
     this.rename.setValue(this.weave().people.get(personId)?.name ?? "");
     const invite = this.weave().people.get(personId)?.invite;
     this.link.setValue({ person: personId, address: invite ? linkTo(invite.token) : "" });
@@ -284,6 +299,12 @@ export function describePerson(ui, people, account, timeline, asking) {
   const circles = account.weave.map((w) => w.data.circles);
   const about = ui.bound(() => account.weave.read().aboutPerson(personId.read()));
   const showsLink = ui.bound(() => people.link.read().person === personId.read() && people.link.read().address !== "");
+  // who else this person could be: any other of the member's people, but not someone linked to a different account, nor the member themself
+  const twins = ui.bound(() => {
+    const weave = account.weave.read();
+    const self = person.read();
+    return weave.data.people.filter((p) => p.id !== self?.id && p.account !== weave.me?.id && !(p.account && self?.account && p.account !== self.account));
+  });
   return ui.screen(PERSON, [
     ui.when(person, ui.column([
       ui.row([mark(ui, person.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6")), "BigDot"), ui.text(person.map((p) => p?.name ?? ""), "Title")]),
@@ -308,6 +329,8 @@ export function describePerson(ui, people, account, timeline, asking) {
           [ui.text(held.map((c) => c?.name ?? ""), Themes.FACE)], "Segment")
           .currentWhile(ui.bound(() => (held.read()?.people ?? []).includes(personId.read()))), (c) => c.id, "Segments"),
       ])),
+      // a memory of them: written with them on it already
+      ui.row([ui.button(ADDS_MEMORY, { with: personId.map((id) => `memory:new:person:${id}`), goes_to: EDIT }).absentWhenRefused()], "Actions"),
       heading(ui, "Everything with them"),
       timeline(about, Phrase.of("Nothing yet. Tag them on a memory, an event or a period.")),
       // someone not on Tapestry: their life on the tapestry, grey, runs from their birth to their death, as far as known
@@ -317,6 +340,17 @@ export function describePerson(ui, people, account, timeline, asking) {
         ui.field(SETS_BORN, "", { label: Phrase.of("Born"), changes: SETS_BORN, shows: people.born, placeholder: Phrase.of("e.g. 1932") }),
         ui.field(SETS_DIED, "", { label: Phrase.of("Died"), changes: SETS_DIED, shows: people.died, placeholder: Phrase.of("Leave empty if they're alive") }),
         ui.row([ui.button(SAVES_LIFE, { payload: personId.map((id) => ({ id })), style: LINK })], "Actions"),
+      ])),
+      // two names for one person, made by mistake or by importing: the other folded into this one
+      ui.when(twins.map((t) => t.length > 0), ui.column([
+        heading(ui, "The same person twice?"),
+        ui.text(person.map((p) => Phrase.with("If another of your people is %s too, pick them. Merged, everything tagged with either is tagged with %s, they are in both's circles, and the other name goes.", [p?.name ?? "", p?.name ?? ""])), "Hint").wraps(),
+        ui.eachAcross(twins, (held) => ui.pressable(PICKS_TWIN, held.map((p) => ({ id: p?.id ?? "" })), [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment")
+          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), (p) => p.id, "Segments"),
+        ui.when(people.twin.map((t) => t !== ""), ui.column([
+          ui.text(ui.bound(() => Phrase.with("Merge %s into %s? It can't be undone.", [account.weave.read().people.get(people.twin.read())?.name ?? "", person.read()?.name ?? ""])), "Warn").wraps(),
+          ui.row([ui.button(MERGES, { payload: personId.map((id) => ({ id })), style: DANGER })], "Actions"),
+        ])),
       ])),
       heading(ui, "Their name to you"),
       ui.row([
@@ -339,8 +373,8 @@ export function describePerson(ui, people, account, timeline, asking) {
   ], null, { on_fill: () => people.open(personId.read()) });
 }
 
-/** An invitation opened, once signed in: from whom, and accepting it. */
-export function describeJoin(ui, people) {
+/** An invitation opened, once signed in: from whom, and accepting it; then what comes after (the welcome, for someone new). */
+export function describeJoin(ui, people, after = null) {
   const invitation = people.invitation;
   return ui.screen(JOIN, [
     ui.text(Phrase.of("An invitation"), "Title"),
@@ -354,5 +388,6 @@ export function describeJoin(ui, people) {
     ])),
     problem(ui, people.problem),
     notice(ui, people.notice),
+    ...(after ? [after] : []),
   ], null, { on_fill: () => people.look(ui.parameter(JOIN).read()) });
 }

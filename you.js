@@ -18,15 +18,16 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
-import { heading, notice, problem } from "./parts.js?v=97f2a9aaf774";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=97f2a9aaf774";
-import { dotOf } from "./parts.js?v=97f2a9aaf774";
-import { SIGNS_OUT } from "./account.js?v=97f2a9aaf774";
-import { copyOf } from "./keep.js?v=97f2a9aaf774";
-import { parseWhen, sayWhen } from "./when.js?v=97f2a9aaf774";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=97f2a9aaf774";
-import { UNBLOCKS } from "./safety.js?v=97f2a9aaf774";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=0f4719403046";
+import { heading, notice, problem } from "./parts.js?v=0f4719403046";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=0f4719403046";
+import { dotOf } from "./parts.js?v=0f4719403046";
+import { SIGNS_OUT } from "./account.js?v=0f4719403046";
+import { copyOf } from "./keep.js?v=0f4719403046";
+import { parseWhen, sayWhen } from "./when.js?v=0f4719403046";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=0f4719403046";
+import { UNBLOCKS } from "./safety.js?v=0f4719403046";
+import { describePhone } from "./phone.js?v=0f4719403046";
 
 export const YOU = "you";
 
@@ -217,7 +218,7 @@ export class You extends Controller {
   /** The member's own account deleted, everything of theirs with it, and their pictures' files: then signed out. */
   async deleteMe() {
     const weave = this.account.weave.read();
-    const paths = weave.data.memories.filter((m) => m.owner === weave.meId).flatMap((m) => m.pictures.map((p) => p.path));
+    const paths = weave.data.memories.filter((m) => m.owner === weave.meId).flatMap((m) => m.pictures.flatMap((p) => [p.path, p.thumb].filter(Boolean)));
     this.busy.setValue(true);
     this.problem.setValue("");
     const gone = await this.loom.deleteMe(paths);
@@ -275,7 +276,7 @@ export class You extends Controller {
   }
 }
 
-export function describeYou(ui, you, account, safety) {
+export function describeYou(ui, you, account, safety, phone) {
   const me = account.weave.map((w) => w.me);
   return ui.screen(YOU, [
     ui.text(Phrase.of("You"), "Title"),
@@ -304,6 +305,7 @@ export function describeYou(ui, you, account, safety) {
     problem(ui, you.problem),
     notice(ui, you.notice),
     // emails (backend.sql, "emailed") are put away until the platform's mail is set up: no jobs.json runs tapestry_mail
+    describePhone(ui, phone, { heading, problem, LINK }),
     heading(ui, "Kinds of period"),
     ui.text(Phrase.of("What kinds of time your periods are, each its colour on your timeline. Make your own; taking one off leaves it on its periods, grey."), "Hint").wraps(),
     ui.eachAcross(account.weave.map((w) => w.periodKinds), (held) => ui.pressable(TAKES_OFF_KIND, held.map((k) => ({ name: k?.name ?? "" })), [

@@ -5,11 +5,11 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
-import { heading, notice, problem } from "./parts.js?v=97f2a9aaf774";
-import { CARD, DANGER, LINK } from "./look/look.js?v=97f2a9aaf774";
-import { HOW_TO_INVITE } from "./people.js?v=97f2a9aaf774";
-import { sayAgo } from "./notices.js?v=97f2a9aaf774";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=0f4719403046";
+import { heading, notice, problem } from "./parts.js?v=0f4719403046";
+import { CARD, DANGER, LINK } from "./look/look.js?v=0f4719403046";
+import { HOW_TO_INVITE } from "./people.js?v=0f4719403046";
+import { sayAgo } from "./notices.js?v=0f4719403046";
 
 export const ADMIN = "admin";
 
@@ -166,7 +166,7 @@ export function describeAdmin(ui, admin, account) {
       ui.text(held.map((r) => Phrase.with(r?.kind === "comment" ? "%s reported a comment by %s" : "%s reported a memory of %s's", [r?.reporter ?? "", r?.owner ?? ""])), "Words").wraps(),
       ui.text(held.map((r) => r?.title ?? ""), "CardTitle").wraps().hidesEmpty(),
       ui.text(held.map((r) => r?.words ?? ""), "Words Body").wraps().hidesEmpty(),
-      ui.eachAcross(held.map((r) => r?.pictures ?? []), (pic) => ui.image(pic.map((p) => (p ? account.address(p.path) : "")), "Thumb",
+      ui.eachAcross(held.map((r) => r?.pictures ?? []), (pic) => ui.image(pic.map((p) => (p ? account.address(p.thumb || p.path) : "")), "Thumb",
         pic.map((p) => p?.caption || Phrase.of("A picture"))), (p) => p.id, "Thumbs"),
       ui.text(held.map((r) => (r?.reason ? Phrase.with("Why: %s", [r.reason]) : "")), "Meta").wraps().hidesEmpty(),
       ui.text(held.map((r) => when(r?.created_at)), "Meta"),
