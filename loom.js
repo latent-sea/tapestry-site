@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=0f4719403046";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=0f4719403046";
-import { shrinkPicture } from "./backend/pictures.js?v=0f4719403046";
+import { Backend } from "./backend/backend.js?v=e43c69e994f9";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=e43c69e994f9";
+import { shrinkPicture } from "./backend/pictures.js?v=e43c69e994f9";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -45,7 +45,7 @@ const by = (id) => `id=eq.${encodeURIComponent(id)}`;
 // what may still be asked while seeing Tapestry as someone else: nothing that changes anything, nor anything of
 // the one looking's own (their texts, their finding) that would show through
 const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "signOut", "mayJoin",
-  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation",
+  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation", "findPublic",
   "pushKey", "addDevice", "removeDevice"]); // a device's notifications are the one signed in's own, whoever they are seeing as
 
 /**
@@ -333,6 +333,12 @@ export class Loom {
   async adminSet(member, admin) { return answer(await this.backend.callRpc("tapestry_admin_set", { member, admin })); }
 
   /** How the server is: { result, commit, at } (platform/bin/deploy's status, open to anyone). */
+  /** What anyone shared with everyone on Tapestry, holding every word looked for: [{ kind, id, title, starts, starts_precision, town, owner_name }]. */
+  async findPublic(looked) { return answer(await this.backend.callRpc("tapestry_find_public", { looked })); }
+
+  /** One found opened: among what the member sees from now on. */
+  async look(kind, id) { return answer(await this.backend.callRpc("tapestry_look", { kind, id })); }
+
   /** The platform's public key for phone notifications (platform/bin/send-push): a device subscribes with it. */
   async pushKey() {
     try {

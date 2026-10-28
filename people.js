@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=0f4719403046";
-import { heading, mark, notice, problem } from "./parts.js?v=0f4719403046";
-import { CARD, DANGER, LINK } from "./look/look.js?v=0f4719403046";
-import { describeIsThisYou } from "./asking.js?v=0f4719403046";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=0f4719403046";
-import { parseWhen, sayWhen } from "./when.js?v=0f4719403046";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
+import { heading, mark, notice, problem } from "./parts.js?v=e43c69e994f9";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e43c69e994f9";
+import { describeIsThisYou } from "./asking.js?v=e43c69e994f9";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=e43c69e994f9";
+import { parseWhen, sayWhen } from "./when.js?v=e43c69e994f9";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -41,6 +41,7 @@ export const REMOVES_CIRCLE = "removes_a_circle";
 export const ACCEPTS = "accepts_the_invitation";
 export const ASKS_TO_REMOVE = "asks_before_removing";
 export const KEEPS = "keeps_them";
+export const ORDERS_PEOPLE = "orders_my_people";
 
 /** How to invite someone, step by step: on the People page and in the admin area. */
 export const HOW_TO_INVITE = [
@@ -73,6 +74,7 @@ export const WORDS = {
   [ACCEPTS]: ["Link our lives"],
   [ASKS_TO_REMOVE]: ["Remove"],
   [KEEPS]: ["No, keep"],
+  [ORDERS_PEOPLE]: ["Choose their order"],
 };
 
 export class People extends Controller {
@@ -87,6 +89,7 @@ export class People extends Controller {
     this.died = this.value(""); // and when they died, as typed: it ends there
     this.link = this.value({ person: "", address: "" }); // the invitation shown, for one person
     this.invitation = this.value(null); // the one being opened: { token, from, expired } once found, or null
+    this.order = this.value(keptOrder()); // the people's list: "name" (A to Z), or "memories" (the most memories together first)
     this.twin = this.value(""); // another of the member's people picked as this same person, to merge into this one
     this.asking = this.value(""); // what is asked about before it is removed: "person:<id>" or "circle:<id>"
     this.busy = this.value(false);
@@ -145,6 +148,10 @@ export class People extends Controller {
       const died = parseWhen(this.died.read()).when;
       this.change(() => this.loom.savePersonLife(payload.id, { born: born?.date ?? null, born_precision: born?.precision ?? "day",
         died: died?.date ?? null, died_precision: died?.precision ?? "day" }), () => "Saved");
+    }
+    if (action === ORDERS_PEOPLE) {
+      this.order.setValue(payload.order);
+      try { localStorage.setItem(ORDER_KEPT, payload.order); } catch { /* this visit only */ }
     }
     if (action === PICKS_TWIN) this.twin.setValue(this.twin.read() === payload.id ? "" : payload.id);
     if (action === MERGES) {
@@ -239,12 +246,25 @@ export class People extends Controller {
   }
 }
 
+const ORDER_KEPT = "tapestry-people-order";
+
+/** The people's order this device was last left in. */
+function keptOrder() {
+  try { return localStorage.getItem(ORDER_KEPT) === "memories" ? "memories" : "name"; } catch { return "name"; }
+}
+
 /** The address an invitation opens at. */
 export function linkTo(token) { return `${location.origin}${location.pathname}#join/${token}`; }
 
 /** The member's people and circles. */
 export function describePeople(ui, people, account) {
-  const list = account.weave.map((w) => w.data.people);
+  const counts = account.weave.map((w) => w.memoryCounts());
+  const list = ui.bound(() => {
+    const all = account.weave.read().data.people;
+    if (people.order.read() !== "memories") return all;
+    const n = counts.read();
+    return [...all].sort((a, b) => (n.get(b.id) ?? 0) - (n.get(a.id) ?? 0) || a.name.localeCompare(b.name));
+  });
   const circles = account.weave.map((w) => w.data.circles);
   return ui.screen(PEOPLE, [
     ui.text(Phrase.of("Your people"), "Title"),
@@ -256,6 +276,8 @@ export function describePeople(ui, people, account) {
     problem(ui, people.problem),
     notice(ui, people.notice),
     ui.when(list.map((l) => l.length === 0), ui.text(Phrase.of("No one yet."), "Quiet")),
+    ui.when(list.map((l) => l.length > 1), ui.row([["name", "A to Z"], ["memories", "Most memories together"]].map(([order, said]) =>
+      ui.pressable(ORDERS_PEOPLE, { order }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment").currentWhile(people.order.map((o) => o === order))), "Segments")),
     ui.surface("Card HowTo", [ui.column([
       ui.text(Phrase.of("Inviting someone"), "FieldName"),
       ...HOW_TO_INVITE.map((step) => ui.text(Phrase.of(step), "Hint").wraps()),
@@ -263,6 +285,7 @@ export function describePeople(ui, people, account) {
     ui.each(list, (held) => ui.pressable(OPENS_PERSON, held.map((p) => ({ parameter: p?.id ?? "" })), [ui.row([
       mark(ui, held.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6"))),
       ui.text(held.map((p) => p?.name ?? ""), "PersonName").grow(),
+      ui.text(ui.bound(() => { const n = counts.read().get(held.read()?.id) ?? 0; return n ? Phrase.counted("%d memory", "%d memories", n) : ""; }), "Quiet").hidesEmpty(),
       ui.text(held.map((p) => Phrase.of(p?.account ? "On Tapestry" : p?.invite ? "Invited" : "A name")), "Quiet"),
     ], "PersonRow")], `${CARD} ListItem`).goesTo(PERSON), (p) => p.id, "List"),
     heading(ui, "Circles"),

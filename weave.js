@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=0f4719403046";
-import { linksOf } from "./links.js?v=0f4719403046";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=e43c69e994f9";
+import { linksOf } from "./links.js?v=e43c69e994f9";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -38,6 +38,7 @@ export const AUDIENCES = [
   ["there", "People who were there"],
   ["connections", "All my people"],
   ["chosen", "Only who I pick"],
+  ["everyone", "Everyone on Tapestry"],
 ];
 
 /** A memory's, event's or period's start or end (which: "starts" or "ends"), as a time, or null. */
@@ -290,9 +291,12 @@ export class Weave {
     const mine = item.owner === this.meId;
     const found = this.places.get(item.place_id) ?? null;
     const place = found ? { id: found.id, name: found.name, where: [found.town, found.region, found.country].filter(Boolean).join(", ") } : null;
-    const people = item.tags.map((tag) => this.tagName(tag));
+    // on something everyone on Tapestry sees, the names the member doesn't know are only counted
+    const named = item.tags.filter((tag) => !tag.hidden);
+    const others = item.tags.length - named.length;
+    const people = [...named.map((tag) => this.tagName(tag)), ...(others ? [others === 1 ? "1 other" : `${others} others`] : [])];
     // each name with the member's own person for it, to open: theirs by name, or the one linked to that account
-    const folk = item.tags.map((tag) => ({ name: this.tagName(tag), person: this.personOf(tag) }));
+    const folk = [...named.map((tag) => ({ name: this.tagName(tag), person: this.personOf(tag) })), ...(others ? [{ name: people[people.length - 1], person: null }] : [])];
     // names of someone else's, linked to no one: the member may ask to be one of them
     const unlinked = item.tags.filter((tag) => tag.unlinked).map((tag) => ({ id: tag.unlinked, name: tag.name }));
     const base = {
@@ -412,6 +416,19 @@ export class Weave {
     });
   }
 
+  /** How many memories each of the member's people is in - tagged on, or theirs - as aboutPerson finds them: person id -> count. */
+  memoryCounts() {
+    return this.kept("memoryCounts", () => {
+      const counts = new Map();
+      for (const memory of this.data.memories) {
+        const with_ = new Set(memory.tags.map((tag) => this.personOf(tag)));
+        with_.add(this.linked.get(memory.owner)?.id);
+        for (const id of with_) if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+      return counts;
+    });
+  }
+
   /** The memories of an event, by everyone, in order. */
   memoriesOf(eventId) { return sortEntries(this.data.memories.filter((m) => m.event_id === eventId).map((m) => this.entry("memory", m))); }
 
@@ -474,6 +491,10 @@ export class Weave {
     }
     for (const account of kept) seen.delete(account);
     seen.delete(this.meId);
+    if (draft.audience === "everyone") {
+      const out = [...kept].map((account) => this.nameOf(account)).sort((a, b) => a.localeCompare(b));
+      return { seen: [...seen], names: [], notOnTapestry: [], summary: out.length ? `Everyone on Tapestry but ${listed(out)}` : "Everyone on Tapestry" };
+    }
     const names = [...seen].map((account) => this.nameOf(account)).sort((a, b) => a.localeCompare(b));
     // those named who would see it if they were on Tapestry
     const named = [...draft.tags, ...draft.shares.filter((s) => s.allowed).flatMap(peopleOf)];

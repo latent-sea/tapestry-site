@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=0f4719403046";
-import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=0f4719403046";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=0f4719403046";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=0f4719403046";
-import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=0f4719403046";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=0f4719403046";
-import { DANGER, LINK } from "./look/look.js?v=0f4719403046";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
+import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=e43c69e994f9";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=e43c69e994f9";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=e43c69e994f9";
+import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=e43c69e994f9";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=e43c69e994f9";
+import { DANGER, LINK } from "./look/look.js?v=e43c69e994f9";
 
 export const EDIT = "edit";
 
@@ -154,6 +154,8 @@ export class Editor extends Controller {
     this.title = this.value("");
     this.text = this.value("");
     this.whenText = this.value("");
+    this.eventSaid = ""; // the event's time, as offered for a memory of it ("" for none), and which event's
+    this.eventSaidOf = null;
     this.eventId = this.value(null);
     this.eventTitle = this.value(""); // the event a memory becomes when someone on Tapestry is tagged: named here, never by its words
     this.periodIds = this.value([]); // a memory's periods: as many as overlap
@@ -377,12 +379,20 @@ export class Editor extends Controller {
     // a long memory a light load cut short: its words in full, fetched before it can be saved
     this.fetching.setValue(false);
     if (kind === "memory" && item?.cut) this.fetchWhole(item);
-    this.whenText.setValue(item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "");
+    // a memory added to an event starts out at the event's time, place and periods (those the member may use), to change
+    // - and one that keeps its event's time shows it too: left as it is, it goes on following the event's
+    const event = kind !== "memory" ? null : !item && tied === "event" ? weave.events.get(tiedId) ?? null : item && !item.starts ? weave.events.get(item.event_id) ?? null : null;
+    this.eventSaid = event ? saySpan(timeOf(event, "starts"), timeOf(event, "ends"), "", true) : "";
+    this.eventSaidOf = event?.id ?? null;
+    this.whenText.setValue(item?.starts || !event ? (item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "") : this.eventSaid);
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
     this.eventTitle.setValue("");
-    this.periodIds.setValue(item ? (kind === "event" ? [...(item.period_ids ?? [])] : periodsOf(item)) : tied === "period" ? [tiedId] : []);
+    this.periodIds.setValue(item ? (kind === "event" ? [...(item.period_ids ?? [])] : periodsOf(item))
+      : tied === "period" ? [tiedId] : event ? (event.period_ids ?? []).filter((id) => this.mayUse(weave.periods.get(id))) : []);
     this.placeId.setValue(item?.place_id ?? (tied === "place" ? tiedId : tied === "event" ? weave.events.get(tiedId)?.place_id ?? null : null));
-    this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : tied === "person" ? [tiedId] : []);
+    // a memory of an event starts with who was there: those of them the member has among their people, and its maker
+    const there = event && !item ? [...event.tags.map((tag) => weave.personOf(tag)), event.owner !== weave.meId ? weave.linked.get(event.owner)?.id : null] : [];
+    this.tags.setValue(item ? item.tags.map((tag) => tag.person).filter(Boolean) : tied === "person" ? [tiedId] : [...new Set(there.filter(Boolean))]);
     this.labels.setValue(kind === "memory" && item ? [...(item.labels ?? [])] : []);
     this.periodType.setValue(kind !== "memory" ? item?.kind ?? "" : "");
     this.adds.setValue(kind === "event" ? item?.adds ?? "there" : "there");
@@ -483,9 +493,12 @@ export class Editor extends Controller {
   }
 
   /** The draft as the platform's save takes it. */
+  /** Whether the time is its event's still, as it was offered: kept as none of its own, so it follows the event's. */
+  followsEvent() { return this.kind.read() === "memory" && this.eventId.read() === this.eventSaidOf && !!this.eventSaid && this.whenText.read().trim() === this.eventSaid; }
+
   given() {
     const kind = this.kind.read();
-    const { starts, ends } = this.span();
+    const { starts, ends } = this.followsEvent() ? { starts: null, ends: null } : this.span();
     const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: at?.time ?? "" });
     const common = {
       id: this.id.read() ?? "", title: this.title.read().trim(), ...time("starts", starts), ...time("ends", ends),
@@ -504,6 +517,8 @@ export class Editor extends Controller {
     const kind = this.kind.read();
     this.busy.setValue(true);
     this.problem.setValue("");
+    // a kind typed but not added yet is added, and is this one's: saved without Enter, it isn't lost
+    if (kind !== "memory" && this.newKind.read().trim()) await this.addKind(this.newKind.read());
     const save = { memory: (g) => this.loom.saveMemory(g), event: (g) => this.loom.saveEvent(g), period: (g) => this.loom.savePeriod(g) }[kind];
     const saved = await save(this.given());
     if (saved.ok && kind === "memory") {
@@ -658,7 +673,7 @@ export function describeEditor(ui, editor, account) {
   const whenSaid = ui.bound(() => {
     const read = span.read();
     if (read.error) return read.error === EXAMPLES ? Phrase.of(EXAMPLES) : Phrase.of(read.error);
-    if (!read.starts) return kind.read() === "memory" && editor.eventId.read() ? Phrase.of("The same as its event") : "";
+    if (!read.starts || editor.followsEvent()) return kind.read() === "memory" && editor.eventId.read() ? Phrase.of("The same as its event") : "";
     return Phrase.with("Read as: %s", [saySpan(read.starts, read.ends, read.going ? "now" : "", kind.read() === "memory")]);
   });
   const audience = ui.bound(() => editor.audienceNow());
@@ -694,7 +709,10 @@ export function describeEditor(ui, editor, account) {
           return dotOf(kind.read() === "event" ? w.eventKindColour(held.read()?.type) : w.kindColour(held.read()?.type));
         }), "SmallDot", ""), ui.text(held.map((k) => k?.said ?? ""), Themes.FACE)], "Segment")
         .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
-      ui.field(ADDS_PERIOD_KIND, "", { changes: SETS_NEW_KIND, shows: editor.newKind, placeholder: Phrase.of("Or a kind of your own - Enter adds it") }),
+      ui.row([
+        ui.field(ADDS_PERIOD_KIND, "", { changes: SETS_NEW_KIND, shows: editor.newKind, placeholder: Phrase.of("Or a kind of your own") }).grow(),
+        ui.button(ADDS_PERIOD_KIND, { style: LINK }),
+      ], "AddRow"),
     ], "Part")),
     // an event is a grouping of memories: what is written goes in its memories, not on it
     ui.when(kind.map((k) => k !== "event"), ui.column([
