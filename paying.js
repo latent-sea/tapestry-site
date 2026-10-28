@@ -6,9 +6,9 @@
 // confirms it with the store - it alone holds the stores' keys - and then
 // the member is on the paid plan, everywhere.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
-import { ACTION } from "./look/look.js?v=a546cc14beb2";
-import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
+import { ACTION } from "./look/look.js?v=97f2a9aaf774";
+import { heading, notice, problem } from "./parts.js?v=97f2a9aaf774";
 
 export const PAID = "paid";
 export const GOES_PAID = "goes_paid";

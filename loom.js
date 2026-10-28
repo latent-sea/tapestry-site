@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=a546cc14beb2";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=a546cc14beb2";
-import { shrinkPicture } from "./backend/pictures.js?v=a546cc14beb2";
+import { Backend } from "./backend/backend.js?v=97f2a9aaf774";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=97f2a9aaf774";
+import { shrinkPicture } from "./backend/pictures.js?v=97f2a9aaf774";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -39,6 +39,34 @@ export function said(reply) {
 
 const answer = (reply, data = reply.data) => ({ ok: reply.ok, data: reply.ok ? data : null, error: said(reply) });
 const by = (id) => `id=eq.${encodeURIComponent(id)}`;
+
+// what may still be asked while seeing Tapestry as someone else: nothing that changes anything, nor anything of
+// the one looking's own (their texts, their finding) that would show through
+const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "signOut", "mayJoin",
+  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation"]);
+
+/**
+ * The loom, or a stand-in for it, kept from changing anything while seeing as someone else: guarded.seeing is
+ * who (null for no one), and every call but a read is refused while it is someone.
+ */
+export function guarded(loom) {
+  const guard = { seeing: null };
+  return new Proxy(loom, {
+    get(target, name) {
+      if (name === "seeing") return guard.seeing;
+      const value = target[name];
+      if (typeof value !== "function") return value;
+      return (...given) => (guard.seeing && !READS.has(name)
+        ? Promise.resolve({ ok: false, data: null, error: "Seeing Tapestry as someone else: nothing is changed" })
+        : value.apply(target, given));
+    },
+    set(target, name, value) {
+      if (name === "seeing") { guard.seeing = value; return true; }
+      target[name] = value;
+      return true;
+    },
+  });
+}
 
 export class Loom {
   constructor(backend = new Backend(PLATFORM, KEY, { keptIn: "tapestry_session" })) {
@@ -206,6 +234,25 @@ export class Loom {
 
   /** A report dealt with by an admin: what was reported taken off (removed), or let be. */
   async adminSettleReport(report, removed) { return answer(await this.backend.callRpc("tapestry_admin_settle_report", { report, removed })); }
+
+  // --- moderating, and support ---
+
+  /** What is reported, in full, for those who moderate. */
+  async reportsView() { return answer(await this.backend.callRpc("tapestry_reports_view")); }
+
+  /** A report dealt with: what it is of removed (saying why), or let be. */
+  async settleReport(report, removed, reason) { return answer(await this.backend.callRpc("tapestry_settle_report", { report, removed, reason })); }
+
+  async adminSetModerator(member, moderates) { return answer(await this.backend.callRpc("tapestry_admin_set_moderator", { member, moderates })); }
+
+  /** Tapestry's support let see the member's account as it is, for so many hours; 0 stops it. */
+  async letSupport(hours) { return answer(await this.backend.callRpc("tapestry_let_support", { hours })); }
+
+  /** What a member sees, as support sees it: masked, unless they let support in. */
+  async viewAs(member) {
+    const reply = await this.backend.callRpc("tapestry_view_as", { member });
+    return reply.ok ? { ok: true, data: { tapestry: reply.data }, error: "" } : answer(reply);
+  }
 
   // --- keeping Tapestry kind, and leaving it ---
 

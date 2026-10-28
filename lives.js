@@ -9,8 +9,8 @@
 // up and down) or in space (3D: time along, each life free in the other
 // two). Plain data in, plain data out, tested by tests/test_lives.mjs.
 
-import { lastDayOf } from "./when.js?v=a546cc14beb2";
-import { yearsOf } from "./woven.js?v=a546cc14beb2";
+import { lastDayOf } from "./when.js?v=97f2a9aaf774";
+import { yearsOf } from "./woven.js?v=97f2a9aaf774";
 
 export const GREY = "#7d869c";
 const FADE = 2; // years a line fades in over, before the first thing with someone whose birth isn't known
@@ -242,11 +242,12 @@ const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g,
  * The lives drawn flat, width wide: time across (the stretch range, { from,
  * to }, or all of it), each life up and down where it settled (layOut), named
  * at its start, in its colour or grey, fading in where its start isn't
- * known; and each thing shared, a knot through the lives in it. Answers
+ * known; and each thing shared, a knot through the lives in it. One life
+ * may be picked out (focus, its id): drawn bold, the rest faint. Answers
  * { svg, width, height, points, from, to } - points each life's drawn places
  * (caught() reads them), or null with nothing to draw.
  */
-export function drawLives(drawn, laid, width = 700, colours = {}, range = null, hidden = []) {
+export function drawLives(drawn, laid, width = 700, colours = {}, range = null, hidden = [], focus = null) {
   const ink = colours.ink ?? "#eef2fa";
   const soft = colours.soft ?? "#8e9ab8";
   const grid = colours.grid ?? "#34426a";
@@ -288,9 +289,15 @@ export function drawLives(drawn, laid, width = 700, colours = {}, range = null, 
       defs.push(`<linearGradient id="${fade}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="0" x2="${x2}" y2="0"><stop offset="0" stop-color="${life.colour}" stop-opacity="0"/><stop offset="1" stop-color="${life.colour}" stop-opacity="1"/></linearGradient>`);
       stroke = `url(#${fade})`;
     }
-    out.push(`<path d="${path.join("")}" fill="none" stroke="${stroke}" stroke-width="${life.grey ? 2 : 3}" stroke-linecap="round" stroke-linejoin="round" opacity="${life.grey ? 0.75 : 1}"/>`);
+    const picked = focus === life.id;
+    const faint = focus && !picked;
+    const width_ = picked ? 5 : life.grey ? 2 : 3;
+    const opacity = faint ? 0.2 : life.grey ? 0.75 : 1;
+    // the line, and a wider one unseen over it, so a finger finds it: pressed, it is picked out
+    out.push(`<g class="life" data-life="${escape(life.id)}" aria-label="${escape(life.name)}"><path d="${path.join("")}" fill="none" stroke="${stroke}" stroke-width="${width_}" stroke-linecap="round" stroke-linejoin="round" opacity="${opacity}"/>`
+      + `<path d="${path.join("")}" fill="none" stroke="transparent" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" pointer-events="stroke"/></g>`);
     const first = points.find((p) => p.id === life.id);
-    out.push(`<text x="${Math.max(first.x, LEFT)}" y="${first.y - 8}" fill="${life.grey ? soft : ink}" font-size="12" font-weight="600">${escape(life.name)}${life.died ? " †" : ""}</text>`);
+    out.push(`<text x="${Math.max(first.x, LEFT)}" y="${first.y - 8}" fill="${life.grey ? soft : ink}" font-size="${picked ? 14 : 12}" font-weight="${picked ? 800 : 600}" opacity="${faint ? 0.35 : 1}">${escape(life.name)}${life.died ? " †" : ""}</text>`);
   });
   // each thing shared: a dot on each life in it, a line down through them
   for (const thing of drawn.shared) {
@@ -302,7 +309,8 @@ export function drawLives(drawn, laid, width = 700, colours = {}, range = null, 
     const cx = x(t);
     const cy = on.map((o) => y(o.p[0])).sort((a, b) => a - b);
     const colourOf = (id) => drawn.lives.find((l) => l.id === id)?.colour ?? GREY;
-    out.push(`<a class="mark" data-key="${escape(thing.key)}" href="#${escape(thing.key.replace(":", "/"))}" aria-label="${escape(said)}"><title>${escape(said)}</title>`
+    const dim = focus && !thing.lives.includes(focus) ? ' opacity="0.25"' : "";
+    out.push(`<a class="mark"${dim} data-key="${escape(thing.key)}" href="#${escape(thing.key.replace(":", "/"))}" aria-label="${escape(said)}"><title>${escape(said)}</title>`
       + `<line x1="${cx}" y1="${cy[0]}" x2="${cx}" y2="${cy[cy.length - 1]}" stroke="${ink}" stroke-width="1.5" opacity="0.5"/>`
       + on.map((o) => `<circle cx="${cx}" cy="${y(o.p[0])}" r="${thing.kind === "event" ? 5 : 4}" fill="${colourOf(o.id)}" stroke="${ink}" stroke-width="1.5"/>`).join("") + "</a>");
   }

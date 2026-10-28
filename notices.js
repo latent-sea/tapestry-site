@@ -2,17 +2,19 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
-import { CARD } from "./look/look.js?v=a546cc14beb2";
-import { describeAsked } from "./asking.js?v=a546cc14beb2";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
+import { CARD } from "./look/look.js?v=97f2a9aaf774";
+import { describeAsked } from "./asking.js?v=97f2a9aaf774";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
 export const OPENS_FEEDBACK_NOTICE = "opens_the_feedback_a_notice_is_of";
+export const OPENS_REPORTS = "opens_what_was_reported";
 
 export const WORDS = {
   [OPENS_NOTICE]: ["Open"],
   [OPENS_FEEDBACK_NOTICE]: ["Open"],
+  [OPENS_REPORTS]: ["Open"],
 };
 
 const KIND_OF = (n) => (n.memory ? "memory" : n.event ? "event" : n.period ? "period" : "");
@@ -30,6 +32,14 @@ export function sayNotice(notice) {
   if (n.kind === "added") return Phrase.with("%s added “%s” to %s", [who, title, n.event_title || Phrase.of("an event you are at")]);
   if (n.kind === "shared") return Phrase.with("%s shared “%s” with you", [who, title]);
   if (n.kind === "commented") return Phrase.with("%s commented on “%s”", [who, title]);
+  if (n.kind === "reported") return Phrase.with(n.what === "comment" ? "%s reported a comment: “%s”" : "%s reported a memory: “%s”", [who, n.about ?? ""]);
+  if (n.kind === "moderated") {
+    const why = n.note ? Phrase.with(" Why: %s", [n.note]) : "";
+    if (n.what === "removed") return Phrase.joined([Phrase.with("Your “%s” was removed by Tapestry's moderators for breaking its terms.", [n.about ?? ""]), why,
+      Phrase.of(" If you think it shouldn't have been, say so in Feedback.")]);
+    if (n.what === "upheld") return Phrase.joined([Phrase.with("What you reported, “%s”, was removed.", [n.about ?? ""]), why]);
+    return Phrase.with("What you reported, “%s”, was looked at and left as it is.", [n.about ?? ""]);
+  }
   if (n.kind === "feedback") {
     if (n.what === "sent") return Phrase.with("%s sent feedback: “%s”", [who, n.about ?? ""]);
     if (n.what === "status") return Phrase.with("%s said where your feedback “%s” stands", [who, n.about ?? ""]);
@@ -103,7 +113,7 @@ export class Notices extends Controller {
 }
 
 /** The screen: what waits for an answer, then each notice, newest first, opening what it is of. */
-export function describeNotices(ui, notices, asking, account, itemScreen, feedbackScreen) {
+export function describeNotices(ui, notices, asking, account, itemScreen, feedbackScreen, adminScreen) {
   const list = account.weave.map((w) => w.notices);
   // new on this visit: marked seen as the screen opens, it still says so until the next load
   const fresh = (held) => held.map((n) => !!n && !n.seen);
@@ -124,7 +134,11 @@ export function describeNotices(ui, notices, asking, account, itemScreen, feedba
       // feedback opens on its own screen; anything else, the memory, event or period it is of
       return ui.when(held.map((n) => !!n?.feedback),
         ui.pressable(OPENS_FEEDBACK_NOTICE, held.map((n) => ({ parameter: n?.feedback ?? "" })), row(), `${CARD} Notice`).goesTo(feedbackScreen),
-        ui.pressable(OPENS_NOTICE, held.map((n) => ({ parameter: openedBy(n) })), row(), `${CARD} Notice`).goesTo(itemScreen));
+        ui.when(held.map((n) => n?.kind === "reported"),
+          ui.pressable(OPENS_REPORTS, {}, row(), `${CARD} Notice`).goesTo(adminScreen),
+          // moderated: said, with nothing left to open
+          ui.when(held.map((n) => n?.kind === "moderated"), ui.surface(`${CARD} Notice`, row()),
+            ui.pressable(OPENS_NOTICE, held.map((n) => ({ parameter: openedBy(n) })), row(), `${CARD} Notice`).goesTo(itemScreen))));
     }, (n) => n.id, "List"),
   ], null, { on_fill: () => notices.open() });
 }

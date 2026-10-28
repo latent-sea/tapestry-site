@@ -243,3 +243,7 @@
   border-radius: 14px; background: color-mix(in srgb, var(--chime-ground) 94%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--chime-lit); }
 #app .TuningRow { align-items: center; gap: 8px; }
 #app .TuningSaid { min-width: 5.5rem; text-align: center; font-weight: 600; }
+
+/* seeing Tapestry as someone else, as its support: said plainly at the top of every screen */
+#app .SeeingBar { align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; border-radius: 14px; border: 2px solid var(--chime-accent-2, #7c5cff);
+  background: color-mix(in srgb, var(--chime-accent-2, #7c5cff) 18%, var(--chime-raised)); }

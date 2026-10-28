@@ -18,15 +18,15 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
-import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=a546cc14beb2";
-import { dotOf } from "./parts.js?v=a546cc14beb2";
-import { SIGNS_OUT } from "./account.js?v=a546cc14beb2";
-import { copyOf } from "./keep.js?v=a546cc14beb2";
-import { parseWhen, sayWhen } from "./when.js?v=a546cc14beb2";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=a546cc14beb2";
-import { UNBLOCKS } from "./safety.js?v=a546cc14beb2";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
+import { heading, notice, problem } from "./parts.js?v=97f2a9aaf774";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=97f2a9aaf774";
+import { dotOf } from "./parts.js?v=97f2a9aaf774";
+import { SIGNS_OUT } from "./account.js?v=97f2a9aaf774";
+import { copyOf } from "./keep.js?v=97f2a9aaf774";
+import { parseWhen, sayWhen } from "./when.js?v=97f2a9aaf774";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=97f2a9aaf774";
+import { UNBLOCKS } from "./safety.js?v=97f2a9aaf774";
 
 export const YOU = "you";
 
@@ -54,6 +54,8 @@ export const SETS_BORN_SHARED = "sets_how_much_of_my_birthday_is_shared";
 export const TOGGLES_DEATH_KEEPER = "lets_them_record_my_death_or_not";
 export const SETS_DEATH = "types_when_they_died";
 export const RECORDS_DEATH = "records_their_death";
+export const LETS_SUPPORT = "lets_support_see_my_account";
+export const STOPS_SUPPORT = "stops_support_seeing_my_account";
 export const DELETES_ME = "deletes_my_account";
 export const KEEPS_ME = "keeps_my_account";
 
@@ -82,6 +84,8 @@ export const WORDS = {
   [TOGGLES_DEATH_KEEPER]: ["Let them record it"],
   [SETS_DEATH]: ["When they died"],
   [RECORDS_DEATH]: ["Record it"],
+  [LETS_SUPPORT]: ["Let support see my account for 24 hours"],
+  [STOPS_SUPPORT]: ["Stop it now"],
   [DELETES_ME]: ["Yes, delete everything"],
   [KEEPS_ME]: ["No, keep it"],
 };
@@ -161,6 +165,8 @@ export class You extends Controller {
       const read = parseWhen(this.deaths.read()[payload.account] ?? "");
       this.change(() => this.loom.recordDeath(payload.account, read.when?.date ?? null, read.when?.precision ?? null), read.when ? "Recorded" : "Taken back");
     }
+    if (action === LETS_SUPPORT) this.change(() => this.loom.letSupport(24), "Support can see your account as you do for the next 24 hours.");
+    if (action === STOPS_SUPPORT) this.change(() => this.loom.letSupport(0), "Support can't see your account now.");
     if (action === ASKS_TO_DELETE_ME) this.deleting.setValue(true);
     if (action === KEEPS_ME) this.deleting.setValue(false);
     if (action === DELETES_ME) { this.deleting.setValue(false); this.deleteMe(); }
@@ -359,12 +365,23 @@ export function describeYou(ui, you, account, safety) {
       notice(ui, safety.notice),
     ])),
     ui.divider(),
-    ui.when(me.map((m) => !!m?.admin), ui.pressable(OPENS_ADMIN, {}, [ui.text(ui.words(OPENS_ADMIN), Themes.FACE)], LINK).goesTo("admin")),
+    ui.when(me.map((m) => !!m?.admin || !!m?.moderator), ui.pressable(OPENS_ADMIN, {}, [ui.text(ui.words(OPENS_ADMIN), Themes.FACE)], LINK).goesTo("admin")),
     ui.button(SIGNS_OUT, { style: LINK }),
     ui.row([
       ui.hyperlink("privacy.html", [ui.text(Phrase.of("Privacy"), "Small")], "LegalLink"),
       ui.hyperlink("terms.html", [ui.text(Phrase.of("Terms"), "Small")], "LegalLink"),
     ], "Legal"),
+    // Tapestry's support: masked unless let in, for a while; every look said here
+    heading(ui, "Tapestry support"),
+    ui.text(Phrase.of("To help with a problem, Tapestry's support can see your account as you do - but with every word jumbled and every picture blacked out. Let them see it as it is only if you want to, for 24 hours. Each time they look is listed here."), "Hint").wraps(),
+    ui.when(me.map((m) => !!m?.support_until), ui.column([
+      ui.text(me.map((m) => (m?.support_until ? Phrase.with("Support can see your account as it is until %s.", [new Date(m.support_until).toLocaleString(undefined,
+        { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })]) : "")), "Notice").wraps(),
+      ui.row([ui.button(STOPS_SUPPORT, { style: LINK })], "Actions"),
+    ]), ui.row([ui.button(LETS_SUPPORT, { style: LINK })], "Actions")),
+    ui.each(me.map((m) => (m?.support_looks ?? []).map((l, i) => ({ ...l, key: `${l.at}-${i}` }))), (held) => ui.text(held.map((l) => Phrase.with(
+      l?.what === "viewed_masked" ? "%s looked, masked, %s" : l?.what === "viewed_with_consent" ? "%s looked, as you let them, %s" : "%s moderated something of yours, %s",
+      [l?.by ?? "", new Date(l?.at ?? 0).toLocaleString(undefined, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })])), "Meta"), (l) => l.key, "List"),
     heading(ui, "Delete my account"),
     ui.text(Phrase.of("Everything of yours - memories, pictures, events, periods, places, people, comments - deleted for good, straight away. Keep a copy first, above, if you'd like one."), "Hint").wraps(),
     ui.when(you.deleting, ui.column([

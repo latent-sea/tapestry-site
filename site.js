@@ -13,34 +13,35 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
-import { Loom } from "./loom.js?v=a546cc14beb2";
-import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=a546cc14beb2";
-import * as Edit from "./editor.js?v=a546cc14beb2";
-import * as Folk from "./people.js?v=a546cc14beb2";
-import * as Where from "./places.js?v=a546cc14beb2";
-import * as Me from "./you.js?v=a546cc14beb2";
-import * as Today from "./journal.js?v=a546cc14beb2";
-import * as Ask from "./asking.js?v=a546cc14beb2";
-import * as Run from "./admin.js?v=a546cc14beb2";
-import * as List from "./importing.js?v=a546cc14beb2";
-import * as Told from "./notices.js?v=a546cc14beb2";
-import * as Talk from "./comments.js?v=a546cc14beb2";
-import * as Kind from "./safety.js?v=a546cc14beb2";
-import * as Pay from "./paying.js?v=a546cc14beb2";
-import * as Say from "./feedback.js?v=a546cc14beb2";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=a546cc14beb2";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=a546cc14beb2";
-import { yearsOf } from "./woven.js?v=a546cc14beb2";
-import { dotOf, heading, mark, notice, problem } from "./parts.js?v=a546cc14beb2";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=a546cc14beb2";
-import { Space } from "./space.js?v=a546cc14beb2";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=a546cc14beb2";
-import { linksOf } from "./links.js?v=a546cc14beb2";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=a546cc14beb2";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
+import { Loom, guarded } from "./loom.js?v=97f2a9aaf774";
+import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=97f2a9aaf774";
+import * as Edit from "./editor.js?v=97f2a9aaf774";
+import * as Folk from "./people.js?v=97f2a9aaf774";
+import * as Where from "./places.js?v=97f2a9aaf774";
+import * as Me from "./you.js?v=97f2a9aaf774";
+import * as Today from "./journal.js?v=97f2a9aaf774";
+import * as Ask from "./asking.js?v=97f2a9aaf774";
+import * as Run from "./admin.js?v=97f2a9aaf774";
+import * as List from "./importing.js?v=97f2a9aaf774";
+import * as Told from "./notices.js?v=97f2a9aaf774";
+import * as Talk from "./comments.js?v=97f2a9aaf774";
+import * as Kind from "./safety.js?v=97f2a9aaf774";
+import * as Pay from "./paying.js?v=97f2a9aaf774";
+import * as Say from "./feedback.js?v=97f2a9aaf774";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=97f2a9aaf774";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=97f2a9aaf774";
+import { yearsOf } from "./woven.js?v=97f2a9aaf774";
+import { dotOf, heading, mark, notice, problem } from "./parts.js?v=97f2a9aaf774";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=97f2a9aaf774";
+import { Space } from "./space.js?v=97f2a9aaf774";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=97f2a9aaf774";
+import { linksOf } from "./links.js?v=97f2a9aaf774";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=97f2a9aaf774";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=a546cc14beb2")).StandIn() : new Loom();
+// read-only while seeing Tapestry as someone else (Account.seeAs)
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=97f2a9aaf774")).StandIn() : new Loom());
 
 // the screens
 const DOOR = "door";
@@ -178,6 +179,7 @@ class Looking extends Controller {
     this.selecting = this.value(false); // whether a drag on the tapestry draws a box, rather than moving it
     this.selection = this.value(null); // what a box caught: a map of life id -> { from, to }, or null
     this.livesRange = this.value(null); // the stretch of years the flat tapestry shows, or null for all of it
+    this.picked = this.value(null); // the life picked out on the tapestry - pressed on its line - or null
     this.tuning = this.value(keptTuning()); // how the lives settle (lives.js, TUNING)
     this.tuningOpen = this.value(false); // whether how the lives are drawn is open over the picture
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
@@ -515,9 +517,10 @@ export class Tapestry extends ChimeApp {
     const timelineOf = (entries, empty, woven = false) => this.timeline(entries, empty, woven);
     return ui.app("tapestry_app", [
       this.nav(),
+      this.seeingBar(),
       ui.stack([
         this.door(), this.todayScreen(), this.threadScreen(), this.timelineScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
-        this.menuScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM, Say.FEEDBACK_ITEM), Run.describeAdmin(ui, this.admin), List.describeImport(ui, this.importer, this.account),
+        this.menuScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM, Say.FEEDBACK_ITEM, ADMIN), Run.describeAdmin(ui, this.admin, this.account), List.describeImport(ui, this.importer, this.account),
         Edit.describeEditor(ui, this.editor, this.account),
         Folk.describePeople(ui, this.people, this.account), Folk.describePerson(ui, this.people, this.account, timelineOf, this.asking), Folk.describeJoin(ui, this.people),
         Where.describePlaces(ui, this.places, this.account), Where.describePlace(ui, this.places, this.account, timelineOf, this.asking),
@@ -529,7 +532,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=a546cc14beb2").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=97f2a9aaf774").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -545,7 +548,7 @@ export class Tapestry extends ChimeApp {
    */
   nav() {
     const ui = this.ui;
-    const admin = this.account.weave.map((w) => !!w.me?.admin);
+    const admin = this.account.weave.map((w) => !!w.me?.admin || !!w.me?.moderator); // the admin area: admins, and moderators for what is reported
     // the notices' tab says how many wait to be seen
     const waiting = ui.bound(() => { const n = this.notices.count(); return n ? String(n > 99 ? "99+" : n) : ""; });
     const words = (action) => (action === GOES_NOTICES
@@ -562,6 +565,20 @@ export class Tapestry extends ChimeApp {
       ui.text("Tapestry", "Wordmark"),
       ui.row(TABS.map(tab), "Nav").named("tabs"),
     ], "TopNav"));
+  }
+
+  /** Seeing Tapestry as someone else, as its support: said on every screen, with the way back. */
+  seeingBar() {
+    const ui = this.ui;
+    const seeing = ui.bound(() => { this.account.weave.read(); return this.account.seeing; });
+    return ui.when(seeing, ui.row([
+      ui.text(ui.bound(() => {
+        const s = seeing.read();
+        return !s ? "" : s.masked ? Phrase.with("Seeing Tapestry as %s - their words jumbled, their pictures blacked out. Nothing can be changed.", [s.name])
+          : Phrase.with("Seeing Tapestry as %s, as they let support see it. Nothing can be changed.", [s.name]);
+      }), "Words").wraps().grow(),
+      ui.button(STOPS_SEEING),
+    ], "SeeingBar"));
   }
 
   /** Today: the quickest way onto the thread - words for right now. */
@@ -673,7 +690,7 @@ export class Tapestry extends ChimeApp {
   /** The menu: a shortcut to every screen, one under another - the admin area's for an admin. */
   menuScreen() {
     const ui = this.ui;
-    const admin = this.account.weave.map((w) => !!w.me?.admin);
+    const admin = this.account.weave.map((w) => !!w.me?.admin || !!w.me?.moderator); // the admin area: admins, and moderators for what is reported
     const go = ([action, screen, onlyAdmin]) => {
       const made = ui.pressable(action, {}, [ui.text(ui.words(action), "PersonName"),
         ...(action === GOES_NOTICES ? [ui.text(ui.bound(() => { const n = this.notices.count(); return n ? Phrase.counted("%d new", "%d new", n) : ""; }), "Quiet").hidesEmpty()] : [])],
@@ -840,8 +857,12 @@ export class Tapestry extends ChimeApp {
       ], "LivesFrame"),
       ui.when(lives.map((l) => !l.length), ui.text(Phrase.of("No lives to draw yet: say your birthday in You, or add a memory."), "Quiet").wraps()),
       ui.text(ui.bound(() => Phrase.of(looking.selecting.read() ? "Draw a box over the lines to select them, for the time it spans."
-        : flat.read() ? "Pinch to zoom. Press Select, then draw a box over lines to list what you were in with them, then. Press a knot to open it."
-          : "Drag to turn it, pinch to zoom; walk with the joysticks (in You) or W A S D and the arrows. Press a knot to open it.")), "Hint").wraps(),
+        : flat.read() ? "Press a line to pick it out; a knot to open it. Pinch to zoom. Press Select, then draw a box over lines to list what you were in with them, then."
+          : "Press a line to pick it out; a knot to open it. Drag to turn it, pinch to zoom; walk with the joysticks (in You) or W A S D and the arrows.")), "Hint").wraps(),
+      ui.text(ui.bound(() => {
+        const picked = looking.drawnLives().lives.find((l) => l.id === looking.picked.read());
+        return picked ? Phrase.with("%s's life picked out. Press it again, or anywhere off the lines, to stop.", [picked.name]) : "";
+      }), "Notice").wraps().hidesEmpty(),
       ui.when(looking.selection, ui.column([
         heading(ui, "What you were in, there"),
         this.finder(SEARCHES_WOVEN, looking.wovenSearch),
@@ -1216,13 +1237,14 @@ export class Tapestry extends ChimeApp {
       const hidden = looking.livesHidden();
       const range = looking.livesRange.read();
       const selecting = looking.selecting.read();
+      const picked = looking.picked.read();
       looking.tuning.read();
       looking.selection.read();
       const colours = { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, ground: PALETTE.ground };
       if (!open) return;
       if (mode === "2d") {
         draw = () => this.drawInto("lives-picture", true, (place) => {
-          const drawn = drawLives(looking.drawnLives(), looking.laidLives(1), Math.max(Math.round(place.clientWidth) || 700, 280), colours, range, hidden);
+          const drawn = drawLives(looking.drawnLives(), looking.laidLives(1), Math.max(Math.round(place.clientWidth) || 700, 280), colours, range, hidden, picked);
           this.livesPoints = drawn?.points ?? [];
           place.classList.toggle("Selecting", selecting);
           return drawn;
@@ -1239,15 +1261,23 @@ export class Tapestry extends ChimeApp {
           this.space = new Space(place, {
             open: (key) => { location.hash = `#${key.replace(":", "/")}`; },
             select: (found) => { this.looking.selection.setValue(found.size ? found : null); },
+            pick: (id) => { this.looking.picked.update((was) => (id === was ? null : id)); },
             settings: () => Me.spaceSettings(),
           });
         }
         this.space.setSelecting(selecting);
-        this.space.set(looking.drawnLives(), looking.laidLives(2), colours, hidden);
+        this.space.set(looking.drawnLives(), looking.laidLives(2), colours, hidden, picked);
       });
       inSpace(40);
     });
     addEventListener("resize", () => draw());
+    // a line pressed on the flat lives (not selecting): it is picked out - pressed again, or off the lines, none is
+    document.addEventListener("click", (event) => {
+      const place = event.target?.closest?.("#lives-picture");
+      if (!place || this.looking.selecting.read() || event.target.closest("a.mark")) return;
+      const life = event.target.closest("[data-life]")?.getAttribute("data-life") ?? null;
+      this.looking.picked.update((was) => (life === was ? null : life));
+    });
     // a box drawn over the flat lives, in select mode: the lives through it, for the time it spans
     let start = null;
     const box = document.createElement("div");

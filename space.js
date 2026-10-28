@@ -7,7 +7,7 @@
 // a knot opens what it is; in select mode a box drawn over it catches the
 // lives through it. The browser's alone: lives.js works out what it draws.
 
-import { caught, placeAt } from "./lives.js?v=a546cc14beb2";
+import { caught, placeAt } from "./lives.js?v=97f2a9aaf774";
 
 const YEAR = 0.6; // a year along the time's way, in the space's units
 const PLACE = 1.6; // a place apart (layOut), in them
@@ -15,9 +15,10 @@ const FOV = 0.9; // how wide the camera sees, as a share of the canvas's width
 
 export class Space {
   /** In this element; open(key) opens a knot pressed, select(caught) is told what a box caught; settings() says { joysticks, invertY }. */
-  constructor(element, { open, select, settings }) {
+  constructor(element, { open, select, settings, pick }) {
     this.element = element;
     this.open = open;
+    this.pick = pick ?? (() => {});
     this.select = select;
     this.settings = settings;
     this.canvas = document.createElement("canvas");
@@ -40,8 +41,9 @@ export class Space {
   }
 
   /** What is drawn: the lives (livesOf), where they are (layOut, in two), their colours, and those hidden. */
-  set(drawn, laid, colours, hidden = []) {
+  set(drawn, laid, colours, hidden = [], focus = null) {
     const first = !this.drawn;
+    this.focus = focus;
     this.drawn = drawn;
     this.laid = laid;
     this.colours = colours;
@@ -116,9 +118,10 @@ export class Space {
         if (p) this.points.push({ id: life.id, t, x: p.x, y: p.y });
         if (p && last) {
           const fade = life.faded ? Math.max(0, Math.min(1, (t - life.from) / 2)) : 1;
+          const picked = this.focus === life.id;
           g.strokeStyle = life.colour;
-          g.globalAlpha = (life.grey ? 0.7 : 1) * fade;
-          g.lineWidth = Math.max(1, Math.min(5, 40 / p.depth)) * (life.grey ? 0.7 : 1);
+          g.globalAlpha = (this.focus && !picked ? 0.18 : life.grey ? 0.7 : 1) * fade;
+          g.lineWidth = Math.max(1, Math.min(5, 40 / p.depth)) * (life.grey ? 0.7 : 1) * (picked ? 2 : 1);
           g.beginPath();
           g.moveTo(last.x, last.y);
           g.lineTo(p.x, p.y);
@@ -248,7 +251,14 @@ export class Space {
       if (moved < 6) {
         // a tap: the knot under it opens
         const knot = (this.knots ?? []).find((k) => Math.hypot(k.x - p.x, k.y - p.y) <= k.r);
-        if (knot) this.open(knot.key);
+        if (knot) { this.open(knot.key); return; }
+        // else the line under it is picked out - or, on none, none is
+        let nearest = null;
+        for (const q of this.points ?? []) {
+          const d = Math.hypot(q.x - p.x, q.y - p.y);
+          if (d <= 14 && (!nearest || d < nearest.d)) nearest = { id: q.id, d };
+        }
+        this.pick(nearest?.id ?? null);
       }
     };
     c.addEventListener("pointerup", up);

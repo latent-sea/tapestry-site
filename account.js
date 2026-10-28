@@ -6,14 +6,15 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
-import { Weave } from "./weave.js?v=a546cc14beb2";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=97f2a9aaf774";
+import { Weave } from "./weave.js?v=97f2a9aaf774";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
 export const JOINS = "joins_tapestry";
 export const RELOADS = "loads_again";
 export const AGREES = "agrees_to_the_terms";
+export const STOPS_SEEING = "stops_seeing_as_them";
 
 export const WORDS = {
   [SIGNS_OUT]: ["Sign out"],
@@ -21,7 +22,10 @@ export const WORDS = {
   [JOINS]: ["Start my life story"],
   [RELOADS]: ["Try again"],
   [AGREES]: ["I agree"],
+  [STOPS_SEEING]: ["Stop seeing as them"],
 };
+
+const MASKED_PICTURE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='black'/></svg>";
 
 /** How long pictures' addresses (good for an hour) are kept before asked for again: with the half-hourly look again, never older than the hour. */
 const ADDRESSES_KEPT = 25 * 60 * 1000;
@@ -60,6 +64,7 @@ export class Account extends Controller {
   would(action) {
     if (action === SIGNS_OUT && ["checking", "out"].includes(this.state.read())) return Phrase.of("Not signed in");
     if (action === AGREES && this.busy.read()) return Phrase.of("Saving");
+    if (action === STOPS_SEEING && !this.loom.seeing) return Phrase.of("Seeing as yourself");
     if (action === JOINS) {
       if (this.busy.read()) return Phrase.of("Joining");
       if (!this.joinName.read().trim()) return Phrase.of("First say what others should call you");
@@ -71,6 +76,7 @@ export class Account extends Controller {
     if (action === SETS_JOIN_NAME) this.joinName.setValue(payload.line);
     if (action === JOINS) this.join();
     if (action === AGREES) this.agree();
+    if (action === STOPS_SEEING) this.stopSeeing();
     if (action === RELOADS) this.again();
     if (action === SIGNS_OUT) {
       this.loom.signOut();
@@ -138,6 +144,24 @@ export class Account extends Controller {
     if (await this.load()) this.state.setValue("in");
   }
 
+  /** Tapestry seen as one of its members, by its support: read-only, masked unless they let support in. */
+  async seeAs(member, name) {
+    this.loom.seeing = { member, name };
+    this.forget();
+    if (!(await this.load())) { this.loom.seeing = null; await this.load(); return false; }
+    return true;
+  }
+
+  /** Back to seeing Tapestry as oneself. */
+  async stopSeeing() {
+    this.loom.seeing = null;
+    this.forget();
+    await this.load();
+  }
+
+  /** Who is being seen as: { member, name, masked }, or null. */
+  get seeing() { return this.loom.seeing ? { ...this.loom.seeing, masked: !!this.weave.read().data.seen_as?.masked } : null; }
+
   /** Signed out from elsewhere (their account deleted): nothing of theirs stays, and the door opens. */
   signedOut() {
     this.weave.setValue(new Weave());
@@ -154,7 +178,7 @@ export class Account extends Controller {
 
   /** Everything the member may see, loaded again: whether it was. */
   async load() {
-    const found = await this.loom.visible();
+    const found = this.loom.seeing ? await this.loom.viewAs(this.loom.seeing.member) : await this.loom.visible();
     if (this.disposed) return false;
     if (!found.ok) {
       this.problem.setValue(found.error);
@@ -185,6 +209,8 @@ export class Account extends Controller {
 
   /** An address that shows a picture, by its path, or "" until there is one: one not had yet is asked for, with the others shown at the same time. */
   address(path) {
+    // a picture hidden from support, seeing as someone: black, its shape kept
+    if (String(path ?? "").startsWith("masked:")) return MASKED_PICTURE;
     const known = this.addresses.read()[path];
     if (!known && path && !this.asked.has(path)) {
       this.asked.add(path);
