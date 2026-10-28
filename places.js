@@ -2,12 +2,12 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
-import { heading, notice, problem } from "./parts.js?v=a72a3c00d32b";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=a72a3c00d32b";
-import { CARD, DANGER, LINK } from "./look/look.js?v=a72a3c00d32b";
-import { describeMerge } from "./asking.js?v=a72a3c00d32b";
-import { addressOf } from "./weave.js?v=a72a3c00d32b";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=92e31c0cea85";
+import { heading, notice, problem } from "./parts.js?v=92e31c0cea85";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=92e31c0cea85";
+import { CARD, DANGER, LINK } from "./look/look.js?v=92e31c0cea85";
+import { describeMerge } from "./asking.js?v=92e31c0cea85";
+import { addressOf } from "./weave.js?v=92e31c0cea85";
 
 // a place's address, part by part, each as a letter has it: every one may be left empty
 const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],

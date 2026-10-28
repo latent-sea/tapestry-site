@@ -13,31 +13,31 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
-import { Loom } from "./loom.js?v=a72a3c00d32b";
-import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=a72a3c00d32b";
-import * as Edit from "./editor.js?v=a72a3c00d32b";
-import * as Folk from "./people.js?v=a72a3c00d32b";
-import * as Where from "./places.js?v=a72a3c00d32b";
-import * as Me from "./you.js?v=a72a3c00d32b";
-import * as Today from "./journal.js?v=a72a3c00d32b";
-import * as Ask from "./asking.js?v=a72a3c00d32b";
-import * as Run from "./admin.js?v=a72a3c00d32b";
-import * as List from "./importing.js?v=a72a3c00d32b";
-import * as Told from "./notices.js?v=a72a3c00d32b";
-import * as Talk from "./comments.js?v=a72a3c00d32b";
-import * as Kind from "./safety.js?v=a72a3c00d32b";
-import * as Pay from "./paying.js?v=a72a3c00d32b";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=a72a3c00d32b";
-import { headingOf } from "./when.js?v=a72a3c00d32b";
-import { dotOf, heading, mark, notice, problem } from "./parts.js?v=a72a3c00d32b";
-import { drawWoven } from "./woven.js?v=a72a3c00d32b";
-import { drawTimeline } from "./gantt.js?v=a72a3c00d32b";
-import { linksOf } from "./links.js?v=a72a3c00d32b";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=a72a3c00d32b";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=92e31c0cea85";
+import { Loom } from "./loom.js?v=92e31c0cea85";
+import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=92e31c0cea85";
+import * as Edit from "./editor.js?v=92e31c0cea85";
+import * as Folk from "./people.js?v=92e31c0cea85";
+import * as Where from "./places.js?v=92e31c0cea85";
+import * as Me from "./you.js?v=92e31c0cea85";
+import * as Today from "./journal.js?v=92e31c0cea85";
+import * as Ask from "./asking.js?v=92e31c0cea85";
+import * as Run from "./admin.js?v=92e31c0cea85";
+import * as List from "./importing.js?v=92e31c0cea85";
+import * as Told from "./notices.js?v=92e31c0cea85";
+import * as Talk from "./comments.js?v=92e31c0cea85";
+import * as Kind from "./safety.js?v=92e31c0cea85";
+import * as Pay from "./paying.js?v=92e31c0cea85";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=92e31c0cea85";
+import { headingOf } from "./when.js?v=92e31c0cea85";
+import { dotOf, heading, mark, notice, problem } from "./parts.js?v=92e31c0cea85";
+import { drawWoven } from "./woven.js?v=92e31c0cea85";
+import { drawTimeline } from "./gantt.js?v=92e31c0cea85";
+import { linksOf } from "./links.js?v=92e31c0cea85";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=92e31c0cea85";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=a72a3c00d32b")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=92e31c0cea85")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -340,7 +340,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=a72a3c00d32b").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=92e31c0cea85").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);

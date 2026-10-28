@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a72a3c00d32b";
-import { Weave } from "./weave.js?v=a72a3c00d32b";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=92e31c0cea85";
+import { Weave } from "./weave.js?v=92e31c0cea85";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -153,6 +153,8 @@ export class Account extends Controller {
     this.found.setValue({ key: "", ids: null });
     this.finding = "";
     this.weave.setValue(new Weave(found.data.tapestry));
+    // terms there were none of when the page opened: agreed to before going on, whenever it loads again
+    if (this.state.read() === "in" && this.weave.read().me?.agreed === false) this.state.setValue("agreeing");
     return true;
   }
 

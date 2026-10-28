@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=a72a3c00d32b";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=a72a3c00d32b";
-import { shrinkPicture } from "./backend/pictures.js?v=a72a3c00d32b";
+import { Backend } from "./backend/backend.js?v=92e31c0cea85";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=92e31c0cea85";
+import { shrinkPicture } from "./backend/pictures.js?v=92e31c0cea85";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
