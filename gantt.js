@@ -1,30 +1,29 @@
-// The member's timeline as a chart across the years: their periods, each a
-// row of its own, oldest first, a bar from its start to its end - or on to
-// today, with an arrow, for one still going - named above it in words; then
-// the events they were at, each a bar named beside it, set in as few rows as
-// they fit; then their memories, each a dot at its time (on a faint bar
-// across a guess), set in as few rows as they fit. Plain data in, an SVG's
-// text out, tested by tests/test_gantt.mjs; the page puts it in place, drawn
-// to the width it has so its words stay their size (site.js).
+// The member's timeline as a chart across the years: their periods, events
+// and memories, all in one order by when each began - each a row of its own,
+// named above its mark: a period a bar from its start to its end (or on to
+// today, with an arrow, while it goes on), an event a shorter bar, a memory a
+// dot (on a faint bar across a guess). Drawn for the stretch of time asked -
+// all of it, or zoomed in on a few years, or months - with what falls outside
+// it left out. Plain data in, an SVG's text out, tested by
+// tests/test_gantt.mjs; the page puts it in place, drawn to the width it has
+// so its words stay their size (site.js).
 //
 // Each period and event in its kind's colour (weave.js, kindColour) - the
 // page's kind chips above it are its key, and its filter. Every mark is a
 // link: each says what it is to a reader who can't see it, and its time as
 // the pointer rests on it.
-import { lastDayOf } from "./when.js?v=92e31c0cea85";
-import { yearMarks, yearsOf } from "./woven.js?v=92e31c0cea85";
+import { lastDayOf } from "./when.js?v=e16e3dc13f3d";
+import { yearMarks, yearsOf } from "./woven.js?v=e16e3dc13f3d";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room
-const HEAD = 22; // a part's name: Periods, Events, Memories
-const ROW = 38; // a period's room: its name, then its bar
+const ROW = 32; // a row's room: its name, then its mark
 const BAR = 10;
-const EVENT_ROW = 30; // an event's room: its name, then its bar
-const EVENT_BAR = 8;
-const DOT_ROW = 16; // a memory's room
 const DOT = 5;
-const MOST_DOT_ROWS = 8; // past these, memories share the last row
 const BOTTOM = 10;
+const KINDS = ["period", "event", "memory"];
+const PART = { period: "periods", event: "events", memory: "memories" };
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -37,136 +36,159 @@ function fitted(name, room, size) {
   return name.length > most ? `${name.slice(0, most - 1)}…` : name;
 }
 
-/** Each of these spans ({ from, to } in pixels) put in the first row it fits in: answers each one's row, and how many rows. */
-function packed(spans, most = Infinity) {
-  const ends = []; // each row's rightmost end so far
-  const rows = spans.map((span) => {
-    let row = ends.findIndex((end) => end <= span.from);
-    if (row < 0) row = ends.length < most ? ends.length : most - 1;
-    ends[row] = Math.max(ends[row] ?? -Infinity, span.to);
-    return row;
-  });
-  return { rows, count: ends.length };
-}
-
 /** What a mark says: its title, when, how long. */
 const sayOf = (entry) => [entry.title, entry.said, entry.lasts].filter(Boolean).join(" · ");
 
+/** Now, in years. */
+const yearsNow = (now) => now.getFullYear() + (now.getMonth() + (now.getDate() - 1) / 31) / 12;
+
 /**
- * The member's thread drawn width wide, now being when it is now: their
- * dated periods, events and memories, but those hidden - hidden.periods and
- * hidden.events, kinds of each left out ("" for none); hidden.parts, whole
- * parts left out ("periods", "events", "memories"). Answers
- * { svg, width, height, rows } - rows being the marks' keys, top to bottom
- * - or null with nothing to draw.
+ * The member's dated periods, events and memories, but those hidden -
+ * hidden.periods and hidden.events, kinds of each left out ("" for none);
+ * hidden.parts, whole parts ("periods", "events", "memories") - each with
+ * where it runs, in years ({ entry, from, to, going }), in order by when it
+ * began: of two together, the longer first, then a period before an event
+ * before a memory.
  */
-export function drawTimeline(weave, width = 700, now = new Date(), colours = {}, hidden = {}) {
+export function marksOf(weave, now = new Date(), hidden = {}) {
+  const parts = hidden.parts ?? [];
+  const today = yearsNow(now);
+  return weave.thread(weave.meId).filter((entry) => entry.when?.date && !parts.includes(PART[entry.kind])
+    && !(entry.kind === "period" && (hidden.periods ?? []).includes(entry.periodKind ?? ""))
+    && !(entry.kind === "event" && (hidden.events ?? []).includes(entry.eventKind ?? "")))
+    .map((entry) => {
+      const from = yearsOf(entry.when);
+      const going = entry.kind === "period" && !entry.until;
+      return { entry, from, going, to: going ? Math.max(today, from + 1 / 12) : endOf(entry.until ?? entry.when) };
+    })
+    .sort((a, b) => a.from - b.from || b.to - a.to || KINDS.indexOf(a.entry.kind) - KINDS.indexOf(b.entry.kind) || a.entry.title.localeCompare(b.entry.title));
+}
+
+/** All of the timeline's time, whole years from the first thing's to the last's (or today): { from, to }, or null with nothing dated. */
+export function extentOf(weave, now = new Date(), hidden = {}) {
+  const marks = marksOf(weave, now, hidden);
+  if (!marks.length) return null;
+  const from = Math.floor(Math.min(...marks.map((m) => m.from)));
+  return { from, to: Math.max(Math.ceil(Math.max(...marks.map((m) => m.to), yearsNow(now))), from + 1) };
+}
+
+/** Where the axis is marked: years (every 1, 5, 10 or 20) across a long stretch; months across a short one. */
+function axisMarks(from, to) {
+  const span = to - from;
+  if (span > 3) return yearMarks(Math.ceil(from), Math.floor(to)).map((year) => ({ at: year, said: String(year) }));
+  const every = span <= 1.5 ? 1 : 3;
+  const marks = [];
+  for (let month = Math.ceil(from * 12); month <= to * 12; month++) {
+    if (month % every) continue;
+    const year = Math.floor(month / 12);
+    const index = month - year * 12;
+    marks.push({ at: month / 12, said: index === 0 ? String(year) : MONTHS[index] });
+  }
+  return marks;
+}
+
+/**
+ * The timeline drawn width wide, now being when it is now, but what is
+ * hidden (marksOf), for the stretch range ({ from, to } in years; all of it
+ * by default): everything overlapping it, a row each. Answers
+ * { svg, width, height, rows, from, to } - rows being the marks' keys, top
+ * to bottom - or null with nothing in it.
+ */
+export function drawTimeline(weave, width = 700, now = new Date(), colours = {}, hidden = {}, range = null) {
   const ink = colours.ink ?? "#eef2fa";
   const soft = colours.soft ?? "#8e9ab8";
   const grid = colours.grid ?? "#34426a";
   const dot = colours.memory ?? "#9db8ff";
-  const parts = hidden.parts ?? [];
-  const thread = weave.thread(weave.meId).filter((entry) => entry.when?.date);
-  const today = now.getFullYear() + (now.getMonth() + (now.getDate() - 1) / 31) / 12;
-  const spanOf = (entry, going) => {
-    const from = yearsOf(entry.when);
-    return { entry, from, going, to: going ? Math.max(today, from + 1 / 12) : endOf(entry.until ?? entry.when) };
-  };
-  const periods = parts.includes("periods") ? [] : thread.filter((entry) => entry.kind === "period" && !(hidden.periods ?? []).includes(entry.periodKind ?? ""))
-    .map((entry) => spanOf(entry, !entry.until));
-  const events = parts.includes("events") ? [] : thread.filter((entry) => entry.kind === "event" && !(hidden.events ?? []).includes(entry.eventKind ?? ""))
-    .map((entry) => spanOf(entry, false));
-  const memories = parts.includes("memories") ? [] : thread.filter((entry) => entry.kind === "memory").map((entry) => spanOf(entry, false));
-  if (!periods.length && !events.length && !memories.length) return null;
-  // oldest first; of two starting together, the longer first
-  for (const list of [periods, events, memories]) list.sort((a, b) => a.from - b.from || b.to - a.to);
-  const all = [...periods, ...events, ...memories];
-  const first = Math.floor(Math.min(...all.map((p) => p.from)));
-  const last = Math.max(Math.ceil(Math.max(...all.map((p) => p.to), today)), first + 1);
+  const whole = extentOf(weave, now, hidden);
+  if (!whole) return null;
+  const from = range?.from ?? whole.from;
+  const to = Math.max(range?.to ?? whole.to, from + 1 / 12);
+  const marks = marksOf(weave, now, hidden).filter((m) => m.to >= from && m.from <= to);
+  if (!marks.length) return null;
   const plot = width - 2 * SIDE;
-  const x = (years) => SIDE + ((years - first) / (last - first)) * plot;
+  const x = (years) => SIDE + ((years - from) / (to - from)) * plot;
+  // a mark past either edge runs to it
+  const clamp = (at) => Math.min(Math.max(at, SIDE), width - SIDE);
+  const today = yearsNow(now);
+  const height = TOP + marks.length * ROW + BOTTOM;
   const out = [];
-  const rows = [];
-  const mark = (entry, body) => {
-    rows.push(entry.key);
-    out.push(`<a class="mark" data-key="${escape(entry.key)}" href="#${escape(entry.key.replace(":", "/"))}" aria-label="${escape(sayOf(entry))}"><title>${escape(sayOf(entry))}</title>${body}</a>`);
-  };
-  const head = (top, words) => out.push(`<text x="${SIDE}" y="${top + 15}" fill="${soft}" font-size="11" font-weight="700" letter-spacing="0.06em">${words}</text>`);
-  let top = TOP;
-  if (periods.length) {
-    head(top, "PERIODS");
-    top += HEAD;
-    periods.forEach((p) => {
-      const colour = weave.kindColour(p.entry.periodKind);
-      const x1 = x(p.from);
-      const x2 = Math.max(x(p.to), x1 + 6);
-      // its name above its bar, from its start - or, near the right edge, ending at its end
-      const name = fitted(p.entry.title, plot, 12);
-      const roomRight = width - SIDE - x1;
-      const atEnd = roomRight < name.length * 12 * 0.56 && x2 - SIDE > roomRight;
-      const label = atEnd
-        ? `<text x="${x2}" y="${top + 14}" fill="${ink}" font-size="12" font-weight="600" text-anchor="end">${escape(name)}</text>`
-        : `<text x="${x1}" y="${top + 14}" fill="${ink}" font-size="12" font-weight="600">${escape(name)}</text>`;
+  // the axis, recessive, and today - a dashed line, the end of every period still going - beneath the marks
+  for (const mark of axisMarks(from, to)) {
+    out.push(`<line x1="${x(mark.at)}" y1="${TOP - 4}" x2="${x(mark.at)}" y2="${height - BOTTOM}" stroke="${grid}" stroke-width="1" opacity="0.5"/>`);
+    out.push(`<text x="${x(mark.at)}" y="${TOP - 10}" fill="${soft}" font-size="11" text-anchor="middle">${mark.said}</text>`);
+  }
+  if (today >= from && today <= to) {
+    out.push(`<line x1="${x(today)}" y1="${TOP - 4}" x2="${x(today)}" y2="${height - BOTTOM}" stroke="${ink}" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>`);
+  }
+  marks.forEach((m, i) => {
+    const top = TOP + i * ROW;
+    const { entry } = m;
+    const x1 = clamp(x(m.from));
+    const x2 = Math.max(clamp(x(m.to)), x1 + (entry.kind === "memory" ? 0 : 6));
+    // its name above its mark, from its start - or, near the right edge, ending there
+    const name = fitted(entry.title, plot, 12);
+    const words = name.length * 12 * 0.56;
+    const label = x1 + words > width - SIDE
+      ? `<text x="${width - SIDE}" y="${top + 12}" fill="${ink}" font-size="12" font-weight="600" text-anchor="end">${escape(name)}</text>`
+      : `<text x="${x1}" y="${top + 12}" fill="${ink}" font-size="12" font-weight="600">${escape(name)}</text>`;
+    let body;
+    if (entry.kind === "memory") {
+      // a moment: a dot at its time, or at the middle of a guess, on a faint bar across it
+      const guess = x2 - x1 > DOT * 2;
+      const cx = guess ? (x1 + x2) / 2 : x1;
+      body = `${guess ? `<rect x="${x1}" y="${top + 20}" width="${x2 - x1}" height="4" rx="2" fill="${dot}" opacity="0.3"/>` : ""}<circle cx="${cx}" cy="${top + 22}" r="${DOT}" fill="${dot}"/>`;
+    } else {
+      const colour = entry.kind === "period" ? weave.kindColour(entry.periodKind) : weave.eventKindColour(entry.eventKind);
+      const tall = entry.kind === "period" ? BAR : BAR - 2;
       // still going: an arrow on its end, at today
-      const arrow = p.going ? `<path d="M${x2 - 1} ${top + 19} l7 ${BAR / 2} l-7 ${BAR / 2} z" fill="${colour}"/>` : "";
-      mark(p.entry, `<rect x="${x1}" y="${top}" width="${Math.max(x2 - x1, 1)}" height="${ROW - 4}" fill="transparent"/>`
-        + `${label}<rect x="${x1}" y="${top + 19}" width="${x2 - x1}" height="${BAR}" rx="4" fill="${colour}"/>${arrow}`);
-      top += ROW;
-    });
-  }
-  if (events.length) {
-    head(top, "EVENTS");
-    top += HEAD;
-    // each event's room: its bar, and its name beside it, cut to at most a third of the width
-    const laid = events.map((e) => {
-      const x1 = x(e.from);
-      const x2 = Math.max(x(e.to), x1 + 6);
-      const name = fitted(e.entry.title, Math.max(plot / 3, 60), 11);
-      const words = name.length * 11 * 0.56;
-      const atEnd = x1 + words > width - SIDE;
-      return { ...e, x1, x2, name, atEnd, room: atEnd ? { from: Math.min(x1, x2 - words) - 6, to: x2 + 6 } : { from: x1 - 6, to: Math.max(x2, x1 + words) + 6 } };
-    });
-    const { rows: at, count } = packed(laid.map((e) => e.room));
-    laid.forEach((e, i) => {
-      const y = top + at[i] * EVENT_ROW;
-      const colour = weave.eventKindColour(e.entry.eventKind);
-      const label = e.atEnd
-        ? `<text x="${e.x2}" y="${y + 12}" fill="${ink}" font-size="11" font-weight="600" text-anchor="end">${escape(e.name)}</text>`
-        : `<text x="${e.x1}" y="${y + 12}" fill="${ink}" font-size="11" font-weight="600">${escape(e.name)}</text>`;
-      mark(e.entry, `<rect x="${e.room.from}" y="${y}" width="${e.room.to - e.room.from}" height="${EVENT_ROW - 4}" fill="transparent"/>`
-        + `${label}<rect x="${e.x1}" y="${y + 17}" width="${e.x2 - e.x1}" height="${EVENT_BAR}" rx="3" fill="${colour}"/>`);
-    });
-    top += count * EVENT_ROW;
-  }
-  if (memories.length) {
-    head(top, "MEMORIES");
-    top += HEAD;
-    // a memory is a moment: a dot at its time, or at the middle of a guess, on a faint bar across it
-    const laid = memories.map((m) => {
-      const x1 = x(m.from);
-      const x2 = x(m.to);
-      const cx = x2 - x1 > DOT * 2 ? (x1 + x2) / 2 : x1;
-      return { ...m, x1, x2, cx, room: { from: Math.min(x1, cx - DOT) - 2, to: Math.max(x2, cx + DOT) + 2 } };
-    });
-    const { rows: at, count } = packed(laid.map((m) => m.room), MOST_DOT_ROWS);
-    laid.forEach((m, i) => {
-      const cy = top + at[i] * DOT_ROW + DOT_ROW / 2;
-      const guess = m.x2 - m.x1 > DOT * 2 ? `<rect x="${m.x1}" y="${cy - 2}" width="${m.x2 - m.x1}" height="4" rx="2" fill="${dot}" opacity="0.3"/>` : "";
-      mark(m.entry, `${guess}<circle cx="${m.cx}" cy="${cy}" r="${DOT}" fill="${dot}"/>`);
-    });
-    top += count * DOT_ROW;
-  }
-  const height = top + BOTTOM;
-  // the years, recessive, and today - a dashed line, the end of every period still going - beneath the marks
-  const under = [];
-  for (const year of yearMarks(first, last)) {
-    under.push(`<line x1="${x(year)}" y1="${TOP - 4}" x2="${x(year)}" y2="${height - BOTTOM}" stroke="${grid}" stroke-width="1" opacity="0.5"/>`);
-    under.push(`<text x="${x(year)}" y="${TOP - 10}" fill="${soft}" font-size="11" text-anchor="middle">${year}</text>`);
-  }
-  if (today <= last) {
-    under.push(`<line x1="${x(today)}" y1="${TOP - 4}" x2="${x(today)}" y2="${height - BOTTOM}" stroke="${ink}" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>`);
-  }
-  const said = `Your timeline from ${first} to ${last}`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="${escape(said)}" font-family="inherit">${under.join("")}${out.join("")}</svg>`;
-  return { svg, width, height, rows };
+      const arrow = m.going && x(today) <= width - SIDE ? `<path d="M${x2 - 1} ${top + 17} l7 ${tall / 2} l-7 ${tall / 2} z" fill="${colour}"/>` : "";
+      body = `<rect x="${x1}" y="${top + 17}" width="${x2 - x1}" height="${tall}" rx="${entry.kind === "period" ? 4 : 3}" fill="${colour}"/>${arrow}`;
+    }
+    out.push(`<a class="mark" data-key="${escape(entry.key)}" href="#${escape(entry.key.replace(":", "/"))}" aria-label="${escape(sayOf(entry))}"><title>${escape(sayOf(entry))}</title>`
+      + `<rect x="${SIDE}" y="${top}" width="${plot}" height="${ROW - 2}" fill="transparent"/>${label}${body}</a>`);
+  });
+  const said = `Your timeline from ${Math.floor(from)} to ${Math.ceil(to)}`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="${escape(said)}" font-family="inherit">${out.join("")}</svg>`;
+  return { svg, width, height, rows: marks.map((m) => m.entry.key), from, to };
+}
+
+/**
+ * The stretch shown next, from this one ({ from, to }, or null for all of it) within all of it: zoomed in
+ * ("in", half as long, about its middle), out ("out", twice as long, never past all of it), or moved a
+ * third of its length earlier ("earlier") or later ("later"). Answers { from, to }, or null for all of it.
+ */
+export function rangeAfter(range, whole, step) {
+  if (!whole) return null;
+  const { from, to } = range ?? whole;
+  const span = to - from;
+  const middle = (from + to) / 2;
+  let next = { from, to };
+  if (step === "in") next = { from: middle - span / 4, to: middle + span / 4 };
+  if (step === "out") next = { from: middle - span, to: middle + span };
+  if (step === "earlier") next = { from: from - span / 3, to: to - span / 3 };
+  if (step === "later") next = { from: from + span / 3, to: to + span / 3 };
+  return within(next, whole);
+}
+
+/**
+ * The stretch shown after a pinch (or a trackpad's): this one ({ from, to }, or null for all of it)
+ * zoomed by a factor - over 1 in, under 1 out - about a point at this fraction across it (0 its start,
+ * 1 its end), which stays where it was. Answers { from, to }, or null for all of it.
+ */
+export function rangeZoomed(range, whole, factor, at = 0.5) {
+  if (!whole || !(factor > 0)) return range;
+  const { from, to } = range ?? whole;
+  const point = from + (to - from) * Math.min(Math.max(at, 0), 1);
+  const span = (to - from) / factor;
+  return within({ from: point - span * at, to: point + span * (1 - at) }, whole);
+}
+
+/** A stretch kept within all of it: never shorter than a month, nor wider than all of it (then null), nor past either end. */
+function within(next, whole) {
+  const middle = (next.from + next.to) / 2;
+  if (next.to - next.from < 1 / 12) next = { from: middle - 1 / 24, to: middle + 1 / 24 };
+  const length = Math.min(next.to - next.from, whole.to - whole.from);
+  if (length >= whole.to - whole.from) return null;
+  const start = Math.min(Math.max(next.from, whole.from), whole.to - length);
+  return { from: start, to: start + length };
 }

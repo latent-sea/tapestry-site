@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=92e31c0cea85";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=92e31c0cea85";
-import { shrinkPicture } from "./backend/pictures.js?v=92e31c0cea85";
+import { Backend } from "./backend/backend.js?v=e16e3dc13f3d";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=e16e3dc13f3d";
+import { shrinkPicture } from "./backend/pictures.js?v=e16e3dc13f3d";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -228,6 +228,17 @@ export class Loom {
     await this.signOut();
     return gone;
   }
+
+  // --- feedback ---
+
+  async sendFeedback(kind, words) { return answer(await this.backend.callRpc("tapestry_send_feedback", { kind, words })); }
+
+  /** The member's feedback - everyone's, for an admin - each with its replies. */
+  async feedbackList() { return answer(await this.backend.callRpc("tapestry_feedback_list")); }
+
+  async replyFeedback(id, words) { return answer(await this.backend.callRpc("tapestry_reply_feedback", { feedback: id, words })); }
+
+  async setFeedbackStatus(id, status) { return answer(await this.backend.callRpc("tapestry_set_feedback_status", { feedback: id, status })); }
 
   /** What a store gave the page for a purchase, handed over to wait until the platform confirms it with the store. */
   async purchased(store, product, token) { return answer(await this.backend.callRpc("tapestry_purchased", { store, product, token })); }

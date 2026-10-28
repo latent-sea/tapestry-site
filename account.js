@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=92e31c0cea85";
-import { Weave } from "./weave.js?v=92e31c0cea85";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
+import { Weave } from "./weave.js?v=e16e3dc13f3d";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -43,6 +43,7 @@ export class Account extends Controller {
     this.asked = new Set();
     this.wanted = new Set();
     this.joinName = this.value("");
+    this.terms = this.value([]); // the terms, read from their own page (terms.html) to be shown before they are agreed to: [{ kind, words }]
     this.busy = this.value(false);
     this.problem = this.value("");
     // back from Google on a phone: its answer signs in; else whoever was signed in before
@@ -93,11 +94,15 @@ export class Account extends Controller {
     const loaded = await this.load();
     if (this.disposed || !loaded) return;
     // here before there were terms: agreed to once, before anything else
-    if (this.weave.read().me) { this.state.setValue(this.weave.read().me.agreed === false ? "agreeing" : "in"); return; }
+    if (this.weave.read().me) {
+      if (this.weave.read().me.agreed === false) this.readTerms();
+      this.state.setValue(this.weave.read().me.agreed === false ? "agreeing" : "in");
+      return;
+    }
     const may = await this.loom.mayJoin(this.invitation());
     if (this.disposed) return;
     if (!may.ok) { this.problem.setValue(may.error); return; }
-    if (may.data) this.joinName.setValue(this.loom.userName());
+    if (may.data) { this.joinName.setValue(this.loom.userName()); this.readTerms(); }
     this.state.setValue(may.data ? "joining" : "uninvited");
   }
 
@@ -110,6 +115,17 @@ export class Account extends Controller {
     this.busy.setValue(false);
     if (!joined.ok) { this.problem.setValue(joined.error); return; }
     if (await this.load()) this.state.setValue("in");
+  }
+
+  /** The terms, read from their own page - one wording, there and here: its headings, paragraphs and points, in order. */
+  async readTerms() {
+    if (this.terms.read().length) return;
+    try {
+      const page = new DOMParser().parseFromString(await (await fetch("terms.html")).text(), "text/html");
+      const parts = [...page.querySelectorAll("main > h2, main > p:not(.when), main > ul > li")].map((part) => ({
+        kind: part.tagName === "H2" ? "heading" : part.tagName === "LI" ? "point" : "words", words: part.textContent.replace(/\s+/g, " ").trim() }));
+      if (!this.disposed) this.terms.setValue(parts);
+    } catch { /* the link to them stays */ }
   }
 
   /** The terms agreed to, by someone here before there were any: then in. */
@@ -154,7 +170,7 @@ export class Account extends Controller {
     this.finding = "";
     this.weave.setValue(new Weave(found.data.tapestry));
     // terms there were none of when the page opened: agreed to before going on, whenever it loads again
-    if (this.state.read() === "in" && this.weave.read().me?.agreed === false) this.state.setValue("agreeing");
+    if (this.state.read() === "in" && this.weave.read().me?.agreed === false) { this.readTerms(); this.state.setValue("agreeing"); }
     return true;
   }
 

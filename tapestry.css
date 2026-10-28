@@ -205,3 +205,16 @@
 /* the privacy policy and the terms, at the door and in You */
 #app .Legal { gap: 18px; justify-content: center; flex-wrap: wrap; }
 #app .chime-hyperlink.LegalLink { color: var(--chime-ink-soft); text-decoration: underline; }
+/* the terms, in full, before they are agreed to: a box of their own to scroll */
+#app .Terms { max-height: 50vh; overflow-y: auto; padding: 12px 16px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); text-align: left; }
+#app .TermsText { gap: 8px; }
+#app .TermsPoint { padding-left: 14px; }
+#app .TermsPoint::before { content: "• "; }
+/* the timeline's zoom: a row of small square presses */
+#app .ZoomRow { align-items: center; gap: 6px; flex-wrap: wrap; }
+#app .chime-pressable.ZoomButton { min-width: 40px; justify-content: center; }
+#app .ZoomMark { font-size: calc(var(--chime-size-face) * 1.125); font-weight: 700; line-height: 1; }
+/* where feedback stands */
+#app .FeedbackStatus { font-size: calc(var(--chime-size-face) * 0.75); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--chime-accent); }
+/* the timeline: one finger scrolls the page; two pinch the years (site.js, keepPinch) */
+#app #timeline-chart { touch-action: pan-y; }
