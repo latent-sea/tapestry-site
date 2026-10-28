@@ -13,33 +13,34 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { Loom } from "./loom.js?v=e16e3dc13f3d";
-import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=e16e3dc13f3d";
-import * as Edit from "./editor.js?v=e16e3dc13f3d";
-import * as Folk from "./people.js?v=e16e3dc13f3d";
-import * as Where from "./places.js?v=e16e3dc13f3d";
-import * as Me from "./you.js?v=e16e3dc13f3d";
-import * as Today from "./journal.js?v=e16e3dc13f3d";
-import * as Ask from "./asking.js?v=e16e3dc13f3d";
-import * as Run from "./admin.js?v=e16e3dc13f3d";
-import * as List from "./importing.js?v=e16e3dc13f3d";
-import * as Told from "./notices.js?v=e16e3dc13f3d";
-import * as Talk from "./comments.js?v=e16e3dc13f3d";
-import * as Kind from "./safety.js?v=e16e3dc13f3d";
-import * as Pay from "./paying.js?v=e16e3dc13f3d";
-import * as Say from "./feedback.js?v=e16e3dc13f3d";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=e16e3dc13f3d";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=e16e3dc13f3d";
-import { yearsOf } from "./woven.js?v=e16e3dc13f3d";
-import { dotOf, heading, mark, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { drawWoven } from "./woven.js?v=e16e3dc13f3d";
-import { drawTimeline, extentOf, rangeAfter, rangeZoomed } from "./gantt.js?v=e16e3dc13f3d";
-import { linksOf } from "./links.js?v=e16e3dc13f3d";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=e16e3dc13f3d";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { Loom } from "./loom.js?v=a546cc14beb2";
+import { Account, AGREES, JOINS, RELOADS, SETS_JOIN_NAME, SIGNS_OUT, WORDS as ACCOUNT_WORDS } from "./account.js?v=a546cc14beb2";
+import * as Edit from "./editor.js?v=a546cc14beb2";
+import * as Folk from "./people.js?v=a546cc14beb2";
+import * as Where from "./places.js?v=a546cc14beb2";
+import * as Me from "./you.js?v=a546cc14beb2";
+import * as Today from "./journal.js?v=a546cc14beb2";
+import * as Ask from "./asking.js?v=a546cc14beb2";
+import * as Run from "./admin.js?v=a546cc14beb2";
+import * as List from "./importing.js?v=a546cc14beb2";
+import * as Told from "./notices.js?v=a546cc14beb2";
+import * as Talk from "./comments.js?v=a546cc14beb2";
+import * as Kind from "./safety.js?v=a546cc14beb2";
+import * as Pay from "./paying.js?v=a546cc14beb2";
+import * as Say from "./feedback.js?v=a546cc14beb2";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=a546cc14beb2";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=a546cc14beb2";
+import { yearsOf } from "./woven.js?v=a546cc14beb2";
+import { dotOf, heading, mark, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=a546cc14beb2";
+import { Space } from "./space.js?v=a546cc14beb2";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=a546cc14beb2";
+import { linksOf } from "./links.js?v=a546cc14beb2";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=a546cc14beb2";
 
 const probing = new URLSearchParams(location.search).has("probe");
-const LOOM = probing ? new (await import("./tests/standin.js?v=e16e3dc13f3d")).StandIn() : new Loom();
+const LOOM = probing ? new (await import("./tests/standin.js?v=a546cc14beb2")).StandIn() : new Loom();
 
 // the screens
 const DOOR = "door";
@@ -77,6 +78,22 @@ const SEARCHES_THREAD = "searches_my_thread";
 const SEARCHES_WOVEN = "searches_the_tapestry";
 const FLIPS_ORDER = "turns_the_order_around";
 const TOGGLES_THREAD = "shows_or_hides_a_thread";
+const TOGGLES_GREY = "shows_or_hides_named_people";
+const SHOWS_LIVES_IN = "shows_the_lives_flat_or_in_space";
+const SELECTS = "selects_with_a_box";
+const CLEARS_SELECTION = "clears_the_selection";
+const ZOOMS_LIVES = "zooms_or_moves_the_lives";
+const SHOWS_ALL_LIVES = "shows_all_of_the_lives";
+const OPENS_LIVES_SETTINGS = "opens_or_closes_how_the_lives_are_drawn";
+const TUNES_LIVES = "tunes_how_the_lives_settle";
+const RESETS_LIVES = "puts_back_how_the_lives_settle";
+// how the lives settle, each a step of five, with its words: what it is, and each end
+const TUNINGS = [["pull", "Pull together", "How strongly what two lives share draws them together"],
+  ["near", "Closeness", "How close lives come while they share"],
+  ["push", "Spacing", "How far apart every life keeps from the others"],
+  ["stiff", "Stiffness", "How slowly a line bends: stiffer lines move less, and more smoothly"],
+  ["reach", "Reach", "How long before and after a shared moment it pulls"]];
+const TUNING_SAID = ["Least", "Less", "Middling", "More", "Most"];
 const SHOWS_PICTURE = "shows_the_picture";
 const SHOWS_EARLIER = "shows_the_picture_before";
 const SHOWS_LATER = "shows_the_picture_after";
@@ -98,6 +115,7 @@ const ZOOMS_TIMELINE = "zooms_or_moves_the_timeline";
 const TYPES_TIMELINE_SPAN = "types_the_timelines_stretch";
 const SETS_TIMELINE_SPAN = "shows_the_timeline_for_that_stretch";
 const SHOWS_ALL_TIME = "shows_all_of_the_timeline";
+const SHOWS_IN_TIMELINE = "shows_it_in_the_timeline";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
 const PAGE = 50;
 
@@ -118,11 +136,23 @@ const kindSaid = (entry) => {
 const INVITE_KEPT = "tapestry_invitation";
 const ORDER_KEPT = "tapestry_order";
 const PARTS_KEPT = "tapestry_timeline_hides"; // the parts of the timeline left out, on this device
+const LIVES_KEPT = "tapestry_lives_in"; // the tapestry flat (2d) or in space (3d), on this device
+const TUNING_KEPT = "tapestry_lives_tuning"; // how the lives settle, on this device
 const SEEN_KEPT = "tapestry_seen_at";
 const NEW_SHOWN = 5;
 // the tabs, in their order along the bar and down the menu: [action, screen, for admins alone]
 const TABS = [[GOES_TODAY, TODAY], [GOES_THREAD, THREAD], [GOES_TIMELINE, TIMELINE], [GOES_EVENTS, EVENTS], [GOES_PERIODS, PERIODS], [GOES_WOVEN, WOVEN],
   [GOES_NOTICES, Told.NOTICES], [GOES_PEOPLE, PEOPLE], [GOES_PLACES, PLACES], [GOES_YOU, YOU], [GOES_FEEDBACK, Say.FEEDBACK], [GOES_ADMIN, ADMIN, true]];
+
+/** How the lives settle, as last tuned on this device. */
+function keptTuning() {
+  try { return { ...TUNING, ...JSON.parse(localStorage.getItem(TUNING_KEPT) ?? "{}") }; } catch { return { ...TUNING }; }
+}
+
+/** Whether the tapestry was last seen flat ("2d") or in space ("3d") on this device. */
+function keptLivesIn() {
+  try { return localStorage.getItem(LIVES_KEPT) === "3d" ? "3d" : "2d"; } catch { return "2d"; }
+}
 
 /** The parts of the timeline left out on this device: periods, events or memories. */
 function keptParts() {
@@ -142,7 +172,14 @@ class Looking extends Controller {
     this.threadSearch = this.value("");
     this.wovenSearch = this.value("");
     this.newestFirst = this.value(keptOrder()); // a journal reads newest first; a life story may be read either way
-    this.hidden = this.value([]); // accounts whose threads the tapestry leaves out
+    this.hidden = this.value([]); // the lives the tapestry leaves out, by id ("account:<id>", "person:<id>")
+    this.hiddenGrey = this.value(false); // whether the people the member only named (grey) are left out
+    this.livesIn = this.value(keptLivesIn()); // the tapestry flat ("2d") or in space ("3d")
+    this.selecting = this.value(false); // whether a drag on the tapestry draws a box, rather than moving it
+    this.selection = this.value(null); // what a box caught: a map of life id -> { from, to }, or null
+    this.livesRange = this.value(null); // the stretch of years the flat tapestry shows, or null for all of it
+    this.tuning = this.value(keptTuning()); // how the lives settle (lives.js, TUNING)
+    this.tuningOpen = this.value(false); // whether how the lives are drawn is open over the picture
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
     this.threadYear = this.value(""); // the one year (or decade) the member's thread is shown, picked at random; "" for every year
     this.threadLabel = this.value(""); // the one label the member's thread is shown for; "" for all
@@ -171,7 +208,47 @@ class Looking extends Controller {
   }
 
   answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
-    ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, SHOWS_ALL_TIME]; }
+    ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, SHOWS_ALL_TIME, SHOWS_IN_TIMELINE,
+    TOGGLES_GREY, SHOWS_LIVES_IN, SELECTS, CLEARS_SELECTION, ZOOMS_LIVES, SHOWS_ALL_LIVES, OPENS_LIVES_SETTINGS, TUNES_LIVES, RESETS_LIVES]; }
+
+  /** The lives of the tapestry, worked out once for each load. */
+  drawnLives() { const weave = this.account.weave.read(); return weave.kept("lives", () => livesOf(weave)); }
+
+  /** Where they settle, flat (1) or in space (2): worked out once for each load. */
+  laidLives(dims) {
+    const weave = this.account.weave.read();
+    const tuning = this.tuning.read();
+    return weave.kept(`lives:${dims}:${JSON.stringify(tuning)}`, () => layOut(this.drawnLives(), dims, undefined, tuning));
+  }
+
+  /** The lives left out, by id: those hidden, and the grey ones while they are. */
+  livesHidden() {
+    const grey = this.hiddenGrey.read() ? this.drawnLives().lives.filter((l) => l.grey).map((l) => l.id) : [];
+    return [...this.hidden.read(), ...grey];
+  }
+
+  /** All of the tapestry's years: { from, to }, or null. */
+  wholeLives() {
+    const lives = this.drawnLives().lives;
+    return lives.length ? { from: Math.floor(Math.min(...lives.map((l) => l.from))), to: Math.ceil(Math.max(...lives.map((l) => l.to))) } : null;
+  }
+
+  /** What a box caught, said: what the member was in with the lives it caught, then - as entries, by their keys. */
+  selected() {
+    const selection = this.selection.read();
+    if (!selection) return [];
+    const weave = this.account.weave.read();
+    const keys = new Set(inSelection(this.drawnLives(), weave.meId, selection));
+    return weave.everything().filter((entry) => keys.has(entry.key));
+  }
+
+  /** A memory, event or period on the member's thread by its key, as an entry - or null. */
+  entryOf(key) {
+    const weave = this.account.weave.read();
+    const [kind, id] = String(key ?? "").split(":");
+    const item = ({ memory: weave.memories, event: weave.events, period: weave.periods })[kind]?.get(id);
+    return item ? weave.entry(kind, item) : null;
+  }
 
   /** What the timeline hides now. */
   timelineHides() { return { periods: this.hiddenTypes.read(), events: this.hiddenEventTypes.read(), parts: this.hiddenParts.read() }; }
@@ -204,6 +281,27 @@ class Looking extends Controller {
     }
     if (action === SETS_TIMELINE_SPAN && !this.typedSpan()) return Phrase.of("Type a stretch of time: 2004 – 2010, or June 2012 – March 2013");
     if (action === SHOWS_ALL_TIME && !this.timelineRange.read()) return Phrase.of("All of it is shown");
+    if (action === CLEARS_SELECTION && !this.selection.read()) return Phrase.of("Nothing is selected");
+    if (action === ZOOMS_LIVES) {
+      const now = this.livesRange.read();
+      const whole = this.wholeLives();
+      if (!whole) return Phrase.of("No lives to show yet");
+      if (payload?.step === "out" && !now) return Phrase.of("All of it is shown");
+      if (payload?.step === "earlier" && (!now || now.from <= whole.from + 1e-9)) return Phrase.of("Nothing earlier");
+      if (payload?.step === "later" && (!now || now.to >= whole.to - 1e-9)) return Phrase.of("Nothing later");
+    }
+    if (action === SHOWS_ALL_LIVES && !this.livesRange.read()) return Phrase.of("All of it is shown");
+    if (action === TUNES_LIVES) {
+      const step = this.tuning.read()[payload?.part] + (payload?.by ?? 0);
+      if (step < 0) return Phrase.of("As little as it goes");
+      if (step > 4) return Phrase.of("As much as it goes");
+    }
+    if (action === RESETS_LIVES && JSON.stringify(this.tuning.read()) === JSON.stringify({ ...TUNING })) return Phrase.of("As it starts already");
+    if (action === SHOWS_IN_TIMELINE) {
+      const entry = this.entryOf(payload?.key);
+      if (!entry?.when?.date) return Phrase.of("It has no time to show it at");
+      if (!this.thread().some((e) => e.key === entry.key)) return Phrase.of("Only what is in your life is on your timeline");
+    }
     if (action === LEAVES_EVENT || action === ASKS_TO_LEAVE) {
       const weave = this.account.weave.read();
       const event = weave.events.get(payload?.id);
@@ -234,6 +332,16 @@ class Looking extends Controller {
     if (action === TYPES_TIMELINE_SPAN) this.timelineSpan.setValue(payload.line);
     if (action === SETS_TIMELINE_SPAN) this.timelineRange.setValue(this.typedSpan());
     if (action === SHOWS_ALL_TIME) { this.timelineRange.setValue(null); this.timelineSpan.setValue(""); }
+    // a month either side of it, it picked out - and its part and kind shown, were they hidden
+    if (action === SHOWS_IN_TIMELINE) {
+      const entry = this.entryOf(payload.key);
+      this.timelineRange.setValue(rangeAround(entry));
+      this.timelineSpan.setValue("");
+      const part = { memory: "memories", event: "events", period: "periods" }[entry.kind];
+      this.hiddenParts.update((hidden) => hidden.filter((p) => p !== part));
+      if (entry.kind === "period") this.hiddenTypes.update((hidden) => hidden.filter((t) => t !== (entry.periodKind ?? "")));
+      if (entry.kind === "event") this.hiddenEventTypes.update((hidden) => hidden.filter((t) => t !== (entry.eventKind ?? "")));
+    }
     if (action === TOGGLES_EVENT_TYPE) this.hiddenEventTypes.update((hidden) => (hidden.includes(payload.type) ? hidden.filter((t) => t !== payload.type) : [...hidden, payload.type]));
     if (action === TOGGLES_PART) {
       this.hiddenParts.update((hidden) => (hidden.includes(payload.part) ? hidden.filter((t) => t !== payload.part) : [...hidden, payload.part]));
@@ -252,7 +360,22 @@ class Looking extends Controller {
       this.newestFirst.update((newest) => !newest);
       try { localStorage.setItem(ORDER_KEPT, this.newestFirst.read() ? "newest" : "oldest"); } catch { /* this visit only */ }
     }
-    if (action === TOGGLES_THREAD) this.hidden.update((hidden) => (hidden.includes(payload.account) ? hidden.filter((a) => a !== payload.account) : [...hidden, payload.account]));
+    if (action === TOGGLES_THREAD) this.hidden.update((hidden) => (hidden.includes(payload.life) ? hidden.filter((a) => a !== payload.life) : [...hidden, payload.life]));
+    if (action === TOGGLES_GREY) this.hiddenGrey.update((hidden) => !hidden);
+    if (action === SHOWS_LIVES_IN) {
+      this.livesIn.setValue(payload.mode);
+      this.selection.setValue(null);
+      try { localStorage.setItem(LIVES_KEPT, payload.mode); } catch { /* this visit only */ }
+    }
+    if (action === SELECTS) this.selecting.update((on) => !on);
+    if (action === CLEARS_SELECTION) this.selection.setValue(null);
+    if (action === ZOOMS_LIVES) this.livesRange.setValue(rangeAfter(this.livesRange.read(), this.wholeLives(), payload.step));
+    if (action === SHOWS_ALL_LIVES) this.livesRange.setValue(null);
+    if (action === OPENS_LIVES_SETTINGS) this.tuningOpen.update((open) => !open);
+    if (action === TUNES_LIVES || action === RESETS_LIVES) {
+      this.tuning.setValue(action === RESETS_LIVES ? { ...TUNING } : { ...this.tuning.read(), [payload.part]: this.tuning.read()[payload.part] + payload.by });
+      try { localStorage.setItem(TUNING_KEPT, JSON.stringify(this.tuning.read())); } catch { /* this visit only */ }
+    }
     if (action === ASKS_TO_LEAVE || action === ASKS_TO_LEAVE_PERIOD) this.leaving.setValue(payload.id);
     if (action === LEAVES_PERIOD) { this.leaving.setValue(""); this.leave(payload.id, true); }
     if (action === STAYS_ON) this.leaving.setValue("");
@@ -277,6 +400,8 @@ class Looking extends Controller {
     this.threadSearch.setValue("");
     this.wovenSearch.setValue("");
     this.hidden.setValue([]);
+    this.selection.setValue(null);
+    this.selecting.setValue(false);
     this.leaving.setValue("");
     this.problem.setValue("");
   }
@@ -290,7 +415,7 @@ class Looking extends Controller {
   /** The threads the tapestry weaves: every one the member follows, less those hidden. */
   shown() {
     const hidden = this.hidden.read();
-    return this.account.weave.read().threads().filter((a) => !hidden.includes(a));
+    return this.account.weave.read().threads().filter((a) => !hidden.includes(`account:${a}`));
   }
 }
 
@@ -322,7 +447,7 @@ export class Tapestry extends ChimeApp {
       [GOES_MENU]: ["Menu"],
       [CLOSES_MENU]: ["Close the menu"],
       [GOES_ADMIN]: ["Admin"],
-      [GOES_THREAD]: ["My thread"],
+      [GOES_THREAD]: ["My life"],
       [GOES_WOVEN]: ["Tapestry"],
       [GOES_PEOPLE]: ["People"],
       [GOES_PLACES]: ["Places"],
@@ -344,10 +469,20 @@ export class Tapestry extends ChimeApp {
       [TYPES_TIMELINE_SPAN]: ["From when to when"],
       [SETS_TIMELINE_SPAN]: ["Show"],
       [SHOWS_ALL_TIME]: ["All of it"],
-      [SEARCHES_THREAD]: ["Find on my thread"],
+      [SHOWS_IN_TIMELINE]: ["Show in timeline"],
+      [SEARCHES_THREAD]: ["Find in my life"],
       [SEARCHES_WOVEN]: ["Find in the tapestry"],
       [FLIPS_ORDER]: ["Turn the order around"],
-      [TOGGLES_THREAD]: ["Show their thread"],
+      [TOGGLES_THREAD]: ["Show their life"],
+      [TOGGLES_GREY]: ["Show the people you named"],
+      [SHOWS_LIVES_IN]: ["Show the lives so"],
+      [SELECTS]: ["Select"],
+      [CLEARS_SELECTION]: ["Clear the selection"],
+      [ZOOMS_LIVES]: ["Zoom or move"],
+      [SHOWS_ALL_LIVES]: ["All of it"],
+      [OPENS_LIVES_SETTINGS]: ["How the lines are drawn"],
+      [TUNES_LIVES]: ["More or less"],
+      [RESETS_LIVES]: ["Back to how it starts"],
       [LEAVES_EVENT]: ["Yes, take me off it"],
       [ASKS_TO_LEAVE]: ["Take me off this event"],
       [STAYS_ON]: ["No, keep me on it"],
@@ -394,11 +529,11 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=e16e3dc13f3d").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=a546cc14beb2").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
-    this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepWoven(); this.keepTimeline(); this.keepTabs(); } });
+    this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepLives(); this.keepTimeline(); this.keepTabs(); } });
     return this;
   }
 
@@ -446,7 +581,7 @@ export class Tapestry extends ChimeApp {
     const entries = ui.bound(() => { const w = account.weave.read(); return w.thread(w.meId).filter((e) => e.kind === "event"); });
     return ui.screen(EVENTS, [
       ui.text(Phrase.of("Events"), "Title"),
-      ui.text(Phrase.of("Times and places where threads cross - a wedding, a holiday, a night out. Each holds everyone's memories of it; open one to add yours, or change it."), "Hint").wraps(),
+      ui.text(Phrase.of("Times and places where lives meet - a wedding, a holiday, a night out. Each holds everyone's memories of it; open one to add yours, or change it."), "Hint").wraps(),
       this.freePlan(),
       ui.row([ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT }).absentWhenRefused()], "Actions"),
       this.timeline(entries, Phrase.of("No events yet.")),
@@ -559,11 +694,11 @@ export class Tapestry extends ChimeApp {
     return ui.screen(DOOR, [
       ui.column([
         ui.text("Tapestry", "DoorTitle"),
-        ui.text(Phrase.of("Everyone has their own thread. Where they cross is where the story is."), "DoorLine").wraps(),
+        ui.text(Phrase.of("Everyone has their own life. Where lives meet is where the story is."), "DoorLine").wraps(),
         ui.text(inviting, "Notice").wraps().hidesEmpty(),
         ui.when(state.map((s) => s === "checking"), ui.text(Phrase.of("Opening…"), "Quiet")),
         ui.when(state.map((s) => s === "out"), ui.column([
-          ui.text(Phrase.of("Sign in to start your thread, or to see the ones shared with you."), "Hint").wraps(),
+          ui.text(Phrase.of("Sign in to start your life story, or to see the ones shared with you."), "Hint").wraps(),
           ui.surface("GoogleButton", []).named("google-button"),
         ])),
         ui.when(state.map((s) => s === "uninvited"), ui.column([
@@ -575,7 +710,7 @@ export class Tapestry extends ChimeApp {
           ui.text(Phrase.of("Welcome. What should your people call you?"), "Words").wraps(),
           ui.field(JOINS, "", { changes: SETS_JOIN_NAME, shows: account.joinName, autocomplete: "name", label: Phrase.of("Your name") }),
           this.terms(),
-          ui.text(Phrase.of("Starting your thread, you agree to these terms, and to Tapestry's privacy policy."), "Hint").wraps(),
+          ui.text(Phrase.of("Starting your life story, you agree to these terms, and to Tapestry's privacy policy."), "Hint").wraps(),
           ui.button(JOINS),
         ])),
         ui.when(state.map((s) => s === "agreeing"), ui.column([
@@ -600,7 +735,7 @@ export class Tapestry extends ChimeApp {
   }
 
   /** On the free plan: what it is, said where a thread would be kept. */
-  freePlan(words = "You're on the free plan: you see what your people share with you, and comment on it. Keeping your own thread - memories, events and periods - is part of the paid plan.") {
+  freePlan(words = "You're on the free plan: you see what your people share with you, and comment on it. Keeping your own life story - memories, events and periods - is part of the paid plan.") {
     const ui = this.ui;
     return ui.when(this.account.weave.map((w) => !w.writes), ui.column([
       ui.text(Phrase.of(words), "Notice").wraps(),
@@ -623,7 +758,7 @@ export class Tapestry extends ChimeApp {
     });
     return ui.screen(THREAD, [
       ui.row([
-        ui.text(Phrase.of("Your thread"), "Title").grow(),
+        ui.text(Phrase.of("Your life"), "Title").grow(),
         ui.when(account.weave.map((w) => w.writes), ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY)),
       ], "TitleRow"),
       this.comingBack(),
@@ -638,38 +773,81 @@ export class Tapestry extends ChimeApp {
       ui.row([
         ui.pressable(SHOWS_RANDOM_YEAR, {}, [ui.text(year.map((y) => Phrase.of(y ? "Another random year" : "A random year")), "Small")], LINK).absentWhenRefused(),
         ui.pressable(OPENS_RANDOM_MEMORY, {}, [ui.text(ui.words(OPENS_RANDOM_MEMORY), "Small")], LINK).absentWhenRefused(),
-        ui.when(narrowed, ui.pressable(SHOWS_EVERYTHING, {}, [ui.text(ui.words(SHOWS_EVERYTHING), "Small")], LINK)),
       ], "Actions RandomRow"),
       // the member's labels: pressed, the thread shows that label's memories alone
       ui.when(account.weave.map((w) => w.labels.length > 0), ui.eachAcross(account.weave.map((w) => w.labels), (held) => ui.pressable(FILTERS_BY_LABEL,
         held.map((l) => ({ label: l?.label ?? "" })), [ui.text(held.map((l) => `#${l?.label ?? ""}`), "Small")], "Segment LabelChip")
         .currentWhile(ui.bound(() => label.read() === held.read()?.label)), (l) => l.label, "Labels")),
-      ui.when(year, ui.text(year.map((y) => Phrase.with("Showing %s only, picked at random.", [y])), "Hint")),
-      ui.when(label, ui.text(label.map((l) => Phrase.with("Showing the memories labelled #%s.", [l])), "Hint")),
+      // narrowed to a year or a label: said plainly, with a clear way back to all of it
+      ui.when(narrowed, ui.row([
+        ui.text(ui.bound(() => (year.read() && label.read() ? Phrase.with("Showing %s only, labelled #%s", [year.read(), label.read()])
+          : year.read() ? Phrase.with("Showing %s only", [year.read()]) : Phrase.with("Showing the memories labelled #%s", [label.read()]))), "Words").grow(),
+        ui.pressable(SHOWS_EVERYTHING, {}, [ui.text("✕", "ZoomMark"), ui.text(ui.words(SHOWS_EVERYTHING), Themes.FACE)], "FactoryAction"),
+      ], "FilterBar")),
       this.timeline(entries, ui.bound(() => (this.looking.threadSearch.read().trim() ? Phrase.of("Nothing found.")
-        : Phrase.of("Your thread is empty. Start with a memory, or a period of your life - where you grew up, a job, a house.")))),
+        : Phrase.of("Your life is empty here. Start with a memory, or a period of your life - where you grew up, a job, a house.")))),
     ]);
   }
 
+  /**
+   * The tapestry: every life a line from birth to now, drawn together where they share - flat or in
+   * space (keepLives) - and under it, what the member was in with the lives a box caught.
+   */
   wovenScreen() {
     const ui = this.ui;
     const account = this.account;
     const looking = this.looking;
-    const threads = account.weave.map((w) => w.threads());
-    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(w.woven(looking.shown()), looking.wovenSearch.read(), account.foundInTexts(looking.wovenSearch.read())); });
+    const lives = ui.bound(() => looking.drawnLives().lives);
+    const coloured = lives.map((l) => l.filter((life) => !life.grey));
+    const flat = looking.livesIn.map((m) => m === "2d");
+    const entries = ui.bound(() => { const w = account.weave.read(); return w.find(looking.selected(), looking.wovenSearch.read(), account.foundInTexts(looking.wovenSearch.read())); });
+    const zoom = (step, said) => ui.pressable(ZOOMS_LIVES, { step }, [ui.text(said, "ZoomMark")], "Segment ZoomButton").absentWhenRefused();
     return ui.screen(WOVEN, [
       ui.text(Phrase.of("The tapestry"), "Title"),
-      ui.text(Phrase.of("Your thread and the threads of your people, as far as they share them, woven together. Where threads cross, it says so."), "Hint").wraps(),
-      ui.eachAcross(threads, (held) => ui.pressable(TOGGLES_THREAD, held.map((a) => ({ account: a ?? "" })), [
-        mark(ui, held.map((a) => account.weave.read().colourOf(a))), ui.text(ui.bound(() => account.weave.read().nameOf(held.read())), Themes.FACE),
-      ], "Segment").currentWhile(ui.bound(() => !looking.hidden.read().includes(held.read()))), (a) => a, "Segments"),
-      // the threads drawn: each a lane, a knot where they cross; each mark a link to what it is (keepWoven)
-      ui.surface("WovenPicture", []).named("woven-picture"),
-      ui.text(Phrase.of("Each thread is a lane: a period a thick run, a memory a dot, and a knot where threads cross at an event. Press any of them to open it."), "Hint").wraps(),
-      this.finder(SEARCHES_WOVEN, looking.wovenSearch),
-      this.timeline(entries, ui.bound(() => (looking.shown().length === 0 ? Phrase.of("Every thread is hidden: press a name above to show it.")
-        : looking.wovenSearch.read().trim() ? Phrase.of("Nothing found.")
-          : Phrase.of("Nothing woven yet. Invite your people from People, and tag each other at events."))), true),
+      ui.text(Phrase.of("Each life a line from birth to now, drawn together while lives share memories, events and periods; a knot where they meet. Your people are in their colours, the people you named in grey."), "Hint").wraps(),
+      ui.row([["2d", "2D"], ["3d", "3D"]].map(([mode, said]) => ui.pressable(SHOWS_LIVES_IN, { mode }, [ui.text(said, Themes.FACE)], "Segment")
+        .currentWhile(looking.livesIn.map((m) => m === mode))), "Segments"),
+      ui.row([
+        ui.eachAcross(coloured, (held) => ui.pressable(TOGGLES_THREAD, held.map((l) => ({ life: l?.id ?? "" })), [
+          mark(ui, held.map((l) => l?.colour ?? "")), ui.text(held.map((l) => l?.name ?? ""), Themes.FACE),
+        ], "Segment").currentWhile(ui.bound(() => !looking.hidden.read().includes(held.read()?.id))), (l) => l.id, "Segments"),
+        ui.when(lives.map((l) => l.some((life) => life.grey)), ui.pressable(TOGGLES_GREY, {}, [ui.text(Phrase.of("Named people"), Themes.FACE)], "Segment")
+          .currentWhile(looking.hiddenGrey.map((h) => !h))),
+      ], "Segments"),
+      ui.row([
+        ui.pressable(SELECTS, {}, [ui.text(Phrase.of("Select"), Themes.FACE)], "Segment").currentWhile(looking.selecting),
+        ui.pressable(CLEARS_SELECTION, {}, [ui.text(ui.words(CLEARS_SELECTION), "Small")], LINK).absentWhenRefused(),
+        ui.when(flat, ui.row([zoom("out", "−"), zoom("in", "+"), zoom("earlier", "◀"), zoom("later", "▶"),
+          ui.pressable(SHOWS_ALL_LIVES, {}, [ui.text(ui.words(SHOWS_ALL_LIVES), "Small")], LINK).absentWhenRefused()], "Actions ZoomRow")),
+      ], "Actions ZoomRow"),
+      // the picture, with a gear over its corner opening how its lines are drawn, over it
+      ui.column([
+        ui.when(flat, ui.surface("LivesPicture", []).named("lives-picture"), ui.surface("LivesSpace", []).named("lives-space")),
+        ui.pressable(OPENS_LIVES_SETTINGS, {}, [ui.text(looking.tuningOpen.map((o) => (o ? "✕" : "⚙")), "GearMark")], "GearButton"),
+        ui.when(looking.tuningOpen, ui.column([
+          ui.text(Phrase.of("How the lines are drawn"), "PartHeading"),
+          ...TUNINGS.map(([part, said, hint]) => ui.column([
+            ui.text(Phrase.of(said), "FieldName"),
+            ui.row([
+              ui.pressable(TUNES_LIVES, { part, by: -1 }, [ui.text("−", "ZoomMark")], "Segment ZoomButton"),
+              ui.text(looking.tuning.map((t) => Phrase.of(TUNING_SAID[t[part]])), "TuningSaid"),
+              ui.pressable(TUNES_LIVES, { part, by: 1 }, [ui.text("+", "ZoomMark")], "Segment ZoomButton"),
+            ], "TuningRow"),
+            ui.text(Phrase.of(hint), "Hint").wraps(),
+          ])),
+          ui.row([ui.pressable(RESETS_LIVES, {}, [ui.text(ui.words(RESETS_LIVES), "Small")], LINK).absentWhenRefused()], "Actions"),
+        ], "TuningPanel")),
+      ], "LivesFrame"),
+      ui.when(lives.map((l) => !l.length), ui.text(Phrase.of("No lives to draw yet: say your birthday in You, or add a memory."), "Quiet").wraps()),
+      ui.text(ui.bound(() => Phrase.of(looking.selecting.read() ? "Draw a box over the lines to select them, for the time it spans."
+        : flat.read() ? "Pinch to zoom. Press Select, then draw a box over lines to list what you were in with them, then. Press a knot to open it."
+          : "Drag to turn it, pinch to zoom; walk with the joysticks (in You) or W A S D and the arrows. Press a knot to open it.")), "Hint").wraps(),
+      ui.when(looking.selection, ui.column([
+        heading(ui, "What you were in, there"),
+        this.finder(SEARCHES_WOVEN, looking.wovenSearch),
+        this.timeline(entries, ui.bound(() => (looking.wovenSearch.read().trim() ? Phrase.of("Nothing found.")
+          : Phrase.of("Nothing you were in with them, then."))), true),
+      ])),
     ]);
   }
 
@@ -771,7 +949,7 @@ export class Tapestry extends ChimeApp {
           ui.text(held.map((e) => e?.said ?? ""), "When").hidesEmpty(),
           ui.text(shown("lengths", (e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(shown("ages", (e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
-          woven ? ui.text(held.map((e) => (e?.mine ? "" : Phrase.with("%s's thread", [e?.ownerName ?? ""]))), "Whose").hidesEmpty() : null,
+          woven ? ui.text(held.map((e) => (e?.mine ? "" : Phrase.with("%s's life", [e?.ownerName ?? ""]))), "Whose").hidesEmpty() : null,
         ].filter(Boolean), "CardTop"),
         ui.text(held.map((e) => e?.title ?? ""), "CardTitle").wraps(),
         ui.text(shown("words", (e) => (e?.kind === "memory" && e.title !== e.text.trim().split("\n")[0] ? e.text : e?.kind !== "memory" ? e?.text ?? "" : "")), "CardText").wraps().hidesEmpty(),
@@ -793,7 +971,7 @@ export class Tapestry extends ChimeApp {
         ui.eachAcross(shownList("pictures", (e) => (e?.videos ?? []).slice(0, 2)), (poster) => ui.image(poster, "Thumb VideoThumb", Phrase.of("A video")), null, "Thumbs"),
         ui.when(crossing.map((c) => c.length > 0), ui.row([
           ui.eachAcross(crossing, (who) => mark(ui, who.map((a) => account.weave.read().colourOf(a)), "SmallDot"), null, "Dots"),
-          ui.text(ui.bound(() => Phrase.with("Threads cross here: %s", [listed(crossing.read().map((a) => account.weave.read().nameOf(a)))])), "Crossing").wraps(),
+          ui.text(ui.bound(() => Phrase.with("Lives meet here: %s", [listed(crossing.read().map((a) => account.weave.read().nameOf(a)))])), "Crossing").wraps(),
         ], "CrossingRow")),
       ], "CardBody").grow(),
     ], "CardRow")], `${CARD} Entry`).goesTo(ITEM);
@@ -855,7 +1033,7 @@ export class Tapestry extends ChimeApp {
           ui.text(entry.map((e) => e?.said ?? ""), "When").hidesEmpty(),
           ui.text(entry.map((e) => e?.lasts ?? ""), "Age").hidesEmpty(),
           ui.text(entry.map((e) => (e?.age ? Phrase.with("You were %s", [e.age]) : "")), "Age").hidesEmpty(),
-          ui.text(entry.map((e) => (e?.mine ? Phrase.of("Your thread") : Phrase.with("%s's thread", [e?.ownerName ?? ""]))), "Whose"),
+          ui.text(entry.map((e) => (e?.mine ? Phrase.of("Your life") : Phrase.with("%s's life", [e?.ownerName ?? ""]))), "Whose"),
         ], "CardTop"),
         ui.text(entry.map((e) => e?.title ?? ""), "Title").wraps(),
         ui.text(words, "Words Body").wraps().hidesEmpty(),
@@ -880,12 +1058,13 @@ export class Tapestry extends ChimeApp {
         ])),
         Ask.describeThatsMe(ui, this.asking, account, entry),
         Talk.describeComments(ui, this.comments, account, ui.bound(() => (kindOf() === "memory" ? item.read() : null))),
-        ui.when(ui.bound(() => (entry.read()?.threads?.length ?? 0) > 1), ui.text(ui.bound(() => Phrase.with("Threads cross here: %s",
+        ui.when(ui.bound(() => (entry.read()?.threads?.length ?? 0) > 1), ui.text(ui.bound(() => Phrase.with("Lives meet here: %s",
           [listed((entry.read()?.threads ?? []).map((a) => account.weave.read().nameOf(a)))])), "Crossing").wraps()),
         ui.text(seenBy, "Seen").wraps().hidesEmpty(),
         problem(ui, this.looking.problem),
         ui.row([
           ui.button(Edit.EDITS, { with: key, goes_to: EDIT }).absentWhenRefused(),
+          ui.button(SHOWS_IN_TIMELINE, { payload: ui.bound(() => ({ key: key.read() })), goes_to: TIMELINE, style: LINK }).absentWhenRefused(),
           ui.button(Edit.ADDS_MEMORY_TO, { with: ui.bound(() => `memory:new:event:${kindOf() === "event" ? idOf() : ""}`), goes_to: EDIT }).absentWhenRefused(),
           // a period the member is in - theirs, or one they were put in - holds their memories too
           ui.when(ui.bound(() => kindOf() === "period" && account.weave.read().isAtPeriod(item.read(), account.weave.read().meId)),
@@ -912,14 +1091,14 @@ export class Tapestry extends ChimeApp {
         problem(ui, this.asking.problem),
         notice(ui, this.asking.notice),
         ui.when(ui.bound(() => kindOf() === "event" && this.looking.leaving.read() === idOf()), ui.column([
-          ui.text(Phrase.of("Take yourself off this event? It leaves your thread for good, and you stop seeing it. Your own memories of it stay yours."), "Warn").wraps(),
+          ui.text(Phrase.of("Take yourself off this event? It leaves your life for good, and you stop seeing it. Your own memories of it stay yours."), "Warn").wraps(),
           ui.row([
             ui.button(LEAVES_EVENT, { payload: ui.bound(() => ({ id: idOf() })), style: DANGER }),
             ui.button(STAYS_ON, { style: LINK }),
           ], "Actions"),
         ])),
         ui.when(ui.bound(() => kindOf() === "period" && this.looking.leaving.read() === idOf()), ui.column([
-          ui.text(Phrase.of("Take yourself out of this period? It leaves your thread for good, and your memories and events go out of it - they stay yours."), "Warn").wraps(),
+          ui.text(Phrase.of("Take yourself out of this period? It leaves your life for good, and your memories and events go out of it - they stay yours."), "Warn").wraps(),
           ui.row([
             ui.button(LEAVES_PERIOD, { payload: ui.bound(() => ({ id: idOf() })), style: DANGER }),
             ui.button(STAYS_ON, { style: LINK }),
@@ -928,7 +1107,7 @@ export class Tapestry extends ChimeApp {
         ui.when(ui.bound(() => kindOf() === "event" && mine.read()), Ask.describeMerge(ui, this.asking, account, "event", ui.bound(() => idOf()))),
         ui.when(ui.bound(() => kindOf() === "period" && mine.read()), Ask.describeMerge(ui, this.asking, account, "period", ui.bound(() => idOf()))),
         ui.when(is("event"), ui.column([heading(ui, "Everyone's memories of it"), this.timeline(memories, Phrase.of("No memories of it yet."), true)])),
-        ui.when(is("period"), ui.column([heading(ui, "During this time"), this.timeline(during, Phrase.of("Nothing else on this thread falls in this time yet."))])),
+        ui.when(is("period"), ui.column([heading(ui, "During this time"), this.timeline(during, Phrase.of("Nothing else in this life falls in this time yet."))])),
       ]), ui.text(Phrase.of("This isn't here, or isn't shared with you."), "Quiet")),
     ]);
   }
@@ -1027,12 +1206,83 @@ export class Tapestry extends ChimeApp {
    * seen, which threads, the screen being open. Its marks are links to the
    * addresses the page already follows, so a press or Enter opens one.
    */
-  keepWoven() {
-    this.chimes.follow({ region: Chimes.GLOBAL }, "woven", () => {
+  keepLives() {
+    // flat: drawn as an SVG to the width there is; a drag in select mode draws a box over it
+    let draw = () => {};
+    this.chimes.follow({ region: Chimes.GLOBAL }, "lives", () => {
       const open = this.driver.getTop().includes(WOVEN);
-      const weave = this.account.weave.read();
-      const shown = this.looking.shown();
-      this.drawInto("woven-picture", open, () => drawWoven(weave, shown, new Date(), { ground: PALETTE.ground, ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit }));
+      const looking = this.looking;
+      const mode = looking.livesIn.read();
+      const hidden = looking.livesHidden();
+      const range = looking.livesRange.read();
+      const selecting = looking.selecting.read();
+      looking.tuning.read();
+      looking.selection.read();
+      const colours = { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, ground: PALETTE.ground };
+      if (!open) return;
+      if (mode === "2d") {
+        draw = () => this.drawInto("lives-picture", true, (place) => {
+          const drawn = drawLives(looking.drawnLives(), looking.laidLives(1), Math.max(Math.round(place.clientWidth) || 700, 280), colours, range, hidden);
+          this.livesPoints = drawn?.points ?? [];
+          place.classList.toggle("Selecting", selecting);
+          return drawn;
+        });
+        draw();
+        return;
+      }
+      // in space: one Space for the place it is drawn in, given what to draw whenever that changes - the place looked
+      // for until the screen has built it, as drawInto does
+      const inSpace = (tries) => Frames.defer(() => {
+        const place = document.getElementById("lives-space");
+        if (!place) { if (tries > 0) setTimeout(() => inSpace(tries - 1), 50); return; }
+        if (this.space?.element !== place) {
+          this.space = new Space(place, {
+            open: (key) => { location.hash = `#${key.replace(":", "/")}`; },
+            select: (found) => { this.looking.selection.setValue(found.size ? found : null); },
+            settings: () => Me.spaceSettings(),
+          });
+        }
+        this.space.setSelecting(selecting);
+        this.space.set(looking.drawnLives(), looking.laidLives(2), colours, hidden);
+      });
+      inSpace(40);
+    });
+    addEventListener("resize", () => draw());
+    // a box drawn over the flat lives, in select mode: the lives through it, for the time it spans
+    let start = null;
+    const box = document.createElement("div");
+    box.className = "SelectBox";
+    const within = (event) => { const place = event.target?.closest?.("#lives-picture"); return place && this.looking.selecting.read() ? place : null; };
+    document.addEventListener("pointerdown", (event) => {
+      const place = within(event);
+      if (!place) return;
+      event.preventDefault();
+      const frame = place.getBoundingClientRect();
+      start = { place, x: event.clientX - frame.left, y: event.clientY - frame.top };
+      place.append(box);
+      Object.assign(box.style, { left: `${start.x}px`, top: `${start.y}px`, width: "0px", height: "0px" });
+      box.hidden = false;
+    });
+    document.addEventListener("pointermove", (event) => {
+      if (!start) return;
+      const frame = start.place.getBoundingClientRect();
+      const x = event.clientX - frame.left;
+      const y = event.clientY - frame.top;
+      Object.assign(box.style, { left: `${Math.min(x, start.x)}px`, top: `${Math.min(y, start.y)}px`, width: `${Math.abs(x - start.x)}px`, height: `${Math.abs(y - start.y)}px` });
+      start.end = { x, y };
+    });
+    document.addEventListener("pointerup", () => {
+      if (!start) return;
+      const { place, x, y, end } = start;
+      start = null;
+      box.hidden = true;
+      if (!end) return;
+      // the picture is drawn at the width it is shown; its height may be scaled to fit
+      const svg = place.querySelector("svg");
+      const scale = svg ? svg.viewBox.baseVal.width / svg.getBoundingClientRect().width : 1;
+      const found = caught(this.livesPoints ?? [], { left: Math.min(x, end.x) * scale, right: Math.max(x, end.x) * scale,
+        top: Math.min(y, end.y) * scale, bottom: Math.max(y, end.y) * scale });
+      this.looking.selection.setValue(found.size ? found : null);
     });
   }
 
@@ -1058,19 +1308,22 @@ export class Tapestry extends ChimeApp {
    * between them, which stays under them; and by a trackpad's pinch (a wheel with ctrl held) on a computer.
    */
   keepPinch() {
-    const chart = (target) => target?.closest?.("#timeline-chart");
-    // where across the plot a point on the screen is: 0 its start, 1 its end (gantt.js keeps 12 pixels either side)
+    // the timeline's chart, or the flat tapestry: each its own stretch of years, and all of its years
+    const chart = (target) => target?.closest?.("#timeline-chart, #lives-picture");
+    const rangeOf = (place) => (place.id === "lives-picture" ? this.looking.livesRange : this.looking.timelineRange);
+    const wholeOf = (place) => (place.id === "lives-picture" ? this.looking.wholeLives() : this.looking.wholeTimeline());
+    // where across the plot a point on the screen is: 0 its start, 1 its end (both keep 12 pixels either side)
     const across = (place, x) => { const box = place.getBoundingClientRect(); return (x - box.left - 12) / Math.max(box.width - 24, 1); };
-    const zoom = (base, factor, at) => {
-      this.looking.timelineRange.setValue(rangeZoomed(base, this.looking.wholeTimeline(), factor, at));
-      this.looking.timelineSpan.setValue("");
+    const zoom = (place, base, factor, at) => {
+      rangeOf(place).setValue(rangeZoomed(base, wholeOf(place), factor, at));
+      if (place.id === "timeline-chart") this.looking.timelineSpan.setValue("");
     };
     let pinch = null; // { place, apart, at, base }: two fingers down, as they were
     const apart = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
     document.addEventListener("touchstart", (event) => {
       const place = chart(event.target);
       if (!place || event.touches.length !== 2) return;
-      pinch = { place, apart: apart(event.touches), at: across(place, (event.touches[0].clientX + event.touches[1].clientX) / 2), base: this.looking.timelineRange.read() };
+      pinch = { place, apart: apart(event.touches), at: across(place, (event.touches[0].clientX + event.touches[1].clientX) / 2), base: rangeOf(place).read() };
     }, { passive: true });
     let frame = 0;
     document.addEventListener("touchmove", (event) => {
@@ -1078,14 +1331,14 @@ export class Tapestry extends ChimeApp {
       event.preventDefault();
       const factor = apart(event.touches) / Math.max(pinch.apart, 1);
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => zoom(pinch.base, factor, pinch.at));
+      frame = requestAnimationFrame(() => pinch && zoom(pinch.place, pinch.base, factor, pinch.at));
     }, { passive: false });
     document.addEventListener("touchend", (event) => { if (event.touches.length < 2) pinch = null; }, { passive: true });
     document.addEventListener("wheel", (event) => {
       const place = chart(event.target);
       if (!place || !event.ctrlKey) return;
       event.preventDefault();
-      zoom(this.looking.timelineRange.read(), Math.exp(-event.deltaY * 0.01), across(place, event.clientX));
+      zoom(place, rangeOf(place).read(), Math.exp(-event.deltaY * 0.01), across(place, event.clientX));
     }, { passive: false });
   }
 

@@ -4,9 +4,9 @@
 // as well as a history; anything more (who, where, which event) is the
 // editor's, from the memory itself.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { clockOf, sayWhen } from "./when.js?v=e16e3dc13f3d";
-import { notice, problem } from "./parts.js?v=e16e3dc13f3d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { clockOf, sayWhen } from "./when.js?v=a546cc14beb2";
+import { notice, problem } from "./parts.js?v=a546cc14beb2";
 
 export const WRITES_TODAY = "writes_about_today";
 export const ADDS_TODAY_PICTURE = "adds_a_picture_to_today";
@@ -42,7 +42,7 @@ export class Journal extends Controller {
 
   would(action) {
     if (action === SAVES_TODAY) {
-      if (!this.account.weave.read().writes) return Phrase.of("Keeping your own thread is part of the paid plan");
+      if (!this.account.weave.read().writes) return Phrase.of("Keeping your own life story is part of the paid plan");
       if (this.busy.read()) return Phrase.of("Keeping it");
       if (!this.text.read().trim() && !this.added.read().length) return Phrase.of("Write something, or add a picture");
       if (this.into.read() && !this.added.read().length && !this.text.read().trim()) return Phrase.of("Write something, or add a picture");
@@ -129,7 +129,7 @@ export class Journal extends Controller {
 export function describeToday(ui, journal) {
   return ui.surface("Card Today", [ui.column([
     ui.text(Phrase.of("Today"), "PartHeading"),
-    ui.text(Phrase.of("What's happening? It goes on your thread at this minute."), "Hint").wraps(),
+    ui.text(Phrase.of("What's happening? It goes in your life at this minute."), "Hint").wraps(),
     ui.area(WRITES_TODAY, journal.text, "TextArea TodayWords"),
     ui.eachAcross(journal.added, (held) => ui.column([
       ui.image(held.map((p) => p?.address ?? ""), "EditThumb", Phrase.of("A picture")),

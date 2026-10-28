@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=e16e3dc13f3d";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=e16e3dc13f3d";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=e16e3dc13f3d";
-import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=e16e3dc13f3d";
-import { DANGER, LINK } from "./look/look.js?v=e16e3dc13f3d";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=a546cc14beb2";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=a546cc14beb2";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=a546cc14beb2";
+import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=a546cc14beb2";
+import { DANGER, LINK } from "./look/look.js?v=a546cc14beb2";
 
 export const EDIT = "edit";
 
@@ -222,7 +222,7 @@ export class Editor extends Controller {
       const [kind, id, tied, tiedId] = String(payload?.parameter ?? "").split(":");
       const weave = this.weave();
       // on the free plan: what others share, and comments on it - no thread of their own
-      if (!weave.writes) return Phrase.of("Keeping your own thread is part of the paid plan");
+      if (!weave.writes) return Phrase.of("Keeping your own life story is part of the paid plan");
       if (action === ADDS_MEMORY_TO && !weave.isAt(weave.events.get(tiedId), weave.meId)) return Phrase.of("Only someone who was there adds to it");
       if (action === ADDS_MEMORY_TO && !weave.mayAddTo(tiedId)) return Phrase.of("Its maker alone adds memories to it");
       if (action === EDITS && id !== "new" && ({ memory: weave.memories, event: weave.events, period: weave.periods }[kind]?.get(id)?.owner !== weave.meId)) {
@@ -729,7 +729,7 @@ export function describeEditor(ui, editor, account) {
       search: editor.searches.person, looks: LOOKS_FOR_PERSON, matches: ui.bound(() => editor.personMatches()), pick: TAGS,
       create: ADDS_NEW_PERSON, placeholder: Phrase.of("Type a name") }),
     ui.when(ui.bound(() => isMemory.read() && !editor.eventId.read() && !editor.becomesEvent()),
-      ui.text(Phrase.of("Tag someone who is on Tapestry and it becomes an event when saved: your threads cross there, and they add their own memories of it."), "Hint").wraps()),
+      ui.text(Phrase.of("Tag someone who is on Tapestry and it becomes an event when saved: your lives meet there, and they add their own memories of it."), "Hint").wraps()),
     ui.when(ui.bound(() => editor.becomesEvent()), ui.column([
       ui.text(Phrase.of("Someone tagged is on Tapestry, so this becomes an event when saved, for them to add their own memories to. What was it? Give it a short name."), "Hint").wraps(),
       ui.field(SETS_EVENT_TITLE, "", { changes: SETS_EVENT_TITLE, shows: editor.eventTitle, label: Phrase.of("The event's name"),

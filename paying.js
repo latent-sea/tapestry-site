@@ -6,9 +6,9 @@
 // confirms it with the store - it alone holds the stores' keys - and then
 // the member is on the paid plan, everywhere.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { ACTION } from "./look/look.js?v=e16e3dc13f3d";
-import { heading, notice, problem } from "./parts.js?v=e16e3dc13f3d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { ACTION } from "./look/look.js?v=a546cc14beb2";
+import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
 
 export const PAID = "paid";
 export const GOES_PAID = "goes_paid";
@@ -76,7 +76,7 @@ export class Paying extends Controller {
       const kept = await this.loom.purchased("play", PRODUCT, response.details?.purchaseToken ?? "");
       await response.complete(kept.ok ? "success" : "fail");
       if (!kept.ok) this.problem.setValue(kept.error);
-      else this.notice.setValue("Thank you. Your payment is being confirmed with Google Play: your thread opens as soon as it is.");
+      else this.notice.setValue("Thank you. Your payment is being confirmed with Google Play: your life story opens as soon as it is.");
       await this.account.load();
     } catch (e) {
       // closed without paying: nothing to say
@@ -97,10 +97,10 @@ export function describePaying(ui, paying, account) {
   const weave = account.weave;
   return ui.screen(PAID, [
     ui.text(Phrase.of("The paid plan"), "Title"),
-    ui.when(weave.map((w) => w.writes), ui.text(Phrase.of("You're on the paid plan: your thread is yours to keep."), "Notice").wraps()),
-    ui.when(weave.map((w) => !w.writes && !!w.me?.paying), ui.text(Phrase.of("Your payment is being confirmed: your thread opens as soon as it is."), "Notice").wraps()),
+    ui.when(weave.map((w) => w.writes), ui.text(Phrase.of("You're on the paid plan: your life story is yours to keep."), "Notice").wraps()),
+    ui.when(weave.map((w) => !w.writes && !!w.me?.paying), ui.text(Phrase.of("Your payment is being confirmed: your life story opens as soon as it is."), "Notice").wraps()),
     heading(ui, "What it is"),
-    ui.text(Phrase.of("Your own thread: memories with their words and pictures, events, periods and places, your timeline, and a copy of it all to keep. On the free plan you see what your people share with you, and comment on it."), "Words").wraps(),
+    ui.text(Phrase.of("Your own life story: memories with their words and pictures, events, periods and places, your timeline, and a copy of it all to keep. On the free plan you see what your people share with you, and comment on it."), "Words").wraps(),
     ui.text(paying.price.map((p) => (p ? Phrase.with("%s, through Google Play.", [p]) : "")), "Words").hidesEmpty(),
     ui.text(Phrase.of("In the Tapestry app you pay through Google Play; on the website, through its checkout. It's the same plan everywhere, cancelled where you bought it."), "Hint").wraps(),
     problem(ui, paying.problem),

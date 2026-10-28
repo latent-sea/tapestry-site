@@ -5,9 +5,9 @@
 // read it later. A family's history is never only on the platform. Plain
 // data in, a page's text out, tested by tests/test_keep.mjs.
 
-import { linksOf } from "./links.js?v=e16e3dc13f3d";
-import { sortEntries } from "./weave.js?v=e16e3dc13f3d";
-import { headingOf } from "./when.js?v=e16e3dc13f3d";
+import { linksOf } from "./links.js?v=a546cc14beb2";
+import { sortEntries } from "./weave.js?v=a546cc14beb2";
+import { headingOf } from "./when.js?v=a546cc14beb2";
 
 const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const KIND = { memory: "Memory", event: "Event", period: "Period" };
@@ -64,7 +64,7 @@ ${links.length ? `<ul class="links">${links.join("")}</ul>` : ""}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escape(me)}'s thread - Tapestry</title>
+<title>${escape(me)}'s life - Tapestry</title>
 <style>
 body { margin: 0 auto; max-width: 44rem; padding: 2rem 1rem; font: 17px/1.55 Georgia, serif; color: #1d2030; background: #fbfaf7; }
 h1 { margin: 0; } .made { color: #666; } h2 { margin: 2rem 0 0.5rem; border-bottom: 1px solid #ccc; color: #0f7f74; }
@@ -75,7 +75,7 @@ figcaption { color: #666; font-size: 0.9rem; } .links { padding-left: 1.2rem; }
 </style>
 </head>
 <body>
-<h1>${escape(me)}'s thread</h1>
+<h1>${escape(me)}'s life</h1>
 <p class="made">Kept from Tapestry on ${escape(made.toUTCString())}: ${entries.length} ${entries.length === 1 ? "thing" : "things"}.</p>
 ${sections.join("\n")}
 <script type="application/json" id="tapestry-data">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>

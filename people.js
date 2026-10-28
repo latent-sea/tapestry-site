@@ -9,10 +9,11 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { heading, mark, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e16e3dc13f3d";
-import { describeIsThisYou } from "./asking.js?v=e16e3dc13f3d";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { heading, mark, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { CARD, DANGER, LINK } from "./look/look.js?v=a546cc14beb2";
+import { describeIsThisYou } from "./asking.js?v=a546cc14beb2";
+import { parseWhen, sayWhen } from "./when.js?v=a546cc14beb2";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -26,6 +27,9 @@ export const COPIES_LINK = "copies_the_invitation";
 export const UNLINKS = "unlinks_them";
 export const SETS_RENAME = "sets_their_name";
 export const RENAMES = "renames_them";
+export const SETS_BORN = "sets_when_they_were_born";
+export const SETS_DIED = "sets_when_they_died";
+export const SAVES_LIFE = "saves_when_they_lived";
 export const REMOVES_PERSON = "removes_them";
 export const SETS_CIRCLE_NAME = "sets_a_new_circles_name";
 export const ADDS_CIRCLE = "adds_a_circle";
@@ -39,8 +43,8 @@ export const KEEPS = "keeps_them";
 export const HOW_TO_INVITE = [
   "1. On People, type their name and press Add.",
   "2. Press their name to open their page.",
-  "3. Press “Invite them to link their thread”, then “Send the link”: on a phone it opens your share sheet; on a computer it copies the link to paste anywhere.",
-  "4. They open it, sign in with Google, say their name, and press “Link our threads”. A link is for one person, and runs out after 30 days.",
+  "3. Press “Invite them to link their life”, then “Send the link”: on a phone it opens your share sheet; on a computer it copies the link to paste anywhere.",
+  "4. They open it, sign in with Google, say their name, and press “Link our lives”. A link is for one person, and runs out after 30 days.",
   "Someone already on Tapestry needs no link: on their name's page, ask them under “Already on Tapestry?”.",
 ];
 
@@ -48,17 +52,20 @@ export const WORDS = {
   [SETS_NEW_PERSON]: ["Name"],
   [ADDS_PERSON]: ["Add"],
   [OPENS_PERSON]: ["Open"],
-  [INVITES]: ["Invite them to link their thread"],
+  [INVITES]: ["Invite them to link their life"],
   [COPIES_LINK]: ["Send the link"],
   [UNLINKS]: ["Unlink their account"],
   [SETS_RENAME]: ["Their name"],
   [RENAMES]: ["Save the name"],
+  [SETS_BORN]: ["Born"],
+  [SETS_DIED]: ["Died"],
+  [SAVES_LIFE]: ["Save when they lived"],
   [REMOVES_PERSON]: ["Remove them from your people"],
   [SETS_CIRCLE_NAME]: ["Circle name"],
   [ADDS_CIRCLE]: ["Add a circle"],
   [TOGGLES_IN_CIRCLE]: ["In this circle"],
   [REMOVES_CIRCLE]: ["Remove the circle"],
-  [ACCEPTS]: ["Link our threads"],
+  [ACCEPTS]: ["Link our lives"],
   [ASKS_TO_REMOVE]: ["Remove"],
   [KEEPS]: ["No, keep"],
 };
@@ -71,6 +78,8 @@ export class People extends Controller {
     this.newName = this.value("");
     this.circleName = this.value("");
     this.rename = this.value("");
+    this.born = this.value(""); // when they were born, as typed: their line on the tapestry starts there
+    this.died = this.value(""); // and when they died, as typed: it ends there
     this.link = this.value({ person: "", address: "" }); // the invitation shown, for one person
     this.invitation = this.value(null); // the one being opened: { token, from, expired } once found, or null
     this.asking = this.value(""); // what is asked about before it is removed: "person:<id>" or "circle:<id>"
@@ -100,6 +109,9 @@ export class People extends Controller {
     if (action === ADDS_PERSON && !this.newName.read().trim()) return Phrase.of("Type their name first");
     if (action === ADDS_CIRCLE && !this.circleName.read().trim()) return Phrase.of("Name the circle first");
     if (action === RENAMES && !this.rename.read().trim()) return Phrase.of("A name can't be empty");
+    if (action === SAVES_LIFE) {
+      for (const typed of [this.born.read(), this.died.read()]) if (typed.trim() && !parseWhen(typed).when) return Phrase.of("Say when, as a time is: 12 June 1932, June 1932, 1932");
+    }
     if (action === INVITES && this.weave().people.get(payload?.id)?.account) return Phrase.of("Already linked");
     if (action === UNLINKS && !this.weave().people.get(payload?.id)?.account) return Phrase.of("Not linked");
     if (action === ACCEPTS) {
@@ -118,6 +130,14 @@ export class People extends Controller {
     if (action === SETS_RENAME) this.rename.setValue(payload.line);
     if (action === OPENS_PERSON) this.open(payload.parameter);
     if (action === ADDS_PERSON) this.change(() => this.loom.addPerson(this.newName.read()), () => { this.newName.setValue(""); return "Added"; });
+    if (action === SETS_BORN) this.born.setValue(payload.line);
+    if (action === SETS_DIED) this.died.setValue(payload.line);
+    if (action === SAVES_LIFE) {
+      const born = parseWhen(this.born.read()).when;
+      const died = parseWhen(this.died.read()).when;
+      this.change(() => this.loom.savePersonLife(payload.id, { born: born?.date ?? null, born_precision: born?.precision ?? "day",
+        died: died?.date ?? null, died_precision: died?.precision ?? "day" }), () => "Saved");
+    }
     if (action === RENAMES) this.change(() => this.loom.renamePerson(payload.id, this.rename.read()), () => "Name saved");
     if (action === ASKS_TO_REMOVE) this.asking.setValue(payload.key);
     if (action === KEEPS) this.asking.setValue("");
@@ -141,6 +161,9 @@ export class People extends Controller {
 
   /** A person's page opened: their name ready to change, no invitation shown yet. */
   open(personId) {
+    const known = this.account.weave.read().people.get(personId);
+    this.born.setValue(known?.born ? sayWhen({ date: known.born, precision: known.born_precision }) : "");
+    this.died.setValue(known?.died ? sayWhen({ date: known.died, precision: known.died_precision }) : "");
     this.asking.setValue("");
     this.rename.setValue(this.weave().people.get(personId)?.name ?? "");
     const invite = this.weave().people.get(personId)?.invite;
@@ -210,7 +233,7 @@ export function describePeople(ui, people, account) {
   const circles = account.weave.map((w) => w.data.circles);
   return ui.screen(PEOPLE, [
     ui.text(Phrase.of("Your people"), "Title"),
-    ui.text(Phrase.of("Anyone you tag or want to find things by. Invite someone to link their own thread: then your threads cross wherever you tag each other."), "Hint").wraps(),
+    ui.text(Phrase.of("Anyone you tag or want to find things by. Invite someone to link their own life: then your lives meet wherever you tag each other."), "Hint").wraps(),
     ui.row([
       ui.field(ADDS_PERSON, "", { changes: SETS_NEW_PERSON, shows: people.newName, placeholder: Phrase.of("Someone's name") }).grow(),
       ui.button(ADDS_PERSON),
@@ -267,7 +290,7 @@ export function describePerson(ui, people, account, timeline, asking) {
       ui.when(linked,
         ui.text(person.map((p) => Phrase.with("On Tapestry as %s. You are among each other's people.", [account.weave.read().data.members[p?.account] ?? ""])), "Hint").wraps(),
         ui.column([
-          ui.text(Phrase.of("Not on Tapestry - or not linked yet. Invite them, and when they accept, your threads cross."), "Hint").wraps(),
+          ui.text(Phrase.of("Not on Tapestry - or not linked yet. Invite them, and when they accept, your lives meet."), "Hint").wraps(),
           ui.button(INVITES, { payload: personId.map((id) => ({ id })) }).absentWhenRefused(),
           ui.when(showsLink, ui.column([
             ui.text(people.link.map((l) => l.address), "InviteLink").wraps(),
@@ -287,6 +310,14 @@ export function describePerson(ui, people, account, timeline, asking) {
       ])),
       heading(ui, "Everything with them"),
       timeline(about, Phrase.of("Nothing yet. Tag them on a memory, an event or a period.")),
+      // someone not on Tapestry: their life on the tapestry, grey, runs from their birth to their death, as far as known
+      ui.when(linked.map((l) => !l), ui.column([
+        heading(ui, "Their life"),
+        ui.text(Phrase.of("When they were born and died, as far as you know - their line on your tapestry runs between them. Not known, it fades in before the first thing with them."), "Hint").wraps(),
+        ui.field(SETS_BORN, "", { label: Phrase.of("Born"), changes: SETS_BORN, shows: people.born, placeholder: Phrase.of("e.g. 1932") }),
+        ui.field(SETS_DIED, "", { label: Phrase.of("Died"), changes: SETS_DIED, shows: people.died, placeholder: Phrase.of("Leave empty if they're alive") }),
+        ui.row([ui.button(SAVES_LIFE, { payload: personId.map((id) => ({ id })), style: LINK })], "Actions"),
+      ])),
       heading(ui, "Their name to you"),
       ui.row([
         ui.field(RENAMES, "", { changes: SETS_RENAME, shows: people.rename, carries: (line) => ({ line, id: personId.read() }) }).grow(),
@@ -315,10 +346,10 @@ export function describeJoin(ui, people) {
     ui.text(Phrase.of("An invitation"), "Title"),
     ui.text(invitation.map((i) => (!i ? Phrase.of("Looking it up…")
       : i.accepted ? Phrase.with("You and %s are linked.", [i.from])
-        : i.from ? Phrase.with("%s invites you to link your threads on Tapestry.", [i.from])
+        : i.from ? Phrase.with("%s invites you to link your lives on Tapestry.", [i.from])
           : Phrase.of("This invitation has run out or been taken back. Ask for a new one."))), "Words").wraps(),
     ui.when(invitation.map((i) => !!i?.from && !i.accepted), ui.column([
-      ui.text(Phrase.of("Once linked, you're each among the other's people: you see what they share with their people, they see what you share with yours, and an event either of you tags the other at is on both your threads. Either of you can unlink at any time."), "Hint").wraps(),
+      ui.text(Phrase.of("Once linked, you're each among the other's people: you see what they share with their people, they see what you share with yours, and an event either of you tags the other at is in both your lives. Either of you can unlink at any time."), "Hint").wraps(),
       ui.button(ACCEPTS),
     ])),
     problem(ui, people.problem),

@@ -5,20 +5,28 @@
 
 const TEXT_KEPT = "tapestry_text_size";
 
+const JOYSTICKS_KEPT = "tapestry_joysticks";
+const INVERT_KEPT = "tapestry_invert_y";
+
+/** How the tapestry in space is moved round on this device: { joysticks, invertY }. */
+export function spaceSettings() {
+  try { return { joysticks: localStorage.getItem(JOYSTICKS_KEPT) === "on", invertY: localStorage.getItem(INVERT_KEPT) === "on" }; } catch { return { joysticks: false, invertY: false }; }
+}
+
 /** The text size chosen on this device, or the base. */
 export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { heading, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=e16e3dc13f3d";
-import { dotOf } from "./parts.js?v=e16e3dc13f3d";
-import { SIGNS_OUT } from "./account.js?v=e16e3dc13f3d";
-import { copyOf } from "./keep.js?v=e16e3dc13f3d";
-import { parseWhen, sayWhen } from "./when.js?v=e16e3dc13f3d";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=e16e3dc13f3d";
-import { UNBLOCKS } from "./safety.js?v=e16e3dc13f3d";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=a546cc14beb2";
+import { dotOf } from "./parts.js?v=a546cc14beb2";
+import { SIGNS_OUT } from "./account.js?v=a546cc14beb2";
+import { copyOf } from "./keep.js?v=a546cc14beb2";
+import { parseWhen, sayWhen } from "./when.js?v=a546cc14beb2";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=a546cc14beb2";
+import { UNBLOCKS } from "./safety.js?v=a546cc14beb2";
 
 export const YOU = "you";
 
@@ -40,6 +48,12 @@ export const OPENS_ADMIN = "opens_the_admin_area";
 export const OPENS_IMPORT = "opens_bringing_in_a_list";
 export const SAVES_BIRTHDAY = "saves_my_birthday";
 export const ASKS_TO_DELETE_ME = "asks_before_deleting_my_account";
+export const TOGGLES_JOYSTICKS = "shows_or_hides_the_joysticks";
+export const TOGGLES_INVERT = "inverts_looking_up_and_down";
+export const SETS_BORN_SHARED = "sets_how_much_of_my_birthday_is_shared";
+export const TOGGLES_DEATH_KEEPER = "lets_them_record_my_death_or_not";
+export const SETS_DEATH = "types_when_they_died";
+export const RECORDS_DEATH = "records_their_death";
 export const DELETES_ME = "deletes_my_account";
 export const KEEPS_ME = "keeps_my_account";
 
@@ -48,7 +62,7 @@ export const WORDS = {
   [SAVES_MY_NAME]: ["Save my name"],
   [SETS_DEFAULT]: ["Choose who sees new things"],
   [SETS_TEXT_SIZE]: ["Choose the text size"],
-  [KEEPS_COPY]: ["Download a copy of my thread"],
+  [KEEPS_COPY]: ["Download a copy of my life story"],
   [SETS_BIRTHDAY]: ["Your birthday"],
   [SAVES_BIRTHDAY]: ["Save my birthday"],
   [SHOWS_ON_CARDS]: ["Show it on cards"],
@@ -62,6 +76,12 @@ export const WORDS = {
   [OPENS_ADMIN]: ["Admin"],
   [OPENS_IMPORT]: ["Bring in a list of memories"],
   [ASKS_TO_DELETE_ME]: ["Delete my account"],
+  [TOGGLES_JOYSTICKS]: ["Joysticks"],
+  [TOGGLES_INVERT]: ["Invert looking up and down"],
+  [SETS_BORN_SHARED]: ["Choose how much of your birthday your people see"],
+  [TOGGLES_DEATH_KEEPER]: ["Let them record it"],
+  [SETS_DEATH]: ["When they died"],
+  [RECORDS_DEATH]: ["Record it"],
   [DELETES_ME]: ["Yes, delete everything"],
   [KEEPS_ME]: ["No, keep it"],
 };
@@ -99,6 +119,8 @@ export class You extends Controller {
     this.newKind = this.value("");
     this.newEventKind = this.value("");
     this.deleting = this.value(false); // asked, before the member's account is deleted
+    this.space = this.value(spaceSettings()); // how the tapestry in space is moved round, on this device
+    this.deaths = this.value({}); // a death as typed, for each member who chose this one to record theirs
     this.busy = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
@@ -110,6 +132,10 @@ export class You extends Controller {
     if (this.busy.read() && action !== SETS_MY_NAME) return Phrase.of(action === KEEPS_COPY ? "Making your copy" : "Saving");
     if (action === SAVES_MY_NAME && !this.name.read().trim()) return Phrase.of("Your name can't be empty");
     if (action === SAVES_BIRTHDAY && birthdayOf(this.birthday.read()).error) return Phrase.of(birthdayOf(this.birthday.read()).error);
+    if (action === RECORDS_DEATH) {
+      const typed = (this.deaths.read()[payload?.account] ?? "").trim();
+      if (typed && !parseWhen(typed).when) return Phrase.of("Say when, as a time is: 3 March 2001, March 2001, 2001");
+    }
     return null;
   }
 
@@ -118,6 +144,23 @@ export class You extends Controller {
     if (action === SETS_MY_NAME) this.name.setValue(payload.line);
     if (action === SAVES_MY_NAME) this.change(() => this.loom.join(this.name.read().trim()), "Saved: this is the name your people see");
     if (action === KEEPS_COPY) this.keepCopy();
+    if (action === TOGGLES_JOYSTICKS || action === TOGGLES_INVERT) {
+      const [key, part] = action === TOGGLES_JOYSTICKS ? [JOYSTICKS_KEPT, "joysticks"] : [INVERT_KEPT, "invertY"];
+      const on = !this.space.read()[part];
+      try { localStorage.setItem(key, on ? "on" : "off"); } catch { /* this visit only */ }
+      this.space.setValue(spaceSettings());
+    }
+    if (action === SETS_BORN_SHARED) this.change(() => this.loom.saveDefaults({ born_shared: payload.shared }), "Saved");
+    if (action === TOGGLES_DEATH_KEEPER) {
+      const keepers = this.account.weave.read().me?.death_keepers ?? [];
+      const next = keepers.includes(payload.account) ? keepers.filter((k) => k !== payload.account) : [...keepers, payload.account];
+      this.change(() => this.loom.setDeathKeepers(next), "Saved");
+    }
+    if (action === SETS_DEATH) this.deaths.update((all) => ({ ...all, [payload.account]: payload.line }));
+    if (action === RECORDS_DEATH) {
+      const read = parseWhen(this.deaths.read()[payload.account] ?? "");
+      this.change(() => this.loom.recordDeath(payload.account, read.when?.date ?? null, read.when?.precision ?? null), read.when ? "Recorded" : "Taken back");
+    }
     if (action === ASKS_TO_DELETE_ME) this.deleting.setValue(true);
     if (action === KEEPS_ME) this.deleting.setValue(false);
     if (action === DELETES_ME) { this.deleting.setValue(false); this.deleteMe(); }
@@ -240,6 +283,11 @@ export function describeYou(ui, you, account, safety) {
       ui.field(SAVES_BIRTHDAY, "", { label: Phrase.of("Your birthday"), changes: SETS_BIRTHDAY, shows: you.birthday, placeholder: Phrase.of("12 June 1975"), autocomplete: "bday" }).grow(),
       ui.button(SAVES_BIRTHDAY, { style: LINK }),
     ], "AddRow"),
+    // how much of their birthday their people see: their life on the tapestry starts there
+    ui.text(Phrase.of("Your people see"), "FieldName"),
+    ui.row([["none", "None of it"], ["year", "The year"], ["date", "The date"]].map(([shared, said]) => ui.pressable(SETS_BORN_SHARED, { shared },
+      [ui.text(Phrase.of(said), Themes.FACE)], "Segment").currentWhile(me.map((m) => (m?.born_shared ?? "none") === shared))), "Segments"),
+    ui.text(Phrase.of("Your life on their tapestry starts at your birth, as far as they see it; seeing none of it, a little before the first thing they share with you."), "Hint").wraps(),
     heading(ui, "Who sees new things"),
     ui.text(Phrase.of("What each new memory, event or period starts out shared with. You can change it on each one as you write it."), "Hint").wraps(),
     ...KINDS.map(([kind, words]) => ui.column([
@@ -263,11 +311,32 @@ export function describeYou(ui, you, account, safety) {
       ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (k) => k.name, "Chips"),
     ui.field(ADDS_EVENT_KIND, "", { changes: TYPES_EVENT_KIND, shows: you.newEventKind, placeholder: Phrase.of("A new kind - Enter adds it") }),
     heading(ui, "What cards show"),
-    ui.text(Phrase.of("On your thread and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
+    ui.text(Phrase.of("In your life and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
     ui.row(CARD_PARTS.map(([part, said]) => ui.pressable(SHOWS_ON_CARDS, { part }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
       .currentWhile(account.weave.map((w) => w.cardShows[part]))), "Segments"),
     ui.row([ui.pressable(SHOWS_ON_CARDS, { part: "light" }, [ui.text(Phrase.of("Light cards: just when and the title, one line each"), Themes.FACE)], "Segment")
       .currentWhile(account.weave.map((w) => !!w.cardShows.light))], "Segments"),
+    heading(ui, "The tapestry in 3D"),
+    ui.text(Phrase.of("Drag to turn it and pinch to zoom; on this device, joysticks too - the left to walk, the right to look."), "Hint").wraps(),
+    ui.row([
+      ui.pressable(TOGGLES_JOYSTICKS, {}, [ui.text(Phrase.of("Joysticks"), Themes.FACE)], "Segment").currentWhile(you.space.map((s) => s.joysticks)),
+      ui.pressable(TOGGLES_INVERT, {}, [ui.text(Phrase.of("Invert up and down"), Themes.FACE)], "Segment").currentWhile(you.space.map((s) => s.invertY)),
+    ], "Segments"),
+    // whom they let record their death, and the deaths they were chosen to record
+    heading(ui, "When you die"),
+    ui.text(Phrase.of("Choose who of your people may record your death on Tapestry: your life on their tapestries ends there."), "Hint").wraps(),
+    ui.eachAcross(account.weave.map((w) => w.data.people.filter((p) => p.account)), (held) => ui.pressable(TOGGLES_DEATH_KEEPER, held.map((p) => ({ account: p?.account ?? "" })),
+      [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment").currentWhile(ui.bound(() => (me.read()?.death_keepers ?? []).includes(held.read()?.account))), (p) => p.id, "Segments"),
+    ui.when(me.map((m) => (m?.keeps_deaths ?? []).length > 0), ui.column([
+      ui.text(Phrase.of("They chose you to record their death"), "FieldName"),
+      ui.each(me.map((m) => m?.keeps_deaths ?? []), (held) => ui.row([
+        ui.text(held.map((k) => k?.name ?? ""), "PersonName"),
+        ui.field(RECORDS_DEATH, "", { changes: SETS_DEATH, placeholder: Phrase.of("When they died"),
+          shows: ui.bound(() => you.deaths.read()[held.read()?.account] ?? (held.read()?.died ? sayWhen({ date: held.read().died, precision: held.read().died_precision }) : "")),
+          carries: (line) => ({ line, account: held.read()?.account ?? "" }) }).grow(),
+        ui.button(RECORDS_DEATH, { payload: held.map((k) => ({ account: k?.account ?? "" })), style: LINK }),
+      ], "AddRow"), (k) => k.account, "List"),
+    ])),
     heading(ui, "Text size"),
     ui.row(TEXT_SIZES.map(([said, size]) => ui.pressable(SETS_TEXT_SIZE, { size }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment")
       .currentWhile(you.textSize.map((s) => s === size))), "Segments"),
@@ -275,7 +344,7 @@ export function describeYou(ui, you, account, safety) {
     ui.text(Phrase.of("Memories written down elsewhere, year by year of your life - pasted in at once."), "Hint").wraps(),
     ui.pressable(OPENS_IMPORT, {}, [ui.text(ui.words(OPENS_IMPORT), Themes.FACE)], LINK).goesTo("import"),
     heading(ui, "Keep a copy"),
-    ui.text(Phrase.of("Everything on your thread, with its pictures, as one page that opens in any browser - to keep, print or pass on."), "Hint").wraps(),
+    ui.text(Phrase.of("Everything in your life, with its pictures, as one page that opens in any browser - to keep, print or pass on."), "Hint").wraps(),
     ui.button(KEEPS_COPY, { style: LINK }),
     ui.divider(),
     // whom the member blocked: neither sees anything of the other's, until unblocked here

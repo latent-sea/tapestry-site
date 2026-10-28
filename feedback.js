@@ -4,10 +4,10 @@
 // turn; an admin sees everyone's, replies, and says where each stands. Each
 // side is told of the other's in Notices.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { CARD, LINK } from "./look/look.js?v=e16e3dc13f3d";
-import { heading, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { sayAgo } from "./notices.js?v=e16e3dc13f3d";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { CARD, LINK } from "./look/look.js?v=a546cc14beb2";
+import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { sayAgo } from "./notices.js?v=a546cc14beb2";
 
 export const FEEDBACK = "feedback";
 export const FEEDBACK_ITEM = "feedback_item"; // one, with its replies: its id the parameter

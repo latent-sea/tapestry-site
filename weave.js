@@ -5,10 +5,10 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=e16e3dc13f3d";
-import { linksOf } from "./links.js?v=e16e3dc13f3d";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=a546cc14beb2";
+import { linksOf } from "./links.js?v=a546cc14beb2";
 
-export const EMPTY = Object.freeze({ me: null, members: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
+export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
 // what each thing is with nothing said of it: a light load (tapestry_visible_light) leaves out what is
 // empty - null, [], false, "" - and the page takes each as its kind's nothing

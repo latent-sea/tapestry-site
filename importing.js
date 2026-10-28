@@ -7,11 +7,11 @@
 // the member unless they choose otherwise first, and adding twice adds
 // nothing twice.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { heading, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { ACTION } from "./look/look.js?v=e16e3dc13f3d";
-import { AUDIENCES } from "./weave.js?v=e16e3dc13f3d";
-import { parseSpan } from "./when.js?v=e16e3dc13f3d";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { ACTION } from "./look/look.js?v=a546cc14beb2";
+import { AUDIENCES } from "./weave.js?v=a546cc14beb2";
+import { parseSpan } from "./when.js?v=a546cc14beb2";
 
 export const IMPORT = "import";
 
@@ -77,7 +77,7 @@ export class Importer extends Controller {
 
   would(action) {
     if (action !== ADDS_LIST) return null;
-    if (!this.account.weave.read().writes) return Phrase.of("Keeping your own thread is part of the paid plan");
+    if (!this.account.weave.read().writes) return Phrase.of("Keeping your own life story is part of the paid plan");
     if (this.busy.read()) return Phrase.of("Adding");
     const read = readList(this.text.read());
     if (read.error) return Phrase.of("First fix the list");
@@ -129,8 +129,8 @@ export class Importer extends Controller {
     if (this.disposed) return;
     this.busy.setValue(false);
     if (!this.problem.read()) {
-      this.notice.setValue(added === total ? Phrase.counted("Added %d memory to your thread.", "Added %d memories to your thread.", added)
-        : Phrase.with("Added %d; the other %d were on your thread already.", [added, total - added]));
+      this.notice.setValue(added === total ? Phrase.counted("Added %d memory to your life.", "Added %d memories to your life.", added)
+        : Phrase.with("Added %d; the other %d were in your life already.", [added, total - added]));
     }
   }
 }

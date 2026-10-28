@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { CARD } from "./look/look.js?v=e16e3dc13f3d";
-import { describeAsked } from "./asking.js?v=e16e3dc13f3d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { CARD } from "./look/look.js?v=a546cc14beb2";
+import { describeAsked } from "./asking.js?v=a546cc14beb2";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -35,11 +35,11 @@ export function sayNotice(notice) {
     if (n.what === "status") return Phrase.with("%s said where your feedback “%s” stands", [who, n.about ?? ""]);
     return Phrase.with("%s replied to feedback: “%s”", [who, n.about ?? ""]);
   }
-  if (n.kind === "linked") return Phrase.with("%s came by your invitation: your threads are linked", [who]);
+  if (n.kind === "linked") return Phrase.with("%s came by your invitation: your lives are linked", [who]);
   if (n.kind === "answered") {
     const about = n.about ?? "";
     const said = {
-      link: [Phrase.with("%s said yes: your threads are linked", [who]), Phrase.with("%s said no to linking “%s”", [who, about])],
+      link: [Phrase.with("%s said yes: your lives are linked", [who]), Phrase.with("%s said no to linking “%s”", [who, about])],
       event: [Phrase.with("%s said yes: you are at “%s”", [who, about]), Phrase.with("%s said no to putting you at “%s”", [who, about])],
       memory: [Phrase.with("%s said yes: you were there too, at “%s”", [who, about]), Phrase.with("%s said no to you being at “%s”", [who, about])],
       merge_event: [Phrase.with("%s said yes: your “%s” is merged into theirs", [who, about]), Phrase.with("%s kept your “%s” apart from theirs", [who, about])],

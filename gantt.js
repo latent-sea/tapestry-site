@@ -12,8 +12,8 @@
 // page's kind chips above it are its key, and its filter. Every mark is a
 // link: each says what it is to a reader who can't see it, and its time as
 // the pointer rests on it.
-import { lastDayOf } from "./when.js?v=e16e3dc13f3d";
-import { yearMarks, yearsOf } from "./woven.js?v=e16e3dc13f3d";
+import { lastDayOf } from "./when.js?v=a546cc14beb2";
+import { yearMarks, yearsOf } from "./woven.js?v=a546cc14beb2";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room
@@ -123,6 +123,10 @@ export function drawTimeline(weave, width = 700, now = new Date(), colours = {},
   marks.forEach((m, i) => {
     const top = TOP + i * ROW;
     const { entry } = m;
+    // the one opened from ("Show in timeline"), picked out
+    if (range?.focus === entry.key) {
+      out.push(`<rect x="2" y="${top - 2}" width="${width - 4}" height="${ROW}" rx="8" fill="${dot}" opacity="0.14" stroke="${dot}" stroke-opacity="0.6"/>`);
+    }
     const x1 = clamp(x(m.from));
     const x2 = Math.max(clamp(x(m.to)), x1 + (entry.kind === "memory" ? 0 : 6));
     // its name above its mark, from its start - or, near the right edge, ending there
@@ -158,6 +162,7 @@ export function drawTimeline(weave, width = 700, now = new Date(), colours = {},
  * third of its length earlier ("earlier") or later ("later"). Answers { from, to }, or null for all of it.
  */
 export function rangeAfter(range, whole, step) {
+  range = range ? { from: range.from, to: range.to } : null;
   if (!whole) return null;
   const { from, to } = range ?? whole;
   const span = to - from;
@@ -176,11 +181,20 @@ export function rangeAfter(range, whole, step) {
  * 1 its end), which stays where it was. Answers { from, to }, or null for all of it.
  */
 export function rangeZoomed(range, whole, factor, at = 0.5) {
+  range = range ? { from: range.from, to: range.to } : null;
   if (!whole || !(factor > 0)) return range;
   const { from, to } = range ?? whole;
   const point = from + (to - from) * Math.min(Math.max(at, 0), 1);
   const span = (to - from) / factor;
   return within({ from: point - span * at, to: point + span * (1 - at) }, whole);
+}
+
+/** The stretch around one thing on the timeline: a month either side of it, and it picked out. */
+export function rangeAround(entry) {
+  if (!entry?.when?.date) return null;
+  const from = yearsOf(entry.when);
+  const to = endOf(entry.until ?? entry.when);
+  return { from: from - 1 / 12, to: to + 1 / 12, focus: entry.key };
 }
 
 /** A stretch kept within all of it: never shorter than a month, nor wider than all of it (then null), nor past either end. */

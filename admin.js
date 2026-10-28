@@ -5,10 +5,10 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { heading, notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e16e3dc13f3d";
-import { HOW_TO_INVITE } from "./people.js?v=e16e3dc13f3d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { heading, notice, problem } from "./parts.js?v=a546cc14beb2";
+import { CARD, DANGER, LINK } from "./look/look.js?v=a546cc14beb2";
+import { HOW_TO_INVITE } from "./people.js?v=a546cc14beb2";
 
 export const ADMIN = "admin";
 
@@ -72,7 +72,7 @@ export class Admin extends Controller {
     if (action === LOOKS_AGAIN) this.open();
     if (action === REMOVES_REPORTED) this.change(() => this.loom.adminSettleReport(payload.id, true), "Removed, for breaking the terms.");
     if (action === LETS_REPORTED_BE) this.change(() => this.loom.adminSettleReport(payload.id, false), "Let be: the report is gone.");
-    if (action === SETS_PLAN) this.change(() => this.loom.adminSetPlan(payload.id, payload.plan), payload.plan === "paid" ? "On the paid plan: they keep a thread of their own." : "On the free plan: they see and comment.");
+    if (action === SETS_PLAN) this.change(() => this.loom.adminSetPlan(payload.id, payload.plan), payload.plan === "paid" ? "On the paid plan: they keep their own life story." : "On the free plan: they see and comment.");
     return null;
   }
 

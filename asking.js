@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e16e3dc13f3d";
-import { notice, problem } from "./parts.js?v=e16e3dc13f3d";
-import { ACTION, LINK } from "./look/look.js?v=e16e3dc13f3d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=a546cc14beb2";
+import { notice, problem } from "./parts.js?v=a546cc14beb2";
+import { ACTION, LINK } from "./look/look.js?v=a546cc14beb2";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
@@ -185,7 +185,7 @@ export class Asking extends Controller {
 export function sayRequest(request) {
   const r = request ?? {};
   if (!r.mine) {
-    if (r.kind === "link") return Phrase.with("%s knows you as “%s”, and asks to link your threads.", [r.asker ?? "", r.name ?? ""]);
+    if (r.kind === "link") return Phrase.with("%s knows you as “%s”, and asks to link your lives.", [r.asker ?? "", r.name ?? ""]);
     if (r.kind === "claim") return Phrase.with("%s says they are your “%s”, and asks to be linked to that name.", [r.asker ?? "", r.name ?? ""]);
     if (r.kind === "memory") return Phrase.with("%s was there too, at your “%s”, and asks to be at it: it becomes an event, and they add their own memories of it.", [r.asker ?? "", r.name ?? ""]);
     if (r.kind === "merge_event") return Phrase.with("%s says their event “%s” is your “%s”, and asks to merge it into yours: everyone at theirs who is among your people, and their memories, come to yours.", [r.asker ?? "", r.name ?? "", r.into_name ?? ""]);
@@ -289,14 +289,14 @@ export function describeMerge(ui, asking, account, kind, id) {
     const owner = weave().nameOf(into?.owner);
     return {
       event: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, everyone at yours who is among their people, and their memories, go to theirs, and yours is gone.", [owner, nameOf(from), nameOf(into)]),
-      period: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, you are in theirs - it is on your thread - with everyone in yours who is among their people, and your memories and events during yours are during theirs. Yours is gone.", [owner, nameOf(from), nameOf(into)]),
+      period: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, you are in theirs - it is in your life - with everyone in yours who is among their people, and your memories and events during yours are during theirs. Yours is gone.", [owner, nameOf(from), nameOf(into)]),
       place: Phrase.with("Ask %s to merge your “%s” into their “%s”? When they say yes, everything at yours is at theirs, and yours is gone.", [owner, nameOf(from), nameOf(into)]),
     }[kind];
   });
   return ui.column([
     ui.text(Phrase.of(kind === "place" ? "The same place twice?" : "Set up twice?"), "PartHeading"),
     ui.text(Phrase.of({ event: "If this event is one someone else set up too, or one you have twice, find it and merge them.",
-      period: "If someone else has this time of your life too - a home you shared, a job together - or you have it twice, find theirs and merge them: one period, on both your threads.",
+      period: "If someone else has this time of your life too - a home you shared, a job together - or you have it twice, find theirs and merge them: one period, in both your lives.",
       place: "If this place is one you or someone else has set up again, find it and merge them." }[kind]), "Hint").wraps(),
     ui.when(picked, ui.column([
       ui.text(said, "Warn").wraps(),
