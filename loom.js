@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=e43c69e994f9";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=e43c69e994f9";
-import { shrinkPicture } from "./backend/pictures.js?v=e43c69e994f9";
+import { Backend } from "./backend/backend.js?v=266a8ca37beb";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=266a8ca37beb";
+import { shrinkPicture } from "./backend/pictures.js?v=266a8ca37beb";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -335,6 +335,9 @@ export class Loom {
   /** How the server is: { result, commit, at } (platform/bin/deploy's status, open to anyone). */
   /** What anyone shared with everyone on Tapestry, holding every word looked for: [{ kind, id, title, starts, starts_precision, town, owner_name }]. */
   async findPublic(looked) { return answer(await this.backend.callRpc("tapestry_find_public", { looked })); }
+
+  /** Someone else's event or period the member was put at: yes, on their life by their own name for it; or no, off it. */
+  async take(kind, id, yes, title) { return answer(await this.backend.callRpc("tapestry_take", { kind, id, yes, title })); }
 
   /** One found opened: among what the member sees from now on. */
   async look(kind, id) { return answer(await this.backend.callRpc("tapestry_look", { kind, id })); }

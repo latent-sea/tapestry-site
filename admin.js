@@ -5,11 +5,11 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { heading, notice, problem } from "./parts.js?v=e43c69e994f9";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e43c69e994f9";
-import { HOW_TO_INVITE } from "./people.js?v=e43c69e994f9";
-import { sayAgo } from "./notices.js?v=e43c69e994f9";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { few, heading, notice, problem } from "./parts.js?v=266a8ca37beb";
+import { CARD, DANGER, LINK } from "./look/look.js?v=266a8ca37beb";
+import { HOW_TO_INVITE } from "./people.js?v=266a8ca37beb";
+import { sayAgo } from "./notices.js?v=266a8ca37beb";
 
 export const ADMIN = "admin";
 
@@ -189,7 +189,7 @@ export function describeAdmin(ui, admin, account) {
       ui.button(LOOKS_AGAIN, { style: LINK }),
     ], "AddRow"),
     heading(ui, "Who is on Tapestry"),
-    ui.each(members, (held) => ui.surface(CARD, [ui.column([
+    few(ui, "admin-members", members, (m) => `${m.name} ${m.email ?? ""}`, (held) => ui.surface(CARD, [ui.column([
       ui.row([
         ui.text(held.map((m) => m?.name ?? ""), "PersonName").grow(),
         ui.text(held.map((m) => (m?.admin ? Phrase.of("Admin") : "")), "Quiet").hidesEmpty(),
@@ -224,7 +224,7 @@ export function describeAdmin(ui, admin, account) {
             ui.pressable(ASKS_TO_REMOVE_MEMBER, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(ui.words(ASKS_TO_REMOVE_MEMBER), "Small")], LINK)),
         ], "Actions")),
       ])),
-    ])]), (m) => m.id, "List"),
+    ])]), { across: false, keyOf: (m) => m.id, style: "List", browsed: true }),
     heading(ui, "Invitations waiting"),
     ui.when(invitations.map((l) => l.length === 0), ui.text(Phrase.of("None waiting."), "Quiet")),
     ui.each(invitations, (held) => ui.surface(CARD, [ui.row([

@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { heading, mark, notice, problem } from "./parts.js?v=e43c69e994f9";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e43c69e994f9";
-import { describeIsThisYou } from "./asking.js?v=e43c69e994f9";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=e43c69e994f9";
-import { parseWhen, sayWhen } from "./when.js?v=e43c69e994f9";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { few, heading, mark, notice, problem } from "./parts.js?v=266a8ca37beb";
+import { CARD, DANGER, LINK } from "./look/look.js?v=266a8ca37beb";
+import { describeIsThisYou } from "./asking.js?v=266a8ca37beb";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=266a8ca37beb";
+import { parseWhen, sayWhen } from "./when.js?v=266a8ca37beb";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -282,12 +282,12 @@ export function describePeople(ui, people, account) {
       ui.text(Phrase.of("Inviting someone"), "FieldName"),
       ...HOW_TO_INVITE.map((step) => ui.text(Phrase.of(step), "Hint").wraps()),
     ], "Part")]),
-    ui.each(list, (held) => ui.pressable(OPENS_PERSON, held.map((p) => ({ parameter: p?.id ?? "" })), [ui.row([
+    few(ui, "people", list, (p) => p.name, (held) => ui.pressable(OPENS_PERSON, held.map((p) => ({ parameter: p?.id ?? "" })), [ui.row([
       mark(ui, held.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6"))),
       ui.text(held.map((p) => p?.name ?? ""), "PersonName").grow(),
       ui.text(ui.bound(() => { const n = counts.read().get(held.read()?.id) ?? 0; return n ? Phrase.counted("%d memory", "%d memories", n) : ""; }), "Quiet").hidesEmpty(),
       ui.text(held.map((p) => Phrase.of(p?.account ? "On Tapestry" : p?.invite ? "Invited" : "A name")), "Quiet"),
-    ], "PersonRow")], `${CARD} ListItem`).goesTo(PERSON), (p) => p.id, "List"),
+    ], "PersonRow")], `${CARD} ListItem`).goesTo(PERSON), { across: false, keyOf: (p) => p.id, style: "List", browsed: true }),
     heading(ui, "Circles"),
     ui.text(Phrase.of("Groups of your people - Family, Old friends - to let in or keep out at once. Put people in a circle from their own page."), "Hint").wraps(),
     ui.row([
@@ -348,9 +348,10 @@ export function describePerson(ui, people, account, timeline, asking) {
       notice(ui, people.notice),
       ui.when(circles.map((c) => c.length > 0), ui.column([
         heading(ui, "Circles"),
-        ui.eachAcross(circles, (held) => ui.pressable(TOGGLES_IN_CIRCLE, ui.bound(() => ({ circle: held.read()?.id ?? "", person: personId.read() })),
+        few(ui, "person-circles", circles, (c) => c.name, (held) => ui.pressable(TOGGLES_IN_CIRCLE, ui.bound(() => ({ circle: held.read()?.id ?? "", person: personId.read() })),
           [ui.text(held.map((c) => c?.name ?? ""), Themes.FACE)], "Segment")
-          .currentWhile(ui.bound(() => (held.read()?.people ?? []).includes(personId.read()))), (c) => c.id, "Segments"),
+          .currentWhile(ui.bound(() => (held.read()?.people ?? []).includes(personId.read()))),
+        { keyOf: (c) => c.id, style: "Segments", keep: (c) => c.people.includes(personId.read()) }),
       ])),
       // a memory of them: written with them on it already
       ui.row([ui.button(ADDS_MEMORY, { with: personId.map((id) => `memory:new:person:${id}`), goes_to: EDIT }).absentWhenRefused()], "Actions"),
@@ -368,8 +369,8 @@ export function describePerson(ui, people, account, timeline, asking) {
       ui.when(twins.map((t) => t.length > 0), ui.column([
         heading(ui, "The same person twice?"),
         ui.text(person.map((p) => Phrase.with("If another of your people is %s too, pick them. Merged, everything tagged with either is tagged with %s, they are in both's circles, and the other name goes.", [p?.name ?? "", p?.name ?? ""])), "Hint").wraps(),
-        ui.eachAcross(twins, (held) => ui.pressable(PICKS_TWIN, held.map((p) => ({ id: p?.id ?? "" })), [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment")
-          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), (p) => p.id, "Segments"),
+        few(ui, "twins", twins, (p) => p.name, (held) => ui.pressable(PICKS_TWIN, held.map((p) => ({ id: p?.id ?? "" })), [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment")
+          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), { keyOf: (p) => p.id, style: "Segments", keep: (p) => p.id === people.twin.read() }),
         ui.when(people.twin.map((t) => t !== ""), ui.column([
           ui.text(ui.bound(() => Phrase.with("Merge %s into %s? It can't be undone.", [account.weave.read().people.get(people.twin.read())?.name ?? "", person.read()?.name ?? ""])), "Warn").wraps(),
           ui.row([ui.button(MERGES, { payload: personId.map((id) => ({ id })), style: DANGER })], "Actions"),

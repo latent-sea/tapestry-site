@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=e43c69e994f9";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=e43c69e994f9";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=e43c69e994f9";
-import { chooser, dotOf, heading, notice, problem } from "./parts.js?v=e43c69e994f9";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=e43c69e994f9";
-import { DANGER, LINK } from "./look/look.js?v=e43c69e994f9";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=266a8ca37beb";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=266a8ca37beb";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=266a8ca37beb";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=266a8ca37beb";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=266a8ca37beb";
+import { DANGER, LINK } from "./look/look.js?v=266a8ca37beb";
 
 export const EDIT = "edit";
 
@@ -239,6 +239,8 @@ export class Editor extends Controller {
       const span = this.span();
       if (span.error) return Phrase.of("First fix when it was");
       if (kind !== "memory" && !span.starts) return Phrase.of("Say when, even roughly");
+      // a memory has a time: its own, or its event's
+      if (kind === "memory" && !span.starts && !this.eventId.read()) return Phrase.of("Say when it was, even roughly: 1987, summer 1994, when I was 7");
       if (kind !== "memory" && !this.title.read().trim()) return Phrase.of(kind === "event" ? "Say what happened" : "Give this time a name");
       if (kind === "memory" && !this.title.read().trim() && !this.text.read().trim() && !this.pictures.read().length && !this.added.read().length) {
         return Phrase.of("Write something, or add a picture");
@@ -383,8 +385,11 @@ export class Editor extends Controller {
     // - and one that keeps its event's time shows it too: left as it is, it goes on following the event's
     const event = kind !== "memory" ? null : !item && tied === "event" ? weave.events.get(tiedId) ?? null : item && !item.starts ? weave.events.get(item.event_id) ?? null : null;
     this.eventSaid = event ? saySpan(timeOf(event, "starts"), timeOf(event, "ends"), "", true) : "";
+    // a memory added to a period starts at the period's time - somewhere in it - to say more closely
+    const period = kind === "memory" && !item && tied === "period" ? weave.periods.get(tiedId) ?? null : null;
+    const periodSaid = period?.starts ? saySpan(timeOf(period, "starts"), timeOf(period, "ends") ?? { date: `${new Date().getFullYear()}-01-01`, precision: "year", about: false }, "", true) : "";
     this.eventSaidOf = event?.id ?? null;
-    this.whenText.setValue(item?.starts || !event ? (item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : "") : this.eventSaid);
+    this.whenText.setValue(item?.starts || !event ? (item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : periodSaid) : this.eventSaid);
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
     this.eventTitle.setValue("");
     this.periodIds.setValue(item ? (kind === "event" ? [...(item.period_ids ?? [])] : periodsOf(item))
@@ -700,15 +705,16 @@ export function describeEditor(ui, editor, account) {
     // a period's or an event's kind: its colour on the timeline, and what it is filtered by
     ui.when(kind.map((k) => k !== "memory"), ui.column([
       ui.text(kind.map((k) => Phrase.of(k === "event" ? "What kind of event" : "What kind of time")), "FieldName"),
-      ui.eachAcross(ui.bound(() => {
+      few(ui, "editor-kinds", ui.bound(() => {
         const w = account.weave.read();
         return [...(kind.read() === "event" ? w.eventKinds : w.periodKinds).map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }];
-      }), (held) => ui.pressable(SETS_PERIOD_TYPE, held.map((k) => ({ type: k?.type ?? "" })),
+      }), (k) => k.said, (held) => ui.pressable(SETS_PERIOD_TYPE, held.map((k) => ({ type: k?.type ?? "" })),
         [ui.image(ui.bound(() => {
           const w = account.weave.read();
           return dotOf(kind.read() === "event" ? w.eventKindColour(held.read()?.type) : w.kindColour(held.read()?.type));
         }), "SmallDot", ""), ui.text(held.map((k) => k?.said ?? ""), Themes.FACE)], "Segment")
-        .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
+        .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))),
+      { keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === editor.periodType.read() }),
       ui.row([
         ui.field(ADDS_PERIOD_KIND, "", { changes: SETS_NEW_KIND, shows: editor.newKind, placeholder: Phrase.of("Or a kind of your own") }).grow(),
         ui.button(ADDS_PERIOD_KIND, { style: LINK }),

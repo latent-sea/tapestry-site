@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { notice, problem } from "./parts.js?v=e43c69e994f9";
-import { ACTION, LINK } from "./look/look.js?v=e43c69e994f9";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { few, notice, problem } from "./parts.js?v=266a8ca37beb";
+import { ACTION, LINK } from "./look/look.js?v=266a8ca37beb";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
@@ -239,8 +239,8 @@ export function describeIsThisYou(ui, asking, account, personId) {
     ], "Request"), ui.when(known.map((k) => k.length > 0), ui.column([
       ui.text(Phrase.of("Already on Tapestry?"), "FieldName"),
       ui.text(Phrase.of("Ask whichever of these they are. When they say yes, you are linked, as by an invitation."), "Hint").wraps(),
-      ui.eachAcross(known, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: personId.read(), member: held.read()?.account ?? "" })),
-        [ui.text(held.map((m) => m?.name ?? ""), "Small")], "Segment"), (m) => m.account, "Segments"),
+      few(ui, "known-members", known, (m) => m.name, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: personId.read(), member: held.read()?.account ?? "" })),
+        [ui.text(held.map((m) => m?.name ?? ""), "Small")], "Segment"), { keyOf: (m) => m.account, style: "Segments" }),
     ]))),
   ]);
 }
@@ -255,8 +255,8 @@ export function describeThatsMe(ui, asking, account, entry) {
   const me = ui.bound(() => account.weave.read().meId);
   return ui.when(names.map((n) => n.length > 0), ui.column([
     ui.text(Phrase.of("Is one of these names you? Ask to be linked to it."), "Hint").wraps(),
-    ui.eachAcross(names, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: held.read()?.id ?? "", member: me.read() })),
-      [ui.text(held.map((n) => Phrase.with("That's me: %s", [n?.name ?? ""])), "Small")], "Segment"), (n) => n.id, "Segments"),
+    few(ui, "thats-me", names, (n) => n.name, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: held.read()?.id ?? "", member: me.read() })),
+      [ui.text(held.map((n) => Phrase.with("That's me: %s", [n?.name ?? ""])), "Small")], "Segment"), { keyOf: (n) => n.id, style: "Segments" }),
   ]));
 }
 
@@ -327,9 +327,10 @@ export function describeNamingPeriod(ui, asking, account, memoryId) {
       : "It becomes a period over its time, with its place, its people, its words and who sees it - and is no longer a memory.")), "Hint").wraps(),
     ui.field(MAKES_NAMED_PERIOD, "", { changes: NAMES_PERIOD, shows: asking.periodName, label: Phrase.of("The period's name"), placeholder: Phrase.of("e.g. Living in Leeds") }),
     ui.text(Phrase.of("What kind of time"), "FieldName"),
-    ui.eachAcross(account.weave.map((w) => [...w.periodKinds.map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }]),
+    few(ui, "memory-period-kinds", account.weave.map((w) => [...w.periodKinds.map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }]), (k) => k.said,
       (held) => ui.pressable(CHOOSES_PERIOD_KIND, held.map((k) => ({ type: k?.type ?? "" })), [ui.text(held.map((k) => k?.said ?? ""), "Small")], "Segment")
-        .currentWhile(ui.bound(() => asking.periodKind.read() === (held.read()?.type ?? ""))), (k) => k.type || "none", "Segments"),
+        .currentWhile(ui.bound(() => asking.periodKind.read() === (held.read()?.type ?? ""))),
+      { keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === asking.periodKind.read() }),
     ui.row([
       ui.button(MAKES_NAMED_PERIOD),
       ui.button(KEEPS_AS_MEMORY, { style: LINK }),

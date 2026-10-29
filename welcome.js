@@ -4,11 +4,11 @@
 // yet - no birthday, no memory - until they finish or skip it; then never
 // again on that device. Its address (#welcome) opens it again any time.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { LINK } from "./look/look.js?v=e43c69e994f9";
-import { notice, problem } from "./parts.js?v=e43c69e994f9";
-import { birthdayOf } from "./you.js?v=e43c69e994f9";
-import { parseSpan } from "./when.js?v=e43c69e994f9";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { LINK } from "./look/look.js?v=266a8ca37beb";
+import { notice, problem } from "./parts.js?v=266a8ca37beb";
+import { birthdayOf } from "./you.js?v=266a8ca37beb";
+import { parseSpan } from "./when.js?v=266a8ca37beb";
 
 export const WELCOME = "welcome";
 export const SETS_BIRTHDAY = "sets_my_birthday_on_the_welcome";
@@ -78,6 +78,7 @@ export class Welcome extends Controller {
       if (!this.memory.read().trim()) return Phrase.of("Write something first, or skip it");
       const span = parseSpan(this.when.read(), new Date(), this.account.weave.read().born);
       if (span.error) return Phrase.of(span.error);
+      if (!span.starts) return Phrase.of("Say when it was, even roughly");
       if (span.going) return Phrase.of("A memory is a time, not one still going");
     }
     return null;

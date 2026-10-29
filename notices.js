@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { CARD } from "./look/look.js?v=e43c69e994f9";
-import { describeAsked } from "./asking.js?v=e43c69e994f9";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { CARD } from "./look/look.js?v=266a8ca37beb";
+import { describeAsked } from "./asking.js?v=266a8ca37beb";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -100,7 +100,7 @@ export class Notices extends Controller {
   count() {
     const weave = this.account.weave.read();
     const seen = this.seen.read();
-    return weave.notices.filter((n) => !n.seen && !seen.has(n.id)).length + weave.requests.filter((r) => !r.mine).length;
+    return weave.notices.filter((n) => !n.seen && !seen.has(n.id)).length + weave.requests.filter((r) => !r.mine).length + weave.waiting().length;
   }
 
   /** Opened: everything new is seen, here at once and on the platform. */
@@ -113,7 +113,7 @@ export class Notices extends Controller {
 }
 
 /** The screen: what waits for an answer, then each notice, newest first, opening what it is of. */
-export function describeNotices(ui, notices, asking, account, itemScreen, feedbackScreen, adminScreen) {
+export function describeNotices(ui, notices, asking, account, itemScreen, feedbackScreen, adminScreen, waiting = null) {
   const list = account.weave.map((w) => w.notices);
   // new on this visit: marked seen as the screen opens, it still says so until the next load
   const fresh = (held) => held.map((n) => !!n && !n.seen);
@@ -121,7 +121,8 @@ export function describeNotices(ui, notices, asking, account, itemScreen, feedba
     ui.text(Phrase.of("Notices"), "Title"),
     ui.text(Phrase.of("What others did that touches you, and what waits for your answer."), "Hint").wraps(),
     describeAsked(ui, asking, account),
-    ui.when(ui.bound(() => list.read().length === 0 && account.weave.read().requests.length === 0),
+    ...(waiting ? [waiting] : []),
+    ui.when(ui.bound(() => list.read().length === 0 && account.weave.read().requests.length === 0 && account.weave.read().waiting().length === 0),
       ui.text(Phrase.of("Nothing yet. When someone puts you in a memory, adds to an event you are at, or answers what you asked, it is here."), "Quiet").wraps()),
     ui.each(list, (held) => {
       const row = () => [ui.row([

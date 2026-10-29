@@ -2,8 +2,8 @@
 // chooser (type to find, press to pick, or add what was typed), and the
 // little rows of names.
 
-import { Phrase, Themes } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { LINK } from "./look/look.js?v=e43c69e994f9";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { LINK } from "./look/look.js?v=266a8ca37beb";
 
 /** A thread's mark: a dot in its colour, as a picture, since a colour is the thread's own. */
 export function dotOf(colour) {
@@ -50,6 +50,78 @@ export function chooser(ui, options) {
       ui.each(offered, (held) => ui.pressable(pick, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(held.map((m) => m?.label ?? ""), "MatchWords")], "Match"), (m) => m.id, "Matches"),
     ].filter(Boolean), "Found")) : null,
   ].filter(Boolean), "Chooser");
+}
+
+// --- choices that grow: past a few, a line to type into narrows them ---
+
+/** How many choices are shown as they are: past this, they are found by typing. */
+export const MANY = 10;
+export const NARROWS = "narrows_the_choices";
+export const WORDS = { [NARROWS]: ["Type to find"] };
+
+/** What is typed to narrow each list of choices, by the list's own key: kept while the page is open. */
+export class Narrowing extends Controller {
+  constructor(chimes) {
+    super(chimes);
+    this.typed = new Map();
+  }
+
+  lineOf(key) {
+    if (!this.typed.has(key)) this.typed.set(key, this.value(""));
+    return this.typed.get(key);
+  }
+
+  answers() { return [NARROWS]; }
+
+  told(action, payload) {
+    if (action === NARROWS) this.lineOf(payload.key).setValue(payload.line ?? "");
+    return null;
+  }
+
+  /** Signed out: nothing typed stays for the next member. */
+  reset() { for (const line of this.typed.values()) line.setValue(""); }
+}
+
+let narrowing = null;
+/** The page's own Narrowing, made once (site.js), for every list of choices to use. */
+export function narrowWith(made) { narrowing = made; }
+
+/**
+ * A list of choices that may grow: up to MANY, each as it is; past that, a line to type into, and only
+ * what holds what is typed - with those kept always (keep: the ones chosen now, so they can be unchosen).
+ * key names the list (one line typed for each); textOf(item) is what it is found by. Options: across (a
+ * row, else a column), keyOf, style, keep; browsed - a list to read rather than choose from, all of it
+ * shown until something is typed.
+ */
+export function few(ui, key, items, textOf, template, { across = true, keyOf = null, style = across ? Themes.ROW : Themes.COLUMN, keep = null, browsed = false } = {}) {
+  const line = narrowing ? narrowing.lineOf(key) : null;
+  const many = items.map((list) => (list ?? []).length > MANY);
+  // what is typed, as words, and those of the list holding every one; the kept ones apart
+  const narrowed = ui.bound(() => {
+    const list = items.read() ?? [];
+    const kept = keep ? list.filter(keep) : [];
+    const words = line ? line.read().toLowerCase().trim().split(/\s+/).filter(Boolean) : [];
+    const found = words.length ? list.filter((item) => !kept.includes(item) && words.every((w) => String(textOf(item) ?? "").toLowerCase().includes(w))) : [];
+    return { list, kept, typed: words.length > 0, found };
+  });
+  const shown = ui.bound(() => {
+    const { list, kept, typed, found } = narrowed.read();
+    if (list.length <= MANY || !line || (browsed && !typed)) return list;
+    return [...kept, ...(browsed ? found : found.slice(0, MANY))];
+  });
+  const left = ui.bound(() => {
+    const { list, typed, found } = narrowed.read();
+    if (list.length <= MANY || !line) return "";
+    if (!typed) return browsed ? "" : Phrase.counted("%d to choose from: type to find one", "%d to choose from: type to find one", list.length);
+    if (!found.length) return Phrase.of("None holds that");
+    return found.length > MANY && !browsed ? Phrase.with("And %s more: type more to narrow them", [String(found.length - MANY)]) : "";
+  });
+  const made = across ? ui.eachAcross(shown, template, keyOf, style) : ui.each(shown, template, keyOf, style);
+  return ui.column([
+    ui.when(many, ui.field(NARROWS, "", { changes: NARROWS, shows: line ?? ui.bound(() => ""), carries: (typed) => ({ line: typed, key }), placeholder: Phrase.of("Type to find") })),
+    made,
+    ui.text(left, "Hint").wraps().hidesEmpty(),
+  ], `Few Few-${String(key).replace(/[^a-z0-9-]/gi, "-")}`);
 }
 
 /** A heading for a part of a screen. */

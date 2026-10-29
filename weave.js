@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=e43c69e994f9";
-import { linksOf } from "./links.js?v=e43c69e994f9";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=266a8ca37beb";
+import { linksOf } from "./links.js?v=266a8ca37beb";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -114,6 +114,12 @@ const CARD_PARTS_SHOWN = { ...Object.fromEntries(CARD_PARTS.map(([key]) => [key,
 export class Weave {
   constructor(data = EMPTY) {
     this.data = filled(data);
+    // someone else's event or period: by the member's own name for it, if they gave one (its maker's kept as makerTitle);
+    // and anyone put at it who hasn't said yes yet is a name on it, not a life through it (pendingAccount)
+    for (const list of ["events", "periods"]) {
+      this.data[list] = this.data[list].map((item) => ({ ...item, makerTitle: item.title, title: item.own_title || item.title,
+        tags: item.tags.map((tag) => (tag.pending ? { ...tag, pendingAccount: tag.account, account: null } : tag)) }));
+    }
     const byId = (list) => new Map(list.map((item) => [item.id, item]));
     this.people = byId(this.data.people);
     this.circles = byId(this.data.circles);
@@ -186,13 +192,14 @@ export class Weave {
   /** A tag's name, as the member knows them. */
   /** The member's own person a tag names, to open: none for the member themself, or someone of another's they don't know. */
   personOf(tag) {
-    if (tag.account && tag.account === this.meId) return null;
+    const account = tag.account ?? tag.pendingAccount;
+    if (account && account === this.meId) return null;
     if (tag.person && this.people.has(tag.person)) return tag.person;
-    return (tag.account && this.linked.get(tag.account)?.id) || null;
+    return (account && this.linked.get(account)?.id) || null;
   }
 
   tagName(tag) {
-    if (tag.account === this.meId && this.meId) return "You";
+    if ((tag.account ?? tag.pendingAccount) === this.meId && this.meId) return "You";
     if (tag.person && this.people.has(tag.person)) return this.people.get(tag.person).name;
     if (tag.account && this.linked.has(tag.account)) return this.linked.get(tag.account).name;
     return tag.name;
@@ -428,6 +435,16 @@ export class Weave {
       return counts;
     });
   }
+
+  /** What someone else put the member at and they haven't said yes or no to: entries, newest first. */
+  waiting() {
+    return this.kept("waiting", () => [...this.data.events.map((e) => ["event", e]), ...this.data.periods.map((p) => ["period", p])]
+      .filter(([, item]) => item.owner !== this.meId && item.tags.some((tag) => tag.pendingAccount && tag.pendingAccount === this.meId))
+      .map(([kind, item]) => this.entry(kind, item)).sort((a, b) => String(this.items(b).created_at ?? "").localeCompare(String(this.items(a).created_at ?? ""))));
+  }
+
+  /** The item an entry is of. */
+  items(entry) { return ({ event: this.events, period: this.periods, memory: this.memories })[entry.kind].get(entry.id); }
 
   /** The memories of an event, by everyone, in order. */
   memoriesOf(eventId) { return sortEntries(this.data.memories.filter((m) => m.event_id === eventId).map((m) => this.entry("memory", m))); }

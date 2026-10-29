@@ -18,16 +18,16 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e43c69e994f9";
-import { heading, notice, problem } from "./parts.js?v=e43c69e994f9";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=e43c69e994f9";
-import { dotOf } from "./parts.js?v=e43c69e994f9";
-import { SIGNS_OUT } from "./account.js?v=e43c69e994f9";
-import { copyOf } from "./keep.js?v=e43c69e994f9";
-import { parseWhen, sayWhen } from "./when.js?v=e43c69e994f9";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=e43c69e994f9";
-import { UNBLOCKS } from "./safety.js?v=e43c69e994f9";
-import { describePhone } from "./phone.js?v=e43c69e994f9";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
+import { few, heading, notice, problem } from "./parts.js?v=266a8ca37beb";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=266a8ca37beb";
+import { dotOf } from "./parts.js?v=266a8ca37beb";
+import { SIGNS_OUT } from "./account.js?v=266a8ca37beb";
+import { copyOf } from "./keep.js?v=266a8ca37beb";
+import { parseWhen, sayWhen } from "./when.js?v=266a8ca37beb";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=266a8ca37beb";
+import { UNBLOCKS } from "./safety.js?v=266a8ca37beb";
+import { describePhone } from "./phone.js?v=266a8ca37beb";
 
 export const YOU = "you";
 
@@ -308,15 +308,15 @@ export function describeYou(ui, you, account, safety, phone) {
     describePhone(ui, phone, { heading, problem, LINK }),
     heading(ui, "Kinds of period"),
     ui.text(Phrase.of("What kinds of time your periods are, each its colour on your timeline. Make your own; taking one off leaves it on its periods, grey."), "Hint").wraps(),
-    ui.eachAcross(account.weave.map((w) => w.periodKinds), (held) => ui.pressable(TAKES_OFF_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
+    few(ui, "you-period-kinds", account.weave.map((w) => w.periodKinds), (k) => k.name, (held) => ui.pressable(TAKES_OFF_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
       ui.image(ui.bound(() => dotOf(account.weave.read().kindColour(held.read()?.name))), "SmallDot", ""),
-      ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (k) => k.name, "Chips"),
+      ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), { keyOf: (k) => k.name, style: "Chips", browsed: true }),
     ui.field(ADDS_YOUR_KIND, "", { changes: TYPES_YOUR_KIND, shows: you.newKind, placeholder: Phrase.of("A new kind - Enter adds it") }),
     heading(ui, "Kinds of event"),
     ui.text(Phrase.of("What kinds your events are, each its colour on your timeline. Make your own; taking one off leaves it on its events, grey."), "Hint").wraps(),
-    ui.eachAcross(account.weave.map((w) => w.eventKinds), (held) => ui.pressable(TAKES_OFF_EVENT_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
+    few(ui, "you-event-kinds", account.weave.map((w) => w.eventKinds), (k) => k.name, (held) => ui.pressable(TAKES_OFF_EVENT_KIND, held.map((k) => ({ name: k?.name ?? "" })), [
       ui.image(ui.bound(() => dotOf(account.weave.read().eventKindColour(held.read()?.name))), "SmallDot", ""),
-      ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (k) => k.name, "Chips"),
+      ui.text(held.map((k) => k?.name ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), { keyOf: (k) => k.name, style: "Chips", browsed: true }),
     ui.field(ADDS_EVENT_KIND, "", { changes: TYPES_EVENT_KIND, shows: you.newEventKind, placeholder: Phrase.of("A new kind - Enter adds it") }),
     heading(ui, "What cards show"),
     ui.text(Phrase.of("In your life and everywhere else, what each card shows besides its title and when. Press one to show it or not."), "Hint").wraps(),
@@ -333,8 +333,9 @@ export function describeYou(ui, you, account, safety, phone) {
     // whom they let record their death, and the deaths they were chosen to record
     heading(ui, "When you die"),
     ui.text(Phrase.of("Choose who of your people may record your death on Tapestry: your life on their tapestries ends there."), "Hint").wraps(),
-    ui.eachAcross(account.weave.map((w) => w.data.people.filter((p) => p.account)), (held) => ui.pressable(TOGGLES_DEATH_KEEPER, held.map((p) => ({ account: p?.account ?? "" })),
-      [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment").currentWhile(ui.bound(() => (me.read()?.death_keepers ?? []).includes(held.read()?.account))), (p) => p.id, "Segments"),
+    few(ui, "death-keepers", account.weave.map((w) => w.data.people.filter((p) => p.account)), (p) => p.name, (held) => ui.pressable(TOGGLES_DEATH_KEEPER, held.map((p) => ({ account: p?.account ?? "" })),
+      [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment").currentWhile(ui.bound(() => (me.read()?.death_keepers ?? []).includes(held.read()?.account))),
+    { keyOf: (p) => p.id, style: "Segments", keep: (p) => (me.read()?.death_keepers ?? []).includes(p.account) }),
     ui.when(me.map((m) => (m?.keeps_deaths ?? []).length > 0), ui.column([
       ui.text(Phrase.of("They chose you to record their death"), "FieldName"),
       ui.each(me.map((m) => m?.keeps_deaths ?? []), (held) => ui.row([

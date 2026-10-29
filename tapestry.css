@@ -186,6 +186,7 @@
 #app .LabelTag { font-size: calc(var(--chime-size-face) * 0.75); font-weight: 700; color: var(--chime-accent); }
 #app .Labels { gap: 6px; flex-wrap: wrap; }
 #app .PeopleLinks { gap: 4px 14px; flex-wrap: wrap; align-items: baseline; }
+#app .PlaceMap { height: 280px; border-radius: 12px; overflow: hidden; margin: 6px 0; background: #1b2339; z-index: 0; }
 #app .chime-pressable.LabelChip { min-height: 32px; padding: 4px 12px; }
 
 /* the periods as a chart: drawn to the width there is, its words their size */
