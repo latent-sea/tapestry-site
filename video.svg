@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" role="img" aria-label="A YouTube video">
+  <!-- what stands for a video until it is pressed: nothing of YouTube's loads before then -->
+  <rect width="480" height="270" fill="#1c1540"/>
+  <rect x="190" y="95" width="100" height="70" rx="18" fill="#e5484d"/>
+  <path d="M228 112 L262 130 L228 148 Z" fill="#fff"/>
+  <text x="240" y="205" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" fill="#d8deec">YouTube - press to play</text>
+</svg>

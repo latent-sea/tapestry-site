@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { CARD } from "./look/look.js?v=e28e37da2a46";
-import { describeAsked } from "./asking.js?v=e28e37da2a46";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { CARD } from "./look/look.js?v=e87b274f50a9";
+import { describeAsked } from "./asking.js?v=e87b274f50a9";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -20,6 +20,10 @@ export const WORDS = {
 const KIND_OF = (n) => (n.memory ? "memory" : n.event ? "event" : n.period ? "period" : "");
 
 /** A notice in words: who did what, to what. */
+/** What was reported, as told to those who moderate. */
+const REPORTED = { memory: "%s reported a memory: “%s”", comment: "%s reported a comment: “%s”", event: "%s reported an event: “%s”",
+  period: "%s reported a period: “%s”", place: "%s reported a place: “%s”" };
+
 export function sayNotice(notice) {
   const n = notice ?? {};
   const who = n.actor_name || Phrase.of("Someone");
@@ -36,11 +40,13 @@ export function sayNotice(notice) {
   if (n.kind === "approval") return n.yes ? Phrase.with("%s approved your “%s” in “%s”", [who, title, n.about ?? ""])
     : Phrase.with("%s didn't approve your “%s” in “%s”. It is there for you alone.", [who, title, n.about ?? ""]);
   if (n.kind === "taken_off") return Phrase.with("%s took your “%s” off “%s”. It stays on your life.", [who, title, n.about ?? ""]);
-  if (n.kind === "reported") return Phrase.with(n.what === "comment" ? "%s reported a comment: “%s”" : "%s reported a memory: “%s”", [who, n.about ?? ""]);
+  if (n.kind === "reported") return Phrase.with(REPORTED[n.what] ?? REPORTED.memory, [who, n.about ?? ""]);
   if (n.kind === "moderated") {
     const why = n.note ? Phrase.with(" Why: %s", [n.note]) : "";
-    if (n.what === "removed") return Phrase.joined([Phrase.with("Your “%s” was removed by Tapestry's moderators for breaking its terms.", [n.about ?? ""]), why,
-      Phrase.of(" If you think it shouldn't have been, say so in Feedback.")]);
+    // removed: what it broke, why, and what its writer can do (the Digital Services Act's statement of reasons)
+    if (n.what === "removed") return Phrase.joined([Phrase.with(n.ground === "law" ? "Your “%s” was removed by Tapestry's moderators as illegal."
+      : "Your “%s” was removed by Tapestry's moderators for breaking its terms.", [n.about ?? ""]), why,
+      Phrase.of(" A person decided this; nothing was automatic. If you think it was wrong, write to Tapestry within six months, at the address in its terms: someone else looks at it again. You may also go to an out-of-court dispute settlement body, or the courts.")]);
     if (n.what === "upheld") return Phrase.joined([Phrase.with("What you reported, “%s”, was removed.", [n.about ?? ""]), why]);
     return Phrase.with("What you reported, “%s”, was looked at and left as it is.", [n.about ?? ""]);
   }

@@ -52,6 +52,9 @@ export function siteOf(link) {
   try { return new URL(link).hostname.replace(/^www\./, ""); } catch { return link; }
 }
 
+/** What stands for a video until it is pressed (video.svg). */
+const VIDEO_POSTER = new URL("./video.svg", import.meta.url).href;
+
 /**
  * A memory's links as its page shows them: those added, then those in its
  * words, each once - { url, site, video } where video, for a YouTube link,
@@ -61,7 +64,8 @@ export function linksOf(memory) {
   const all = [...new Set([...(memory?.links ?? []).map((link) => linkOf(link.url ?? link)), ...linksIn(memory?.body)].filter(Boolean))];
   return all.map((url) => {
     const id = youTubeId(url);
-    const video = id ? { id, src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`, poster: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` } : null;
+    // its picture Tapestry's own: YouTube sees nothing of whoever reads the memory until they press to play
+    const video = id ? { id, src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`, poster: VIDEO_POSTER } : null;
     return { url, site: siteOf(url), video };
   });
 }

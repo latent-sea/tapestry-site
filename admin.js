@@ -5,11 +5,11 @@
 // on the latest version. The founder is the first admin. An admin sees no
 // one's memories, events or periods but as anyone would.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { few, heading, notice, problem } from "./parts.js?v=e28e37da2a46";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
-import { HOW_TO_INVITE } from "./people.js?v=e28e37da2a46";
-import { sayAgo } from "./notices.js?v=e28e37da2a46";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { few, heading, notice, problem } from "./parts.js?v=e87b274f50a9";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e87b274f50a9";
+import { HOW_TO_INVITE } from "./people.js?v=e87b274f50a9";
+import { sayAgo } from "./notices.js?v=e87b274f50a9";
 
 export const ADMIN = "admin";
 
@@ -28,6 +28,7 @@ export const TYPES_WHY = "types_why_it_is_removed";
 export const KEEPS_REPORTED = "goes_back_from_removing_it";
 export const SETS_MODERATOR = "makes_them_a_moderator_or_not";
 export const SEES_AS = "sees_tapestry_as_them";
+export const SAYS_WHAT_IT_BROKE = "says_what_it_broke";
 
 export const WORDS = {
   [ASKS_TO_REMOVE_MEMBER]: ["Remove from Tapestry"],
@@ -45,7 +46,12 @@ export const WORDS = {
   [KEEPS_REPORTED]: ["Not yet"],
   [SETS_MODERATOR]: ["Make a moderator, or not"],
   [SEES_AS]: ["See as them"],
+  [SAYS_WHAT_IT_BROKE]: ["What it broke"],
 };
+
+/** What a report is of, as said on it: whose, and what. */
+const REPORTED = { memory: "%s reported a memory of %s's", comment: "%s reported a comment by %s", event: "%s reported an event of %s's",
+  period: "%s reported a period of %s's", place: "%s reported a place of %s's" };
 
 const when = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "");
 
@@ -58,6 +64,7 @@ export class Admin extends Controller {
     this.reports = this.value([]); // what is reported, in full, for those who moderate
     this.removing = this.value(""); // the report being removed, while why is asked
     this.why = this.value("");
+    this.ground = this.value(""); // what it broke, said on removing it: "terms" or "law"
     this.server = this.value(null);
     this.removingMember = this.value(""); // the member being asked about before they are removed
     this.busy = this.value(false);
@@ -70,6 +77,7 @@ export class Admin extends Controller {
   would(action) {
     if (this.busy.read()) return Phrase.of("Working");
     if (action === REMOVES_REPORTED && !this.why.read().trim()) return Phrase.of("Say why: its writer is told");
+    if (action === REMOVES_REPORTED && !this.ground.read()) return Phrase.of("Say whether it broke the terms or the law");
     return null;
   }
 
@@ -95,12 +103,13 @@ export class Admin extends Controller {
     if (action === UNMAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, false), "They are not an admin now.");
     if (action === LOOKS_AGAIN) this.open();
     // removed: why asked first - its writer is told, and whoever reported it
-    if (action === ASKS_WHY_REMOVED) { this.removing.setValue(payload.id); this.why.setValue(""); }
+    if (action === ASKS_WHY_REMOVED) { this.removing.setValue(payload.id); this.why.setValue(""); this.ground.setValue(""); }
+    if (action === SAYS_WHAT_IT_BROKE) this.ground.setValue(payload.ground);
     if (action === TYPES_WHY) this.why.setValue(payload.line);
     if (action === KEEPS_REPORTED) this.removing.setValue("");
     if (action === REMOVES_REPORTED) {
       this.removing.setValue("");
-      this.change(() => this.loom.settleReport(payload.id, true, this.why.read().trim()), "Removed. Its writer is told why, and whoever reported it what was decided.");
+      this.change(() => this.loom.settleReport(payload.id, true, this.why.read().trim(), this.ground.read()), "Removed. Its writer is told why, and whoever reported it what was decided.");
     }
     if (action === LETS_REPORTED_BE) this.change(() => this.loom.settleReport(payload.id, false, ""), "Let be. Whoever reported it is told.");
     if (action === SETS_MODERATOR) this.change(() => this.loom.adminSetModerator(payload.id, payload.moderates), payload.moderates ? "They moderate what is reported now." : "They don't moderate now.");
@@ -163,7 +172,7 @@ export function describeAdmin(ui, admin, account) {
     heading(ui, "Reported"),
     ui.when(admin.reports.map((l) => l.length === 0), ui.text(Phrase.of("Nothing reported."), "Quiet")),
     ui.each(admin.reports, (held) => ui.surface(CARD, [ui.column([
-      ui.text(held.map((r) => Phrase.with(r?.kind === "comment" ? "%s reported a comment by %s" : "%s reported a memory of %s's", [r?.reporter ?? "", r?.owner ?? ""])), "Words").wraps(),
+      ui.text(held.map((r) => Phrase.with(REPORTED[r?.kind] ?? REPORTED.memory, [r?.reporter ?? "", r?.owner ?? ""])), "Words").wraps(),
       ui.text(held.map((r) => r?.title ?? ""), "CardTitle").wraps().hidesEmpty(),
       ui.text(held.map((r) => r?.words ?? ""), "Words Body").wraps().hidesEmpty(),
       ui.eachAcross(held.map((r) => r?.pictures ?? []), (pic) => ui.image(pic.map((p) => (p ? account.address(p.thumb || p.path) : "")), "Thumb",
@@ -171,7 +180,9 @@ export function describeAdmin(ui, admin, account) {
       ui.text(held.map((r) => (r?.reason ? Phrase.with("Why: %s", [r.reason]) : "")), "Meta").wraps().hidesEmpty(),
       ui.text(held.map((r) => when(r?.created_at)), "Meta"),
       ui.when(ui.bound(() => admin.removing.read() === held.read()?.id), ui.column([
-        ui.text(Phrase.of("Why is it removed? Its writer is told, and whoever reported it."), "Hint").wraps(),
+        ui.text(Phrase.of("Why is it removed? Its writer is told, and whoever reported it: which rule of the terms, or which law, it broke, and what about it does."), "Hint").wraps(),
+        ui.row([["terms", "It breaks the terms"], ["law", "It is illegal"]].map(([ground, said]) => ui.pressable(SAYS_WHAT_IT_BROKE, { ground },
+          [ui.text(Phrase.of(said), "Small")], "Segment").currentWhile(admin.ground.map((g) => g === ground))), "Segments"),
         ui.area(TYPES_WHY, admin.why, "TextArea"),
         ui.row([
           ui.pressable(REMOVES_REPORTED, held.map((r) => ({ id: r?.id ?? "" })), [ui.text(ui.words(REMOVES_REPORTED), "Small")], DANGER),
@@ -224,7 +235,7 @@ export function describeAdmin(ui, admin, account) {
             ui.pressable(ASKS_TO_REMOVE_MEMBER, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(ui.words(ASKS_TO_REMOVE_MEMBER), "Small")], LINK)),
         ], "Actions")),
       ])),
-    ])]), { across: false, keyOf: (m) => m.id, style: "List", browsed: true }),
+    ])]), { finds: "Find a member by name or email", across: false, keyOf: (m) => m.id, style: "List", browsed: true }),
     heading(ui, "Invitations waiting"),
     ui.when(invitations.map((l) => l.length === 0), ui.text(Phrase.of("None waiting."), "Quiet")),
     ui.each(invitations, (held) => ui.surface(CARD, [ui.row([

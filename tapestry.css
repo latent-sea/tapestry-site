@@ -191,6 +191,16 @@
 #app .CrowdPhotos { flex-wrap: wrap; gap: 6px; }
 #app .CrowdPhoto { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; }
 #app .CrowdActions { gap: 14px; flex-wrap: wrap; }
+/* a big event's memory: new, its likes, and more for who runs it, small in its card's corner - never a row of their own */
+#app .CrowdCard { position: relative; }
+#app .CrowdCard > .chime-pressable:first-child, #app .CrowdCard > :first-child > .chime-pressable { padding-bottom: 34px; }
+#app .CrowdCorner { position: absolute; right: 10px; bottom: 6px; gap: 6px; align-items: center; max-width: calc(100% - 20px); }
+#app .chime-pressable.Heart { min-height: 28px; padding: 2px 8px; border: none; border-radius: 999px; background: transparent; box-shadow: none;
+  color: var(--chime-ink-soft); display: flex; gap: 6px; align-items: center; min-width: 0; }
+#app .chime-pressable.Heart:hover { background: rgba(255, 255, 255, 0.06); }
+#app .chime-pressable.Heart.chime-current { color: #ff6b9a; }
+#app .HeartWords { font-size: 0.95em; font-weight: 700; white-space: nowrap; }
+#app .Likers { font-size: 0.8em; color: var(--chime-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 12em; }
 #app .chime-pressable.LabelChip { min-height: 32px; padding: 4px 12px; }
 
 /* the periods as a chart: drawn to the width there is, its words their size */
@@ -255,3 +265,9 @@
 /* seeing Tapestry as someone else, as its support: said plainly at the top of every screen */
 #app .SeeingBar { align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; border-radius: 14px; border: 2px solid var(--chime-accent-2, #7c5cff);
   background: color-mix(in srgb, var(--chime-accent-2, #7c5cff) 18%, var(--chime-raised)); }
+
+/* what is said before joining or agreeing: a box ticked by a press, the words beside it */
+#app .Ticks { gap: 8px; }
+#app .chime-pressable.Tick { display: flex; align-items: flex-start; gap: 10px; text-align: left; background: transparent; border: 1px solid var(--chime-ink-soft); }
+#app .chime-pressable.Tick.chime-current { border: 2px solid #7c5cff; }
+#app .TickBox { font-size: 1.3em; line-height: 1.1; }

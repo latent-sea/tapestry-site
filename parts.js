@@ -2,8 +2,8 @@
 // chooser (type to find, press to pick, or add what was typed), and the
 // little rows of names.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { LINK } from "./look/look.js?v=e28e37da2a46";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { LINK } from "./look/look.js?v=e87b274f50a9";
 
 /** A thread's mark: a dot in its colour, as a picture, since a colour is the thread's own. */
 export function dotOf(colour) {
@@ -89,11 +89,11 @@ export function narrowWith(made) { narrowing = made; }
 /**
  * A list of choices that may grow: up to MANY, each as it is; past that, a line to type into, and only
  * what holds what is typed - with those kept always (keep: the ones chosen now, so they can be unchosen).
- * key names the list (one line typed for each); textOf(item) is what it is found by. Options: across (a
- * row, else a column), keyOf, style, keep; browsed - a list to read rather than choose from, all of it
- * shown until something is typed.
+ * key names the list (one line typed for each); textOf(item) is what it is found by; finds says, in the
+ * line itself, what it searches ("Find a person by name"). Options: across (a row, else a column), keyOf,
+ * style, keep; browsed - a list to read rather than choose from, all of it shown until something is typed.
  */
-export function few(ui, key, items, textOf, template, { across = true, keyOf = null, style = across ? Themes.ROW : Themes.COLUMN, keep = null, browsed = false } = {}) {
+export function few(ui, key, items, textOf, template, { finds, across = true, keyOf = null, style = across ? Themes.ROW : Themes.COLUMN, keep = null, browsed = false } = {}) {
   const line = narrowing ? narrowing.lineOf(key) : null;
   const many = items.map((list) => (list ?? []).length > MANY);
   // what is typed, as words, and those of the list holding every one; the kept ones apart
@@ -112,13 +112,13 @@ export function few(ui, key, items, textOf, template, { across = true, keyOf = n
   const left = ui.bound(() => {
     const { list, typed, found } = narrowed.read();
     if (list.length <= MANY || !line) return "";
-    if (!typed) return browsed ? "" : Phrase.counted("%d to choose from: type to find one", "%d to choose from: type to find one", list.length);
+    if (!typed) return "";
     if (!found.length) return Phrase.of("None holds that");
     return found.length > MANY && !browsed ? Phrase.with("And %s more: type more to narrow them", [String(found.length - MANY)]) : "";
   });
   const made = across ? ui.eachAcross(shown, template, keyOf, style) : ui.each(shown, template, keyOf, style);
   return ui.column([
-    ui.when(many, ui.field(NARROWS, "", { changes: NARROWS, shows: line ?? ui.bound(() => ""), carries: (typed) => ({ line: typed, key }), placeholder: Phrase.of("Type to find") })),
+    ui.when(many, ui.field(NARROWS, "", { changes: NARROWS, shows: line ?? ui.bound(() => ""), carries: (typed) => ({ line: typed, key }), label: typeof finds === "string" ? Phrase.of(finds) : finds })),
     made,
     ui.text(left, "Hint").wraps().hidesEmpty(),
   ], `Few Few-${String(key).replace(/[^a-z0-9-]/gi, "-")}`);

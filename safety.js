@@ -1,12 +1,12 @@
-// Keeping Tapestry kind (terms.html): something that breaks its terms - a
-// memory, or a comment - reported to its admins, who see each report in the
-// admin area; and another member blocked, so neither sees anything of the
+// Keeping Tapestry kind (terms.html): something that breaks its terms or the
+// law - a memory, a comment, an event, a period or a place - reported, saying
+// why, to its moderators, who see each report in the admin area; and another member blocked, so neither sees anything of the
 // other's, nor comments, nor asks anything (backend.sql, "blocking"), until
 // taken back in You.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
-import { notice, problem } from "./parts.js?v=e28e37da2a46";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { DANGER, LINK } from "./look/look.js?v=e87b274f50a9";
+import { notice, problem } from "./parts.js?v=e87b274f50a9";
 
 export const REPORTS = "reports_it";
 export const SETS_REASON = "says_why_it_is_reported";
@@ -31,7 +31,7 @@ export class Safety extends Controller {
     super(chimes);
     this.loom = loom;
     this.account = account;
-    this.reporting = this.value(null); // { memory } or { comment }: what is being reported, while why is asked
+    this.reporting = this.value(null); // { memory }, { comment } or { kind, id } (an event, period or place): what is being reported, while why is asked
     this.reason = this.value("");
     this.blocking = this.value(""); // the account about to be blocked, while it is asked
     this.busy = this.value(false);
@@ -44,24 +44,30 @@ export class Safety extends Controller {
   would(action, payload) {
     if (this.busy.read()) return Phrase.of("Saving");
     const weave = this.account.weave.read();
+    if (action === SENDS_REPORT && !this.reason.read().trim()) return Phrase.of("Say why it is reported: what it breaks, of the terms or the law");
     if (action === BLOCKS && (!payload?.account || payload.account === weave.meId)) return Phrase.of("Not someone else");
     if (action === REPORTS) {
       const memory = payload?.memory ? weave.memories.get(payload.memory) : null;
       const comment = payload?.comment ? weave.data.memories.flatMap((m) => m.comments ?? []).find((c) => c.id === payload.comment) : null;
-      if ((!memory && !comment) || memory?.owner === weave.meId || comment?.author === weave.meId) return Phrase.of("Only someone else's");
+      const thing = payload?.kind ? ({ event: weave.events, period: weave.periods, place: weave.places })[payload.kind]?.get(payload.id) : null;
+      if ((!memory && !comment && !thing) || memory?.owner === weave.meId || comment?.author === weave.meId || thing?.owner === weave.meId) return Phrase.of("Only someone else's");
     }
     return null;
   }
 
   told(action, payload) {
     this.notice.setValue("");
-    if (action === REPORTS) { this.reporting.setValue(payload.memory ? { memory: payload.memory } : { comment: payload.comment }); this.reason.setValue(""); }
+    if (action === REPORTS) {
+      this.reporting.setValue(payload.memory ? { memory: payload.memory } : payload.comment ? { comment: payload.comment } : { kind: payload.kind, id: payload.id });
+      this.reason.setValue("");
+    }
     if (action === SETS_REASON) this.reason.setValue(payload.line);
     if (action === CANCELS) { this.reporting.setValue(null); this.blocking.setValue(""); }
     if (action === SENDS_REPORT) {
-      const { memory = "", comment = "" } = this.reporting.read() ?? {};
+      const { memory = "", comment = "", kind = "", id = "" } = this.reporting.read() ?? {};
+      const reason = this.reason.read().trim();
       this.reporting.setValue(null);
-      this.change(() => this.loom.report(memory, comment, this.reason.read().trim()), "Reported. Tapestry's admins will look at it.");
+      this.change(() => (kind ? this.loom.reportThing(kind, id, reason) : this.loom.report(memory, comment, reason)), "Reported. Tapestry's moderators will look at it, and tell you what they decide.");
     }
     if (action === BLOCKS) this.blocking.setValue(payload.account);
     if (action === CONFIRMS_BLOCK) {
@@ -84,17 +90,18 @@ export class Safety extends Controller {
   }
 }
 
-/** Why something is being reported, asked before it is sent - shown for this memory, or a comment on it. */
-export function describeReporting(ui, safety, memoryId) {
+/** Why something is being reported, asked before it is sent - shown on what is reported (key: "memory:<id>", "event:<id>", ...), or for a comment on a memory. */
+export function describeReporting(ui, safety, key) {
   const reportingHere = ui.bound(() => {
     const at = safety.reporting.read();
-    if (!at) return false;
-    if (at.memory) return at.memory === memoryId.read();
-    return !!memoryId.read();
+    if (!at || !key.read()) return false;
+    if (at.memory) return key.read() === `memory:${at.memory}`;
+    if (at.comment) return key.read().startsWith("memory:");
+    return key.read() === `${at.kind}:${at.id}`;
   });
   return ui.column([
     ui.when(reportingHere, ui.column([
-      ui.text(Phrase.of("Report this to Tapestry's admins as breaking its terms? Say why, if you like. Whoever wrote it isn't told who reported it."), "Hint").wraps(),
+      ui.text(Phrase.of("Report this to Tapestry's moderators as breaking its terms or the law? Say why: what it breaks, and how. Whoever it is of isn't told who reported it."), "Hint").wraps(),
       ui.area(SETS_REASON, safety.reason, "TextArea"),
       ui.row([ui.button(SENDS_REPORT, { style: DANGER }), ui.button(CANCELS, { style: LINK })], "Actions"),
     ], "Part")),

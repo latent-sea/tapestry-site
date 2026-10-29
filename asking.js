@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { few, notice, problem } from "./parts.js?v=e28e37da2a46";
-import { ACTION, LINK } from "./look/look.js?v=e28e37da2a46";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { few, notice, problem } from "./parts.js?v=e87b274f50a9";
+import { ACTION, LINK } from "./look/look.js?v=e87b274f50a9";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
@@ -240,7 +240,7 @@ export function describeIsThisYou(ui, asking, account, personId) {
       ui.text(Phrase.of("Already on Tapestry?"), "FieldName"),
       ui.text(Phrase.of("Ask whichever of these they are. When they say yes, you are linked, as by an invitation."), "Hint").wraps(),
       few(ui, "known-members", known, (m) => m.name, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: personId.read(), member: held.read()?.account ?? "" })),
-        [ui.text(held.map((m) => m?.name ?? ""), "Small")], "Segment"), { keyOf: (m) => m.account, style: "Segments" }),
+        [ui.text(held.map((m) => m?.name ?? ""), "Small")], "Segment"), { finds: "Find them by name", keyOf: (m) => m.account, style: "Segments" }),
     ]))),
   ]);
 }
@@ -256,7 +256,7 @@ export function describeThatsMe(ui, asking, account, entry) {
   return ui.when(names.map((n) => n.length > 0), ui.column([
     ui.text(Phrase.of("Is one of these names you? Ask to be linked to it."), "Hint").wraps(),
     few(ui, "thats-me", names, (n) => n.name, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: held.read()?.id ?? "", member: me.read() })),
-      [ui.text(held.map((n) => Phrase.with("That's me: %s", [n?.name ?? ""])), "Small")], "Segment"), { keyOf: (n) => n.id, style: "Segments" }),
+      [ui.text(held.map((n) => Phrase.with("That's me: %s", [n?.name ?? ""])), "Small")], "Segment"), { finds: "Find your name", keyOf: (n) => n.id, style: "Segments" }),
   ]));
 }
 
@@ -330,7 +330,7 @@ export function describeNamingPeriod(ui, asking, account, memoryId) {
     few(ui, "memory-period-kinds", account.weave.map((w) => [...w.periodKinds.map((k) => ({ type: k.name, said: k.name })), { type: "", said: "None" }]), (k) => k.said,
       (held) => ui.pressable(CHOOSES_PERIOD_KIND, held.map((k) => ({ type: k?.type ?? "" })), [ui.text(held.map((k) => k?.said ?? ""), "Small")], "Segment")
         .currentWhile(ui.bound(() => asking.periodKind.read() === (held.read()?.type ?? ""))),
-      { keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === asking.periodKind.read() }),
+      { finds: "Find a kind of time", keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === asking.periodKind.read() }),
     ui.row([
       ui.button(MAKES_NAMED_PERIOD),
       ui.button(KEEPS_AS_MEMORY, { style: LINK }),

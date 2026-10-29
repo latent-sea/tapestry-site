@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- what the page may load, and from where: its own files, the platform, Google's sign-in button, OpenStreetMap's maps, YouTube's players - nothing else, whatever were slipped into it -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https://api.latent-sea.com https://tile.openstreetmap.org https://*.googleusercontent.com; connect-src 'self' https://api.latent-sea.com https://nominatim.openstreetmap.org https://accounts.google.com/gsi/; frame-src https://www.youtube-nocookie.com https://accounts.google.com/gsi/; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#121829">
 <meta name="description" content="Tapestry: everyone has their own thread through time, and threads cross at events.">
@@ -12,10 +14,10 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="tapestry.css?v=e28e37da2a46">
-<script type="module" src="site.js?v=e28e37da2a46"></script>
-<meta name="build" content="e28e37da2a46">
-<script type="module" src="fresh.js?v=e28e37da2a46"></script>
+<link rel="stylesheet" href="tapestry.css?v=e87b274f50a9">
+<script type="module" src="site.js?v=e87b274f50a9"></script>
+<meta name="build" content="e87b274f50a9">
+<script type="module" src="fresh.js?v=e87b274f50a9"></script>
 </head>
 <body>
 <main id="app"></main>

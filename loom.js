@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=e28e37da2a46";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=e28e37da2a46";
-import { shrinkPicture } from "./backend/pictures.js?v=e28e37da2a46";
+import { Backend } from "./backend/backend.js?v=e87b274f50a9";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=e87b274f50a9";
+import { shrinkPicture } from "./backend/pictures.js?v=e87b274f50a9";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -264,8 +264,8 @@ export class Loom {
   /** What is reported, in full, for those who moderate. */
   async reportsView() { return answer(await this.backend.callRpc("tapestry_reports_view")); }
 
-  /** A report dealt with: what it is of removed (saying why), or let be. */
-  async settleReport(report, removed, reason) { return answer(await this.backend.callRpc("tapestry_settle_report", { report, removed, reason })); }
+  /** A report dealt with: what it is of removed (saying why, and whether it broke the terms or the law: "terms" or "law"), or let be. */
+  async settleReport(report, removed, reason, ground = "terms") { return answer(await this.backend.callRpc("tapestry_settle_report", { report, removed, reason, ground })); }
 
   async adminSetModerator(member, moderates) { return answer(await this.backend.callRpc("tapestry_admin_set_moderator", { member, moderates })); }
 
@@ -283,6 +283,9 @@ export class Loom {
   /** Tapestry's terms agreed to: on joining, or once by everyone here before there were terms. */
   async agree() { return answer(await this.backend.callRpc("tapestry_agree")); }
 
+  /** Said on joining, or once by everyone here before it was asked: 14 or over, and Tapestry may keep what they write about themselves; the terms agreed to with it. */
+  async confirm(over14, letsKeep) { return answer(await this.backend.callRpc("tapestry_confirm", { over_14: !!over14, lets_keep: !!letsKeep })); }
+
   /** Another member blocked (blocking), or no longer: neither sees anything of the other's. */
   async block(member, blocking) { return answer(await this.backend.callRpc("tapestry_block", { member, blocking })); }
 
@@ -290,6 +293,12 @@ export class Loom {
   async report(memory, comment, reason) {
     return answer(await this.backend.callRpc("tapestry_report", { the_memory: memory || null, the_comment: comment || null, reason }));
   }
+
+  /** An event, a period or a place of someone else's reported to Tapestry's moderators as breaking its terms or the law, and why. */
+  async reportThing(kind, id, reason) { return answer(await this.backend.callRpc("tapestry_report_thing", { kind, id, reason })); }
+
+  /** Everything Tapestry keeps about the member that their life doesn't show: for their copy. */
+  async myData() { return answer(await this.backend.callRpc("tapestry_my_data")); }
 
   /** The member's own account deleted - everything of theirs - then their pictures' files, then signed out. */
   async deleteMe(paths = []) {

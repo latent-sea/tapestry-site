@@ -8,11 +8,11 @@
 // memory likes it: the count is everyone's, who liked it its writer's alone.
 // A big event's memories come only in part with a load: opened, all of them.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
-import { few, heading, notice, problem } from "./parts.js?v=e28e37da2a46";
-import { headingOf, sayWhen } from "./when.js?v=e28e37da2a46";
-import { sortEntries } from "./weave.js?v=e28e37da2a46";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { DANGER, LINK } from "./look/look.js?v=e87b274f50a9";
+import { few, heading, notice, problem } from "./parts.js?v=e87b274f50a9";
+import { headingOf, sayWhen } from "./when.js?v=e87b274f50a9";
+import { sortEntries } from "./weave.js?v=e87b274f50a9";
 
 export const SEARCHES_CROWD = "finds_in_what_it_holds";
 export const ORDERS_CROWD = "orders_what_it_holds";
@@ -29,6 +29,7 @@ export const MAKES_ADMIN = "makes_them_one_of_its_admins";
 export const APPROVES = "approves_what_waits";
 export const DECLINES = "does_not_approve_what_waits";
 export const UNMAKES_ADMIN = "makes_them_no_longer_one_of_its_admins";
+export const OPENS_RUNNING = "shows_what_can_be_done_with_it";
 
 export const WORDS = {
   [SEARCHES_CROWD]: ["Find in it"],
@@ -46,6 +47,7 @@ export const WORDS = {
   [UNMAKES_ADMIN]: ["No longer an admin"],
   [APPROVES]: ["Approve"],
   [DECLINES]: ["Don't approve"],
+  [OPENS_RUNNING]: ["More"],
 };
 
 const PAGE = 20;
@@ -67,6 +69,7 @@ export class Crowd extends Controller {
     this.photosShown = this.value(PHOTOS);
     this.since = this.value(null); // when the member had last opened it, before now: what came after is new
     this.asking = this.value(""); // the memory about to be taken off, asked first
+    this.running = this.value(""); // the memory whose pin and take-off are shown, by who runs it: one at a time
     this.busy = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
@@ -154,6 +157,7 @@ export class Crowd extends Controller {
       const pinned = (item?.pinned ?? []).includes(payload.id);
       this.change(() => this.loom.pin(kind, id, payload.id, !pinned), pinned ? "Unpinned" : "Pinned to the top");
     }
+    if (action === OPENS_RUNNING) this.running.update((open) => (open === payload.id ? "" : payload.id));
     if (action === ASKS_TAKE_OFF) this.asking.setValue(payload.id);
     if (action === KEEPS_ON) this.asking.setValue("");
     if (action === TAKES_OFF) {
@@ -300,11 +304,21 @@ export function describeCrowd(ui, crowd, account, card, opens, item, emptySaid) 
   const shownCount = ui.bound(() => rows.read().filter((r) => r.entry).length);
   const pinned = ui.bound(() => { weave.read(); return crowd.pinned(); });
   const photos = ui.bound(() => { weave.read(); crowd.looked.read(); crowd.onlyNew.read(); return crowd.pictures(); });
-  // what may be done with one: liked; pinned and taken off by who runs it; who liked one's own
-  const actions = (held) => {
+  // what may be done with one, in its card's corner: new, liked (who liked their own, for its writer) and, for who runs
+  // it, more - pinned and taken off, shown only when asked for
+  const corner = (held) => {
     const memory = ui.bound(() => (held.read()?.kind === "memory" ? weave.read().memories.get(held.read().id) ?? null : null));
     const id = held.map((e) => ({ id: e?.id ?? "" }));
-    return ui.when(memory, ui.column([
+    return ui.when(memory, ui.row([
+      ui.text(ui.bound(() => (crowd.isNew(held.read() ?? {}) ? Phrase.of("New") : "")), "NewMark").hidesEmpty(),
+      ui.pressable(LIKES, id, [ui.text(memory.map((m) => `${m?.liked ? "♥" : "♡"} ${m?.likes ?? 0}`), "HeartWords"),
+        ui.text(memory.map((m) => (m?.likers ?? []).join(", ")), "Likers").hidesEmpty()], "Heart").currentWhile(memory.map((m) => !!m?.liked)),
+      ui.when(runs, ui.pressable(OPENS_RUNNING, id, [ui.text("⋯", "HeartWords")], "Heart").currentWhile(ui.bound(() => crowd.running.read() === held.read()?.id))),
+    ], "CrowdCorner"));
+  };
+  const running = (held) => {
+    const id = held.map((e) => ({ id: e?.id ?? "" }));
+    return ui.column([
       // its writer's own, not approved there: said so
       ui.text(ui.bound(() => {
         const status = crowd.statusOf(held.read());
@@ -312,22 +326,18 @@ export function describeCrowd(ui, crowd, account, card, opens, item, emptySaid) 
         return status === "waiting" ? Phrase.with("Waiting for %s to approve it", [weave.read().nameOf(it?.owner)])
           : status === "declined" ? Phrase.of("Only you see this here: not added for everyone") : "";
       }), "Hint").wraps().hidesEmpty(),
-      ui.row([
-        ui.text(ui.bound(() => (crowd.isNew(held.read() ?? {}) ? Phrase.of("New") : "")), "NewMark").hidesEmpty(),
-        ui.pressable(LIKES, id, [ui.text(memory.map((m) => Phrase.with("%s · %s", [m?.liked ? "♥ Liked" : "♡ Like", String(m?.likes ?? 0)])), "Small")], LINK),
-        ui.when(runs, ui.pressable(PINS, id, [ui.text(ui.bound(() => Phrase.of((crowd.item().item?.pinned ?? []).includes(held.read()?.id) ? "Unpin" : "Pin to the top")), "Small")], LINK)
-          .absentWhenRefused()),
-        ui.when(ui.bound(() => runs.read() && crowd.asking.read() !== held.read()?.id),
-          ui.pressable(ASKS_TAKE_OFF, id, [ui.text(ui.bound(() => Phrase.of(isEvent.read() ? "Take it off the event" : "Take it out of the period")), "Small")], LINK).absentWhenRefused()),
-      ], "Actions CrowdActions"),
-      ui.text(memory.map((m) => ((m?.likers ?? []).length ? Phrase.with("Liked by %s", [m.likers.join(", ")]) : "")), "Hint").wraps().hidesEmpty(),
+      ui.when(ui.bound(() => runs.read() && crowd.running.read() === held.read()?.id && crowd.asking.read() !== held.read()?.id), ui.row([
+        ui.pressable(PINS, id, [ui.text(ui.bound(() => Phrase.of((crowd.item().item?.pinned ?? []).includes(held.read()?.id) ? "Unpin" : "Pin to the top")), "Small")], LINK)
+          .absentWhenRefused(),
+        ui.pressable(ASKS_TAKE_OFF, id, [ui.text(ui.bound(() => Phrase.of(isEvent.read() ? "Take it off the event" : "Take it out of the period")), "Small")], LINK).absentWhenRefused(),
+      ], "Actions CrowdActions")),
       ui.when(ui.bound(() => crowd.asking.read() === held.read()?.id), ui.column([
         ui.text(Phrase.of("Take this memory off it? It stays its writer's, on their life; they are told."), "Warn").wraps(),
         ui.row([ui.pressable(TAKES_OFF, id, [ui.text(ui.words(TAKES_OFF), "Small")], DANGER), ui.pressable(KEEPS_ON, {}, [ui.text(ui.words(KEEPS_ON), "Small")], LINK)], "Actions"),
       ])),
-    ]));
+    ]);
   };
-  const entry = (held) => ui.column([card(held), actions(held)], "CrowdEntry");
+  const entry = (held) => ui.column([ui.column([card(held), corner(held)], "CrowdCard"), running(held)], "CrowdEntry");
   // who runs it: its maker, and the admins they made; who else at it may be made one
   const admins = ui.bound(() => {
     const it = crowd.item().item;
@@ -397,7 +407,7 @@ export function describeCrowd(ui, crowd, account, card, opens, item, emptySaid) 
       ui.when(candidates.map((c) => c.length > 0), ui.column([
         ui.text(Phrase.of("Make someone at it an admin"), "FieldName"),
         few(ui, "crowd-admins", candidates, (c) => c.name, (held) => ui.pressable(MAKES_ADMIN, held.map((c) => ({ account: c?.account ?? "" })),
-          [ui.text(held.map((c) => c?.name ?? ""), "Small")], "Segment"), { keyOf: (c) => c.account, style: "Segments" }),
+          [ui.text(held.map((c) => c?.name ?? ""), "Small")], "Segment"), { finds: "Find someone at it by name", keyOf: (c) => c.account, style: "Segments" }),
       ])),
     ])),
   ]);

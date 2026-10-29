@@ -5,9 +5,9 @@
 // read it later. A family's history is never only on the platform. Plain
 // data in, a page's text out, tested by tests/test_keep.mjs.
 
-import { linksOf } from "./links.js?v=e28e37da2a46";
-import { sortEntries } from "./weave.js?v=e28e37da2a46";
-import { headingOf } from "./when.js?v=e28e37da2a46";
+import { linksOf } from "./links.js?v=e87b274f50a9";
+import { sortEntries } from "./weave.js?v=e87b274f50a9";
+import { headingOf } from "./when.js?v=e87b274f50a9";
 
 const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const KIND = { memory: "Memory", event: "Event", period: "Period" };
@@ -24,7 +24,7 @@ export function keptEntries(weave) {
  * The page: pictures given as { path: a data: address } are put inside it;
  * one not given is said to be missing rather than left broken.
  */
-export function copyOf(weave, pictures = {}, made = new Date()) {
+export function copyOf(weave, pictures = {}, made = new Date(), rest = null) {
   const me = weave.me?.name ?? "";
   const entries = keptEntries(weave);
   const sections = [];
@@ -58,6 +58,8 @@ ${links.length ? `<ul class="links">${links.join("")}</ul>` : ""}
     circles: weave.data.circles, places: weave.data.places.filter((p) => p.owner === weave.meId),
     periods: weave.data.periods.filter((p) => p.owner === weave.meId), events: weave.data.events.filter((e) => entries.some((x) => x.key === `event:${e.id}`)),
     memories: weave.data.memories.filter((m) => m.owner === weave.meId),
+    // and everything else Tapestry keeps about them (tapestry_my_data): comments, likes, notices, reports, feedback, settings, who saw what
+    ...(rest ? { everything_else: rest } : {}),
   };
   return `<!doctype html>
 <html lang="en">
@@ -78,6 +80,7 @@ figcaption { color: #666; font-size: 0.9rem; } .links { padding-left: 1.2rem; }
 <h1>${escape(me)}'s life</h1>
 <p class="made">Kept from Tapestry on ${escape(made.toUTCString())}: ${entries.length} ${entries.length === 1 ? "thing" : "things"}.</p>
 ${sections.join("\n")}
+${rest ? `<p class="made">Everything else Tapestry keeps about you - your sign-in's email, your settings, your comments on others' memories, your likes, notices, reports and feedback, and each time support or a moderator saw something of yours - is in this page's data, below, for anything that reads it.</p>` : ""}
 <script type="application/json" id="tapestry-data">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>
 </body>
 </html>

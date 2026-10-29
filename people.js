@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { few, heading, mark, notice, problem } from "./parts.js?v=e28e37da2a46";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
-import { describeIsThisYou } from "./asking.js?v=e28e37da2a46";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=e28e37da2a46";
-import { parseWhen, sayWhen } from "./when.js?v=e28e37da2a46";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { few, heading, mark, notice, problem } from "./parts.js?v=e87b274f50a9";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e87b274f50a9";
+import { describeIsThisYou } from "./asking.js?v=e87b274f50a9";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=e87b274f50a9";
+import { parseWhen, sayWhen } from "./when.js?v=e87b274f50a9";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -287,7 +287,7 @@ export function describePeople(ui, people, account) {
       ui.text(held.map((p) => p?.name ?? ""), "PersonName").grow(),
       ui.text(ui.bound(() => { const n = counts.read().get(held.read()?.id) ?? 0; return n ? Phrase.counted("%d memory", "%d memories", n) : ""; }), "Quiet").hidesEmpty(),
       ui.text(held.map((p) => Phrase.of(p?.account ? "On Tapestry" : p?.invite ? "Invited" : "A name")), "Quiet"),
-    ], "PersonRow")], `${CARD} ListItem`).goesTo(PERSON), { across: false, keyOf: (p) => p.id, style: "List", browsed: true }),
+    ], "PersonRow")], `${CARD} ListItem`).goesTo(PERSON), { finds: "Find one of your people by name", across: false, keyOf: (p) => p.id, style: "List", browsed: true }),
     heading(ui, "Circles"),
     ui.text(Phrase.of("Groups of your people - Family, Old friends - to let in or keep out at once. Put people in a circle from their own page."), "Hint").wraps(),
     ui.row([
@@ -354,7 +354,7 @@ export function describePerson(ui, people, account, timeline, asking) {
         few(ui, "person-circles", circles, (c) => c.name, (held) => ui.pressable(TOGGLES_IN_CIRCLE, ui.bound(() => ({ circle: held.read()?.id ?? "", person: personId.read() })),
           [ui.text(ui.bound(() => `${(held.read()?.people ?? []).includes(personId.read()) ? "✓" : "+"} ${held.read()?.name ?? ""}`), Themes.FACE)], "Segment CircleChip")
           .currentWhile(ui.bound(() => (held.read()?.people ?? []).includes(personId.read()))),
-        { keyOf: (c) => c.id, style: "Segments", keep: (c) => c.people.includes(personId.read()) }),
+        { finds: "Find a circle by name", keyOf: (c) => c.id, style: "Segments", keep: (c) => c.people.includes(personId.read()) }),
       ])),
       heading(ui, "Everything with them"),
       timeline(about, Phrase.of("Nothing yet. Tag them on a memory, an event or a period.")),
@@ -371,7 +371,7 @@ export function describePerson(ui, people, account, timeline, asking) {
         heading(ui, "The same person twice?"),
         ui.text(person.map((p) => Phrase.with("If another of your people is %s too, pick them. Merged, everything tagged with either is tagged with %s, they are in both's circles, and the other name goes.", [p?.name ?? "", p?.name ?? ""])), "Hint").wraps(),
         few(ui, "twins", twins, (p) => p.name, (held) => ui.pressable(PICKS_TWIN, held.map((p) => ({ id: p?.id ?? "" })), [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment")
-          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), { keyOf: (p) => p.id, style: "Segments", keep: (p) => p.id === people.twin.read() }),
+          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), { finds: "Find one of your people by name", keyOf: (p) => p.id, style: "Segments", keep: (p) => p.id === people.twin.read() }),
         ui.when(people.twin.map((t) => t !== ""), ui.column([
           ui.text(ui.bound(() => Phrase.with("Merge %s into %s? It can't be undone.", [account.weave.read().people.get(people.twin.read())?.name ?? "", person.read()?.name ?? ""])), "Warn").wraps(),
           ui.row([ui.button(MERGES, { payload: personId.map((id) => ({ id })), style: DANGER })], "Actions"),

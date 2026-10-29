@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { Weave } from "./weave.js?v=e28e37da2a46";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { Weave } from "./weave.js?v=e87b274f50a9";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -15,6 +15,8 @@ export const JOINS = "joins_tapestry";
 export const RELOADS = "loads_again";
 export const AGREES = "agrees_to_the_terms";
 export const STOPS_SEEING = "stops_seeing_as_them";
+export const SAYS_AGE = "says_i_am_14_or_over";
+export const LETS_KEEP = "lets_tapestry_keep_what_i_write_about_myself";
 
 export const WORDS = {
   [SIGNS_OUT]: ["Sign out"],
@@ -23,7 +25,12 @@ export const WORDS = {
   [RELOADS]: ["Try again"],
   [AGREES]: ["I agree"],
   [STOPS_SEEING]: ["Stop seeing as them"],
+  [SAYS_AGE]: ["I am 14 or over"],
+  [LETS_KEEP]: ["Tapestry may keep what I write about myself - sensitive things, like my health or beliefs, included - to show to whom I choose"],
 };
+
+/** Whether a member agreed to the terms, said they are 14 or over, and let Tapestry keep what they write: all asked once. */
+const agreed = (me) => me.agreed !== false && me.confirmed !== false;
 
 const MASKED_PICTURE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='black'/></svg>";
 
@@ -36,7 +43,7 @@ export class Account extends Controller {
     super(chimes);
     this.loom = loom;
     this.leaving = []; // what goes while still signed in, on signing out: each an async function
-    this.state = this.value("checking"); // checking, out, uninvited, joining, agreeing (to the terms, once) or in
+    this.state = this.value("checking"); // checking, out, uninvited, joining, agreeing (to the terms, once, and saying their age) or in
     /** The token of the invitation they came by, or "" (the page's, kept through signing in). */
     this.invitation = () => "";
     this.weave = this.value(new Weave());
@@ -48,6 +55,8 @@ export class Account extends Controller {
     this.asked = new Set();
     this.wanted = new Set();
     this.joinName = this.value("");
+    this.over14 = this.value(false); // said, ticked, before joining or agreeing
+    this.letsKeep = this.value(false);
     this.terms = this.value([]); // the terms, read from their own page (terms.html) to be shown before they are agreed to: [{ kind, words }]
     this.busy = this.value(false);
     this.problem = this.value("");
@@ -65,6 +74,8 @@ export class Account extends Controller {
   would(action) {
     if (action === SIGNS_OUT && ["checking", "out"].includes(this.state.read())) return Phrase.of("Not signed in");
     if (action === AGREES && this.busy.read()) return Phrase.of("Saving");
+    if ((action === AGREES || action === JOINS) && !this.over14.read()) return Phrase.of("First say you are 14 or over: Tapestry isn't for anyone younger");
+    if ((action === AGREES || action === JOINS) && !this.letsKeep.read()) return Phrase.of("First say Tapestry may keep what you write about yourself");
     if (action === STOPS_SEEING && !this.loom.seeing) return Phrase.of("Seeing as yourself");
     if (action === JOINS) {
       if (this.busy.read()) return Phrase.of("Joining");
@@ -75,6 +86,8 @@ export class Account extends Controller {
 
   told(action, payload) {
     if (action === SETS_JOIN_NAME) this.joinName.setValue(payload.line);
+    if (action === SAYS_AGE) this.over14.update((said) => !said);
+    if (action === LETS_KEEP) this.letsKeep.update((said) => !said);
     if (action === JOINS) this.join();
     if (action === AGREES) this.agree();
     if (action === STOPS_SEEING) this.stopSeeing();
@@ -95,10 +108,10 @@ export class Account extends Controller {
   async signedIn() {
     const loaded = await this.load();
     if (this.disposed || !loaded) return;
-    // here before there were terms: agreed to once, before anything else
+    // here before there were terms, or before joining asked their age: agreed to once, before anything else
     if (this.weave.read().me) {
-      if (this.weave.read().me.agreed === false) this.readTerms();
-      this.state.setValue(this.weave.read().me.agreed === false ? "agreeing" : "in");
+      if (!agreed(this.weave.read().me)) this.askAgreeing();
+      else this.state.setValue("in");
       return;
     }
     const may = await this.loom.mayJoin(this.invitation());
@@ -112,11 +125,19 @@ export class Account extends Controller {
     this.busy.setValue(true);
     this.problem.setValue("");
     const joined = await this.loom.join(this.joinName.read().trim(), this.invitation());
-    // joining is agreeing to the terms, as its button says
-    if (joined.ok) await this.loom.agree();
+    // joining is agreeing to the terms, as its button says, and saying what was ticked
+    if (joined.ok) await this.loom.confirm(this.over14.read(), this.letsKeep.read());
     this.busy.setValue(false);
     if (!joined.ok) { this.problem.setValue(joined.error); return; }
     if (await this.load()) this.state.setValue("in");
+  }
+
+  /** Asked to agree, and say their age, before anything else: the terms to read, nothing ticked yet. */
+  askAgreeing() {
+    this.readTerms();
+    this.over14.setValue(false);
+    this.letsKeep.setValue(false);
+    this.state.setValue("agreeing");
   }
 
   /** The terms, read from their own page - one wording, there and here: its headings, paragraphs and points, in order. */
@@ -130,11 +151,11 @@ export class Account extends Controller {
     } catch { /* the link to them stays */ }
   }
 
-  /** The terms agreed to, by someone here before there were any: then in. */
+  /** The terms agreed to, and their age said, by someone here before either was asked: then in. */
   async agree() {
     this.busy.setValue(true);
     this.problem.setValue("");
-    const agreed = await this.loom.agree();
+    const agreed = await this.loom.confirm(this.over14.read(), this.letsKeep.read());
     this.busy.setValue(false);
     if (!agreed.ok) { this.problem.setValue(agreed.error); return; }
     if (await this.load()) this.state.setValue("in");
@@ -201,7 +222,7 @@ export class Account extends Controller {
     // the member's own pictures from before small copies, given one each, a few at a time, unhurried
     if (!this.loom.seeing) setTimeout(() => this.makeThumbs(), 3000);
     // terms there were none of when the page opened: agreed to before going on, whenever it loads again
-    if (this.state.read() === "in" && this.weave.read().me?.agreed === false) { this.readTerms(); this.state.setValue("agreeing"); }
+    if (this.state.read() === "in" && this.weave.read().me && !agreed(this.weave.read().me)) this.askAgreeing();
     return true;
   }
 

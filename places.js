@@ -2,13 +2,14 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
-import { few, heading, notice, problem } from "./parts.js?v=e28e37da2a46";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=e28e37da2a46";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
-import { describeMerge } from "./asking.js?v=e28e37da2a46";
-import { addressOf } from "./weave.js?v=e28e37da2a46";
-import { findOnMap } from "./placemap.js?v=e28e37da2a46";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
+import { few, heading, notice, problem } from "./parts.js?v=e87b274f50a9";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=e87b274f50a9";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e87b274f50a9";
+import { describeMerge } from "./asking.js?v=e87b274f50a9";
+import { addressOf } from "./weave.js?v=e87b274f50a9";
+import { findOnMap } from "./placemap.js?v=e87b274f50a9";
+import { REPORTS, describeReporting } from "./safety.js?v=e87b274f50a9";
 
 // a place's address, part by part, each as a letter has it: every one may be left empty
 const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],
@@ -183,11 +184,11 @@ export function describePlaces(ui, places, account) {
         ui.text(held.map((p) => [p?.town, p?.country].filter(Boolean).join(", ")), "Quiet").hidesEmpty(),
       ]).grow(),
       ui.text(ui.bound(() => Phrase.counted("%d thing", "%d things", account.weave.read().atPlace(held.read()?.id).length)), "Quiet"),
-    ], "PersonRow")], `${CARD} ListItem`).goesTo(PLACE), { across: false, keyOf: (p) => p.id, style: "List", browsed: true }),
+    ], "PersonRow")], `${CARD} ListItem`).goesTo(PLACE), { finds: "Find a place by name, town or country", across: false, keyOf: (p) => p.id, style: "List", browsed: true }),
   ]);
 }
 
-export function describePlace(ui, places, account, timeline, asking) {
+export function describePlace(ui, places, account, timeline, asking, safety) {
   const placeId = ui.parameter(PLACE);
   const place = ui.bound(() => account.weave.read().places.get(placeId.read()) ?? null);
   const mine = ui.bound(() => place.read()?.owner === account.weave.read().meId);
@@ -237,6 +238,10 @@ export function describePlace(ui, places, account, timeline, asking) {
         ui.text(place.map((p) => addressOf(p)), "Meta").wraps().hidesEmpty(),
         ui.text(place.map((p) => p?.notes ?? ""), "Words").wraps().hidesEmpty(),
         ui.when(mine, ui.row([ui.button(ADDS_MEMORY, { with: placeId.map((id) => `memory:new:place:${id}`), goes_to: EDIT })], "Actions")),
+        // someone else's: reported to the moderators as breaking the terms or the law
+        ui.when(ui.bound(() => !!place.read() && !mine.read()), ui.row([
+          ui.pressable(REPORTS, placeId.map((id) => ({ kind: "place", id })), [ui.text(ui.words(REPORTS), "Small")], LINK)], "Actions SafetyRow")),
+        describeReporting(ui, safety, placeId.map((id) => `place:${id}`)),
         heading(ui, "Everything here"),
         timeline(at, Phrase.of("Nothing here yet.")),
         ui.when(mine, ui.column([
