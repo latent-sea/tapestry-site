@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
-import { few, heading, mark, notice, problem } from "./parts.js?v=266a8ca37beb";
-import { CARD, DANGER, LINK } from "./look/look.js?v=266a8ca37beb";
-import { describeIsThisYou } from "./asking.js?v=266a8ca37beb";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=266a8ca37beb";
-import { parseWhen, sayWhen } from "./when.js?v=266a8ca37beb";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
+import { few, heading, mark, notice, problem } from "./parts.js?v=e28e37da2a46";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
+import { describeIsThisYou } from "./asking.js?v=e28e37da2a46";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=e28e37da2a46";
+import { parseWhen, sayWhen } from "./when.js?v=e28e37da2a46";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -331,6 +331,8 @@ export function describePerson(ui, people, account, timeline, asking) {
   return ui.screen(PERSON, [
     ui.when(person, ui.column([
       ui.row([mark(ui, person.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6")), "BigDot"), ui.text(person.map((p) => p?.name ?? ""), "Title")]),
+      // a memory of them: written with them on it already - first, under their name, apart from their circles
+      ui.row([ui.button(ADDS_MEMORY, { with: personId.map((id) => `memory:new:person:${id}`), goes_to: EDIT }).absentWhenRefused()], "Actions"),
       ui.when(linked,
         ui.text(person.map((p) => Phrase.with("On Tapestry as %s. You are among each other's people.", [account.weave.read().data.members[p?.account] ?? ""])), "Hint").wraps(),
         ui.column([
@@ -347,14 +349,13 @@ export function describePerson(ui, people, account, timeline, asking) {
       problem(ui, people.problem),
       notice(ui, people.notice),
       ui.when(circles.map((c) => c.length > 0), ui.column([
-        heading(ui, "Circles"),
+        heading(ui, "Their circles"),
+        ui.text(Phrase.of("Ticked: they are in it. Press a circle to put them in, or take them out."), "Hint").wraps(),
         few(ui, "person-circles", circles, (c) => c.name, (held) => ui.pressable(TOGGLES_IN_CIRCLE, ui.bound(() => ({ circle: held.read()?.id ?? "", person: personId.read() })),
-          [ui.text(held.map((c) => c?.name ?? ""), Themes.FACE)], "Segment")
+          [ui.text(ui.bound(() => `${(held.read()?.people ?? []).includes(personId.read()) ? "✓" : "+"} ${held.read()?.name ?? ""}`), Themes.FACE)], "Segment CircleChip")
           .currentWhile(ui.bound(() => (held.read()?.people ?? []).includes(personId.read()))),
         { keyOf: (c) => c.id, style: "Segments", keep: (c) => c.people.includes(personId.read()) }),
       ])),
-      // a memory of them: written with them on it already
-      ui.row([ui.button(ADDS_MEMORY, { with: personId.map((id) => `memory:new:person:${id}`), goes_to: EDIT }).absentWhenRefused()], "Actions"),
       heading(ui, "Everything with them"),
       timeline(about, Phrase.of("Nothing yet. Tag them on a memory, an event or a period.")),
       // someone not on Tapestry: their life on the tapestry, grey, runs from their birth to their death, as far as known

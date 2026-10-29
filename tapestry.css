@@ -187,6 +187,10 @@
 #app .Labels { gap: 6px; flex-wrap: wrap; }
 #app .PeopleLinks { gap: 4px 14px; flex-wrap: wrap; align-items: baseline; }
 #app .PlaceMap { height: 280px; border-radius: 12px; overflow: hidden; margin: 6px 0; background: #1b2339; z-index: 0; }
+#app .NewMark { color: #19c3b3; font-weight: 700; font-size: 0.85em; }
+#app .CrowdPhotos { flex-wrap: wrap; gap: 6px; }
+#app .CrowdPhoto { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; }
+#app .CrowdActions { gap: 14px; flex-wrap: wrap; }
 #app .chime-pressable.LabelChip { min-height: 32px; padding: 4px 12px; }
 
 /* the periods as a chart: drawn to the width there is, its words their size */
@@ -199,6 +203,8 @@
 /* a kind of period: its chip is its key - outlined while shown, faded while hidden - so its colour dot stays clear */
 #app .chime-pressable.KindChip { background: var(--chime-raised); color: var(--chime-ink); border: 1px solid var(--chime-lit); box-shadow: none; opacity: 0.45; }
 #app .chime-pressable.KindChip.chime-current { opacity: 1; border-color: var(--chime-ink-soft); background: var(--chime-raised); color: var(--chime-ink); }
+#app .chime-pressable.CircleChip { border-radius: 999px; background: transparent; border: 1px dashed var(--chime-ink-soft); color: var(--chime-ink-soft); }
+#app .chime-pressable.CircleChip.chime-current { background: transparent; border: 2px solid #7c5cff; color: var(--chime-ink); }
 
 /* comments: each quiet, its taking off small */
 #app .Comment .chime-pressable { min-height: 28px; padding: 2px 12px; align-self: flex-start; font-size: calc(var(--chime-size-face) * 0.812); }

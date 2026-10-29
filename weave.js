@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=266a8ca37beb";
-import { linksOf } from "./links.js?v=266a8ca37beb";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=e28e37da2a46";
+import { linksOf } from "./links.js?v=e28e37da2a46";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -14,9 +14,11 @@ export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [
 // empty - null, [], false, "" - and the page takes each as its kind's nothing
 const SPAN = { starts: null, starts_precision: null, starts_about: false, starts_time: null, ends: null, ends_precision: null, ends_about: false, ends_time: null };
 const NOTHING = {
-  memories: { title: "", body: "", links: [], labels: [], comments: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false },
-  events: { title: "", notes: "", kind: null, adds: "there", asks: "anyone", period_ids: [], ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
-  periods: { title: "", notes: "", kind: null, ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [] },
+  memories: { title: "", body: "", links: [], labels: [], comments: [], ...SPAN, event_id: null, place_id: null, audience: null, created_at: null, tags: [], shares: [], pictures: [], cut: false,
+    likes: 0, liked: false, likers: null, approval: null, periods_unapproved: [], periods_declined: null },
+  events: { title: "", notes: "", kind: null, adds: "there", asks: "anyone", period_ids: [], ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [],
+    admins: [], pinned: [], opened_at: null, memory_count: 0, periods_unapproved: [], approval_by: {} },
+  periods: { title: "", notes: "", kind: null, ...SPAN, place_id: null, audience: null, created_at: null, tags: [], shares: [], admins: [], pinned: [], opened_at: null },
   places: { notes: "", street: "", street_2: "", town: "", region: "", postcode: "", country: "" },
 };
 

@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
-import { CARD } from "./look/look.js?v=266a8ca37beb";
-import { describeAsked } from "./asking.js?v=266a8ca37beb";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
+import { CARD } from "./look/look.js?v=e28e37da2a46";
+import { describeAsked } from "./asking.js?v=e28e37da2a46";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -32,6 +32,10 @@ export function sayNotice(notice) {
   if (n.kind === "added") return Phrase.with("%s added “%s” to %s", [who, title, n.event_title || Phrase.of("an event you are at")]);
   if (n.kind === "shared") return Phrase.with("%s shared “%s” with you", [who, title]);
   if (n.kind === "commented") return Phrase.with("%s commented on “%s”", [who, title]);
+  if (n.kind === "awaiting") return Phrase.with("%s put “%s” in something of yours: approve it or not", [who, title]);
+  if (n.kind === "approval") return n.yes ? Phrase.with("%s approved your “%s” in “%s”", [who, title, n.about ?? ""])
+    : Phrase.with("%s didn't approve your “%s” in “%s”. It is there for you alone.", [who, title, n.about ?? ""]);
+  if (n.kind === "taken_off") return Phrase.with("%s took your “%s” off “%s”. It stays on your life.", [who, title, n.about ?? ""]);
   if (n.kind === "reported") return Phrase.with(n.what === "comment" ? "%s reported a comment: “%s”" : "%s reported a memory: “%s”", [who, n.about ?? ""]);
   if (n.kind === "moderated") {
     const why = n.note ? Phrase.with(" Why: %s", [n.note]) : "";

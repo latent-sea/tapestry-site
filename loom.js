@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=266a8ca37beb";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=266a8ca37beb";
-import { shrinkPicture } from "./backend/pictures.js?v=266a8ca37beb";
+import { Backend } from "./backend/backend.js?v=e28e37da2a46";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=e28e37da2a46";
+import { shrinkPicture } from "./backend/pictures.js?v=e28e37da2a46";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -45,7 +45,7 @@ const by = (id) => `id=eq.${encodeURIComponent(id)}`;
 // what may still be asked while seeing Tapestry as someone else: nothing that changes anything, nor anything of
 // the one looking's own (their texts, their finding) that would show through
 const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "signOut", "mayJoin",
-  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation", "findPublic",
+  "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation", "findPublic", "openedNow",
   "pushKey", "addDevice", "removeDevice"]); // a device's notifications are the one signed in's own, whoever they are seeing as
 
 /**
@@ -125,8 +125,9 @@ export class Loom {
    * from a platform from before, in full (tapestry_visible). Pictures'
    * addresses are asked for as they are shown (pictureAddresses).
    */
-  async visible() {
-    let reply = await this.backend.callRpc("tapestry_visible_light");
+  async visible(focus = null) {
+    // an event opened: every memory of it (of any other big one, only its newest are sent)
+    let reply = focus ? await this.backend.callRpc("tapestry_visible_light_of", { focus }) : await this.backend.callRpc("tapestry_visible_light");
     if (!reply.ok && reply.status === 404) reply = await this.backend.callRpc("tapestry_visible");
     if (!reply.ok) return answer(reply);
     return { ok: true, data: { tapestry: reply.data ?? { me: null } }, error: "" };
@@ -338,6 +339,24 @@ export class Loom {
 
   /** Someone else's event or period the member was put at: yes, on their life by their own name for it; or no, off it. */
   async take(kind, id, yes, title) { return answer(await this.backend.callRpc("tapestry_take", { kind, id, yes, title })); }
+
+  /** What waits in an event or period the member runs - a memory of it, or an event in a period - approved, or not. */
+  async approve(kind, id, what, thing, yes) { return answer(await this.backend.callRpc("tapestry_approve", { kind, id, what, thing, yes })); }
+
+  /** A memory liked by the member, or no longer. */
+  async like(memory, yes) { return answer(await this.backend.callRpc("tapestry_like", { memory, yes })); }
+
+  /** A memory pinned to the top of an event or period the member runs, or no longer. */
+  async pin(kind, id, memory, yes) { return answer(await this.backend.callRpc("tapestry_pin", { kind, id, memory, yes })); }
+
+  /** A memory taken off an event or period the member runs: it stays its writer's. */
+  async takeOff(kind, id, memory) { return answer(await this.backend.callRpc("tapestry_take_off", { kind, id, memory })); }
+
+  /** Someone at an event or period made one of its admins, or no longer. */
+  async setAdmin(kind, id, account, yes) { return answer(await this.backend.callRpc("tapestry_set_admin", { kind, id, account, yes })); }
+
+  /** An event or period opened, now: what is added after is new to the member. */
+  async openedNow(kind, id) { return answer(await this.backend.callRpc("tapestry_opened_now", { kind, id })); }
 
   /** One found opened: among what the member sees from now on. */
   async look(kind, id) { return answer(await this.backend.callRpc("tapestry_look", { kind, id })); }

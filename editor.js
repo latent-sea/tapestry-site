@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
-import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=266a8ca37beb";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=266a8ca37beb";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=266a8ca37beb";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=266a8ca37beb";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=266a8ca37beb";
-import { DANGER, LINK } from "./look/look.js?v=266a8ca37beb";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
+import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=e28e37da2a46";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=e28e37da2a46";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=e28e37da2a46";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=e28e37da2a46";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=e28e37da2a46";
+import { DANGER, LINK } from "./look/look.js?v=e28e37da2a46";
 
 export const EDIT = "edit";
 
@@ -728,6 +728,16 @@ export function describeEditor(ui, editor, account) {
     ui.when(isMemory, chooser(ui, { label: Phrase.of("Of an event - one you were at, or name a new one"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
       search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
       create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") })),
+    // someone else's event, or someone else's period: what goes into it waits for them
+    ui.text(ui.bound(() => {
+      const weave = account.weave.read();
+      const me = weave.meId;
+      const runs = (item) => !item || item.owner === me || (item.admins ?? []).includes(me);
+      const event = kind.read() === "memory" ? weave.events.get(editor.eventId.read()) : null;
+      const others = editor.periodIds.read().map((id) => weave.periods.get(id)).filter((p) => p && !runs(p));
+      const names = [...(event && !runs(event) ? [weave.nameOf(event.owner)] : []), ...others.map((p) => weave.nameOf(p.owner))];
+      return names.length ? Phrase.with("It goes on your life at once. Others see it there only once %s approves it - until then it is there for you alone.", [[...new Set(names)].join(" and ")]) : "";
+    }), "Hint").wraps().hidesEmpty(),
     // the periods it was during: every one of the member's overlapping its time offered at once, or one found or named
     ui.when(kind.map((k) => k !== "period"), chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()),
       unpick: DROPS_PERIOD, search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD,

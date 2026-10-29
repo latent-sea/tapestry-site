@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=266a8ca37beb";
-import { Weave } from "./weave.js?v=266a8ca37beb";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e28e37da2a46";
+import { Weave } from "./weave.js?v=e28e37da2a46";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -183,7 +183,7 @@ export class Account extends Controller {
 
   /** Everything the member may see, loaded again: whether it was. */
   async load() {
-    const found = this.loom.seeing ? await this.loom.viewAs(this.loom.seeing.member) : await this.loom.visible();
+    const found = this.loom.seeing ? await this.loom.viewAs(this.loom.seeing.member) : await this.loom.visible(this.focus ?? null);
     if (this.disposed) return false;
     if (!found.ok) {
       this.problem.setValue(found.error);
