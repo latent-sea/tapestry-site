@@ -3,11 +3,11 @@
 // seen by whoever sees the memory, oldest first, and taken off by its writer
 // or the memory's owner.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
-import { CARD, LINK } from "./look/look.js?v=e87b274f50a9";
-import { notice, problem } from "./parts.js?v=e87b274f50a9";
-import { sayAgo } from "./notices.js?v=e87b274f50a9";
-import { REPORTS } from "./safety.js?v=e87b274f50a9";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=89aae1096cfb";
+import { CARD, LINK } from "./look/look.js?v=89aae1096cfb";
+import { notice, problem } from "./parts.js?v=89aae1096cfb";
+import { sayAgo } from "./notices.js?v=89aae1096cfb";
+import { REPORTS } from "./safety.js?v=89aae1096cfb";
 
 export const WRITES_COMMENT = "writes_a_comment";
 export const COMMENTS = "comments_on_it";

@@ -8,11 +8,11 @@
 // memory likes it: the count is everyone's, who liked it its writer's alone.
 // A big event's memories come only in part with a load: opened, all of them.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
-import { DANGER, LINK } from "./look/look.js?v=e87b274f50a9";
-import { few, heading, notice, problem } from "./parts.js?v=e87b274f50a9";
-import { headingOf, sayWhen } from "./when.js?v=e87b274f50a9";
-import { sortEntries } from "./weave.js?v=e87b274f50a9";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=89aae1096cfb";
+import { DANGER, LINK } from "./look/look.js?v=89aae1096cfb";
+import { few, heading, notice, problem } from "./parts.js?v=89aae1096cfb";
+import { headingOf, sayWhen } from "./when.js?v=89aae1096cfb";
+import { sortEntries } from "./weave.js?v=89aae1096cfb";
 
 export const SEARCHES_CROWD = "finds_in_what_it_holds";
 export const ORDERS_CROWD = "orders_what_it_holds";

@@ -13,44 +13,44 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=e87b274f50a9";
-import { Loom, guarded } from "./loom.js?v=e87b274f50a9";
-import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=e87b274f50a9";
-import * as Edit from "./editor.js?v=e87b274f50a9";
-import * as Folk from "./people.js?v=e87b274f50a9";
-import * as Where from "./places.js?v=e87b274f50a9";
-import * as Me from "./you.js?v=e87b274f50a9";
-import * as Today from "./journal.js?v=e87b274f50a9";
-import * as Ask from "./asking.js?v=e87b274f50a9";
-import * as Run from "./admin.js?v=e87b274f50a9";
-import * as List from "./importing.js?v=e87b274f50a9";
-import * as Told from "./notices.js?v=e87b274f50a9";
-import * as Talk from "./comments.js?v=e87b274f50a9";
-import * as Kind from "./safety.js?v=e87b274f50a9";
-import * as Pay from "./paying.js?v=e87b274f50a9";
-import * as Say from "./feedback.js?v=e87b274f50a9";
-import * as Hello from "./welcome.js?v=e87b274f50a9";
-import * as Ring from "./phone.js?v=e87b274f50a9";
-import * as Look from "./find.js?v=e87b274f50a9";
-import * as Take from "./taking.js?v=e87b274f50a9";
-import * as Parts from "./parts.js?v=e87b274f50a9";
-import { PlaceMap } from "./placemap.js?v=e87b274f50a9";
-import * as Many from "./crowd.js?v=e87b274f50a9";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=e87b274f50a9";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=e87b274f50a9";
-import { yearsOf } from "./woven.js?v=e87b274f50a9";
-import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=e87b274f50a9";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=e87b274f50a9";
-import { Space } from "./space.js?v=e87b274f50a9";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=e87b274f50a9";
-import { linksOf } from "./links.js?v=e87b274f50a9";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=e87b274f50a9";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=89aae1096cfb";
+import { Loom, guarded } from "./loom.js?v=89aae1096cfb";
+import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=89aae1096cfb";
+import * as Edit from "./editor.js?v=89aae1096cfb";
+import * as Folk from "./people.js?v=89aae1096cfb";
+import * as Where from "./places.js?v=89aae1096cfb";
+import * as Me from "./you.js?v=89aae1096cfb";
+import * as Today from "./journal.js?v=89aae1096cfb";
+import * as Ask from "./asking.js?v=89aae1096cfb";
+import * as Run from "./admin.js?v=89aae1096cfb";
+import * as List from "./importing.js?v=89aae1096cfb";
+import * as Told from "./notices.js?v=89aae1096cfb";
+import * as Talk from "./comments.js?v=89aae1096cfb";
+import * as Kind from "./safety.js?v=89aae1096cfb";
+import * as Pay from "./paying.js?v=89aae1096cfb";
+import * as Say from "./feedback.js?v=89aae1096cfb";
+import * as Hello from "./welcome.js?v=89aae1096cfb";
+import * as Ring from "./phone.js?v=89aae1096cfb";
+import * as Look from "./find.js?v=89aae1096cfb";
+import * as Take from "./taking.js?v=89aae1096cfb";
+import * as Parts from "./parts.js?v=89aae1096cfb";
+import { PlaceMap } from "./placemap.js?v=89aae1096cfb";
+import * as Many from "./crowd.js?v=89aae1096cfb";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=89aae1096cfb";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=89aae1096cfb";
+import { yearsOf } from "./woven.js?v=89aae1096cfb";
+import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=89aae1096cfb";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=89aae1096cfb";
+import { Space } from "./space.js?v=89aae1096cfb";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=89aae1096cfb";
+import { linksOf } from "./links.js?v=89aae1096cfb";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=89aae1096cfb";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=e87b274f50a9")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=89aae1096cfb")).StandIn() : new Loom());
 // the browser's notifications, stood in for when probing: headless, it has none to give
-const PUSH = probing ? new (await import("./tests/standin.js?v=e87b274f50a9")).StandInPush() : null;
+const PUSH = probing ? new (await import("./tests/standin.js?v=89aae1096cfb")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -126,8 +126,6 @@ const TOGGLES_PART = "shows_or_hides_a_part_of_the_timeline";
 const ZOOMS_TIMELINE = "zooms_or_moves_the_timeline";
 const TYPES_TIMELINE_SPAN = "types_the_timelines_stretch";
 const SETS_TIMELINE_SPAN = "shows_the_timeline_for_that_stretch";
-const TYPES_LIFE_YEARS = "types_the_years_of_my_life_to_show";
-const SHOWS_LIFE_YEARS = "shows_my_life_for_those_years";
 const SHOWS_ALL_TIME = "shows_all_of_the_timeline";
 const SHOWS_IN_TIMELINE = "shows_it_in_the_timeline";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
@@ -141,6 +139,21 @@ const legal = (ui) => ui.row([
   ui.hyperlink("terms.html", [ui.text(Phrase.of("Terms"), "Small")], "LegalLink"),
   ui.hyperlink("report.html", [ui.text(Phrase.of("Report something"), "Small")], "LegalLink"),
 ], "Legal");
+
+/**
+ * What is typed to find in a life, its years apart: each year (1994) or from one to another (1990 – 1995, 1990-95,
+ * 1990 to 1995) as { from, to } in years, and the rest of the words.
+ */
+export function yearsAsked(line) {
+  const years = [];
+  const words = String(line ?? "").replace(/\b(\d{4})\s*(?:-|–|—|to)\s*(\d{2}|\d{4})\b/gi, (_, a, b) => {
+    const from = Number(a);
+    const until = b.length === 2 ? Math.floor(from / 100) * 100 + Number(b) : Number(b);
+    years.push({ from: Math.min(from, until), to: Math.max(from, until) + 1 });
+    return " ";
+  }).replace(/\b(1[0-9]{3}|20[0-9]{2})\b/g, (_, a) => { years.push({ from: Number(a), to: Number(a) + 1 }); return " "; });
+  return { words: words.replace(/\s+/g, " ").trim(), years };
+}
 
 /** What an entry is, said on its card: "Memory", or an event's or period's kind beside it ("Event · Holiday"). */
 const kindSaid = (entry) => {
@@ -200,9 +213,6 @@ class Looking extends Controller {
     this.tuningOpen = this.value(false); // whether how the lives are drawn is open over the picture
     this.leaving = this.value(""); // the event being asked about before the member takes themselves off it
     this.threadYear = this.value(""); // the one year (or decade) the member's thread is shown, picked at random; "" for every year
-    this.lifeYears = this.value(""); // the years typed to show of the member's life: 1994, or 1990 – 1995
-    this.lifeRange = this.value(null); // those years shown, { from, to } in years, or null for all of them
-    this.threadLabel = this.value(""); // the one label the member's thread is shown for; "" for all
     this.hiddenTypes = this.value([]); // the kinds of period left out of the periods' list and the timeline ("" for none)
     this.hiddenEventTypes = this.value([]); // the kinds of event left out of the timeline ("" for none)
     this.hiddenParts = this.value(keptParts()); // the parts of the timeline left out: periods, events, memories
@@ -228,7 +238,7 @@ class Looking extends Controller {
   }
 
   answers() { return [OPENS_ITEM, SEARCHES_THREAD, SEARCHES_WOVEN, SEARCHES_TIMELINE, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
-    ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, TYPES_LIFE_YEARS, SHOWS_LIFE_YEARS, SHOWS_ALL_TIME, SHOWS_IN_TIMELINE,
+    ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, SHOWS_ALL_TIME, SHOWS_IN_TIMELINE,
     TOGGLES_GREY, SHOWS_LIVES_IN, SELECTS, CLEARS_SELECTION, ZOOMS_LIVES, SHOWS_ALL_LIVES, OPENS_LIVES_SETTINGS, TUNES_LIVES, RESETS_LIVES]; }
 
   /** The keys of what the timeline's search finds on the member's own life, or null while nothing is looked for. */
@@ -363,7 +373,6 @@ class Looking extends Controller {
       if (payload?.step === "earlier" && (!now || now.from <= whole.from + 1e-9)) return Phrase.of("Nothing earlier");
       if (payload?.step === "later" && (!now || now.to >= whole.to - 1e-9)) return Phrase.of("Nothing later");
     }
-    if (action === SHOWS_LIFE_YEARS && !this.typedSpan(this.lifeYears.read())) return Phrase.of("Type a year, or from one to another: 1994, or 1990 – 1995");
     if (action === SETS_TIMELINE_SPAN && !this.typedSpan()) return Phrase.of("Type a stretch of time: 2004 – 2010, or June 2012 – March 2013");
     if (action === SHOWS_ALL_TIME && !this.timelineRange.read()) return Phrase.of("All of it is shown");
     if (action === CLEARS_SELECTION && !this.selection.read()) return Phrase.of("Nothing is selected");
@@ -408,16 +417,7 @@ class Looking extends Controller {
       this.shownOf(payload.key).setValue(PAGE);
     }
     // a year with memories in it, picked at random - another each press - and the thread shown for it alone
-    if (action === SHOWS_RANDOM_YEAR) {
-      this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? "");
-      this.lifeRange.setValue(null);
-    }
-    // from one year to another typed: the member's life shown for those years alone
-    if (action === TYPES_LIFE_YEARS) this.lifeYears.setValue(payload.line);
-    if (action === SHOWS_LIFE_YEARS) {
-      this.lifeRange.setValue(this.typedSpan(this.lifeYears.read()));
-      this.threadYear.setValue("");
-    }
+    if (action === SHOWS_RANDOM_YEAR) this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? "");
     if (action === TOGGLES_PERIOD_TYPE) this.hiddenTypes.update((hidden) => (hidden.includes(payload.type) ? hidden.filter((t) => t !== payload.type) : [...hidden, payload.type]));
     if (action === ZOOMS_TIMELINE) {
       this.timelineRange.setValue(rangeAfter(this.timelineRange.read(), this.wholeTimeline(), payload.step));
@@ -441,9 +441,10 @@ class Looking extends Controller {
       this.hiddenParts.update((hidden) => (hidden.includes(payload.part) ? hidden.filter((t) => t !== payload.part) : [...hidden, payload.part]));
       try { localStorage.setItem(PARTS_KEPT, this.hiddenParts.read().join(",")); } catch { /* this visit only */ }
     }
-    if (action === SHOWS_EVERYTHING) { this.threadYear.setValue(""); this.threadLabel.setValue(""); this.lifeRange.setValue(null); this.lifeYears.setValue(""); }
+    if (action === SHOWS_EVERYTHING) { this.threadYear.setValue(""); this.threadSearch.setValue(""); }
     // a label: the thread shown for its memories alone; pressed again, all of it
-    if (action === FILTERS_BY_LABEL) this.threadLabel.update((label) => (label === payload.label && !payload.only ? "" : payload.label));
+    // a label pressed on a card: the life found by it, in the one line that finds anything
+    if (action === FILTERS_BY_LABEL) { this.threadSearch.setValue(`#${payload.label}`); this.threadYear.setValue(""); }
     if (action === OPENS_RANDOM_MEMORY) {
       const memory = pickAnother(this.thread().filter((entry) => entry.kind === "memory"), null);
       if (memory) location.hash = `#memory/${memory.id}`;
@@ -571,8 +572,6 @@ export class Tapestry extends ChimeApp {
       [ZOOMS_TIMELINE]: ["Zoom or move"],
       [TYPES_TIMELINE_SPAN]: ["From when to when"],
       [SETS_TIMELINE_SPAN]: ["Show"],
-      [TYPES_LIFE_YEARS]: ["Years to show"],
-      [SHOWS_LIFE_YEARS]: ["Show those years"],
       [SHOWS_ALL_TIME]: ["All of it"],
       [SHOWS_IN_TIMELINE]: ["Show in timeline"],
       [SEARCHES_THREAD]: ["Find in my life"],
@@ -648,7 +647,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=e87b274f50a9").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=89aae1096cfb").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -897,65 +896,55 @@ export class Tapestry extends ChimeApp {
     const ui = this.ui;
     const account = this.account;
     const year = this.looking.threadYear;
-    const label = this.looking.threadLabel;
-    const range = this.looking.lifeRange;
-    const narrowed = ui.bound(() => !!year.read() || !!range.read() || !!label.read());
-    // from one year to another: what was then, any of it - a period over them, or begun before and going on into them
-    const within = (entry) => {
-      const r = range.read();
-      if (!r) return true;
+    const search = this.looking.threadSearch;
+    // the one line finds anything: words, people, places, events, #labels, kinds - and years, one or from one to another
+    const asked = ui.bound(() => yearsAsked(search.read()));
+    // years: what was then, any of it - a period over them, or begun before and going on into them
+    const within = (entry, r) => {
       if (!entry.when?.date) return false;
-      return yearsOf(entry.when) < r.to && yearsOf({ date: lastDayOf(entry.until ?? entry.when) ?? entry.when.date }) >= r.from - 1 / 365.25
+      return yearsOf(entry.when) < r.to && yearsOf({ date: lastDayOf(entry.until ?? entry.when) ?? entry.when.date }) >= r.from
         || (entry.kind === "period" && !entry.until && yearsOf(entry.when) < r.to);
     };
-    const yearsSaid = ui.bound(() => {
-      const r = range.read();
-      if (!r) return year.read();
-      const first = Math.floor(r.from);
-      const last = Math.floor(r.to - 1 / 365);
-      return first === last ? String(first) : `${first} – ${last}`;
-    });
     const entries = ui.bound(() => {
       const w = account.weave.read();
-      const found = w.find(w.thread(w.meId), this.looking.threadSearch.read(), account.foundInTexts(this.looking.threadSearch.read()));
-      // a year picked at random: that year alone; a label: its memories alone
-      const inYear = (year.read() ? found.filter((entry) => headingOf(entry.when) === year.read()) : found).filter(within);
-      return label.read() ? inYear.filter((entry) => (entry.labels ?? []).includes(label.read())) : inYear;
+      const { words, years } = asked.read();
+      const found = w.find(w.thread(w.meId), words, account.foundInTexts(words));
+      const inYears = years.length ? found.filter((entry) => years.some((r) => within(entry, r))) : found;
+      // a year picked at random: that year alone
+      return year.read() ? inYears.filter((entry) => headingOf(entry.when) === year.read()) : inYears;
     });
+    const narrowed = ui.bound(() => !!year.read() || !!search.read().trim());
     return ui.screen(THREAD, [
-      ui.row([
-        ui.text(Phrase.of("Your life"), "Title").grow(),
-        ui.when(account.weave.map((w) => w.writes), ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY)),
-      ], "TitleRow"),
+      ui.text(Phrase.of("Your life"), "Title"),
       this.comingBack(),
       this.freePlan(),
+      // all four alike: each makes something, none is lesser
       ui.row([
+        ui.when(account.weave.map((w) => w.writes), ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY)),
         ui.button(Edit.ADDS_MEMORY, { with: "memory:new", goes_to: EDIT }).absentWhenRefused(),
-        // all three alike: each makes something, none is lesser
         ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT }).absentWhenRefused(),
         ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT }).absentWhenRefused(),
       ], "Actions"),
-      this.finder(SEARCHES_THREAD, this.looking.threadSearch),
-      ui.row([
-        ui.pressable(SHOWS_RANDOM_YEAR, {}, [ui.text(year.map((y) => Phrase.of(y ? "Another random year" : "A random year")), "Small")], LINK).absentWhenRefused(),
-        ui.pressable(OPENS_RANDOM_MEMORY, {}, [ui.text(ui.words(OPENS_RANDOM_MEMORY), "Small")], LINK).absentWhenRefused(),
-      ], "Actions RandomRow"),
-      // the member's labels: pressed, the thread shows that label's memories alone
-      ui.when(account.weave.map((w) => w.labels.length > 0), few(ui, "labels", account.weave.map((w) => w.labels), (l) => l.label, (held) => ui.pressable(FILTERS_BY_LABEL,
-        held.map((l) => ({ label: l?.label ?? "" })), [ui.text(held.map((l) => `#${l?.label ?? ""}`), "Small")], "Segment LabelChip")
-        .currentWhile(ui.bound(() => label.read() === held.read()?.label)), { finds: "Find a label", keyOf: (l) => l.label, style: "Labels", keep: (l) => l.label === label.read() })),
-      // a year, or from one year to another: the life shown for those years alone
-      ui.row([
-        ui.field(SHOWS_LIFE_YEARS, "", { changes: TYPES_LIFE_YEARS, shows: this.looking.lifeYears, label: Phrase.of("Show the years"), placeholder: Phrase.of("e.g. 1994, or 1990 – 1995") }).grow(),
-        ui.button(SHOWS_LIFE_YEARS, { style: LINK }),
-      ], "AddRow"),
-      // narrowed to years or a label: said plainly, with a clear way back to all of it
+      ui.field(SEARCHES_THREAD, "", { changes: SEARCHES_THREAD, shows: search,
+        label: Phrase.of("Find in your life: people, places, events, words, #labels, kinds, years (1994, or 1990 – 1995)"),
+        placeholder: Phrase.of("e.g. Mum 1990 – 1995 #holidays") }),
+      // what is shown, said plainly, with the way back to all of it
       ui.when(narrowed, ui.row([
-        ui.text(ui.bound(() => (yearsSaid.read() && label.read() ? Phrase.with("Showing %s only, labelled #%s", [yearsSaid.read(), label.read()])
-          : yearsSaid.read() ? Phrase.with("Showing %s only", [yearsSaid.read()]) : Phrase.with("Showing the memories labelled #%s", [label.read()]))), "Words").grow(),
+        ui.text(ui.bound(() => {
+          const n = entries.read().length;
+          const typed = search.read().trim();
+          if (year.read() && typed) return Phrase.with("Showing %s, for “%s”: %s", [year.read(), typed, String(n)]);
+          if (year.read()) return Phrase.with("Showing %s only", [year.read()]);
+          return Phrase.with("%s found for “%s”", [String(n), typed]);
+        }), "Words").grow(),
         ui.pressable(SHOWS_EVERYTHING, {}, [ui.text("✕", "ZoomMark"), ui.text(ui.words(SHOWS_EVERYTHING), Themes.FACE)], "FactoryAction"),
       ], "FilterBar")),
-      this.timeline(entries, ui.bound(() => (this.looking.threadSearch.read().trim() ? Phrase.of("Nothing found.")
+      ui.row([
+        ...this.orders(),
+        ui.pressable(SHOWS_RANDOM_YEAR, {}, [ui.text(year.map((y) => Phrase.of(y ? "Another random year" : "A random year")), "Small")], LINK).absentWhenRefused(),
+        ui.pressable(OPENS_RANDOM_MEMORY, {}, [ui.text(ui.words(OPENS_RANDOM_MEMORY), "Small")], LINK).absentWhenRefused(),
+      ], "Actions RandomRow LifeLinks"),
+      this.timeline(entries, ui.bound(() => (narrowed.read() ? Phrase.of("Nothing found.")
         : Phrase.of("Your life is empty here. Start with a memory, or a period of your life - where you grew up, a job, a house.")))),
     ]);
   }
@@ -1103,8 +1092,9 @@ export class Tapestry extends ChimeApp {
     const more = ui.bound(() => fromHere.read().length - shown.read());
     return ui.column([
       ui.when(entries.map((list) => list.length === 0), ui.text(empty, "Quiet").wraps()),
-      ui.when(years.map((y) => y.length > 2), few(ui, `years-${key}`, years, (y) => y, (year) => ui.pressable(JUMPS_TO_YEAR, ui.bound(() => ({ key, heading: year.read() })),
-        [ui.text(year, "Small")], "Segment YearChip").currentWhile(ui.bound(() => from.read() === year.read())), { finds: "Find a year", keyOf: (y) => y, style: "Years", keep: (y) => y === from.read() })),
+      // a strip of them, one line, scrolled sideways: never a box of its own to type in
+      ui.when(years.map((y) => y.length > 2), ui.eachAcross(years, (year) => ui.pressable(JUMPS_TO_YEAR, ui.bound(() => ({ key, heading: year.read() })),
+        [ui.text(year, "Small")], "Segment YearChip").currentWhile(ui.bound(() => from.read() === year.read())), (y) => y, "Years")),
       ui.each(rows, (held) => ui.when(held.map((row) => !!row?.heading), ui.text(held.map((row) => row?.heading ?? ""), "YearHeading"),
         this.card(held, woven)), (row) => row.key, "Timeline"),
       ui.when(more.map((n) => n > 0), ui.pressable(SHOWS_MORE, { key }, [ui.text(more.map((n) => Phrase.with("Show more (%d further)", [n])), Themes.FACE)], LINK)),

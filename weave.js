@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=e87b274f50a9";
-import { linksOf } from "./links.js?v=e87b274f50a9";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=89aae1096cfb";
+import { linksOf } from "./links.js?v=89aae1096cfb";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -402,7 +402,8 @@ export class Weave {
     return entries.filter((entry) => {
       // what it is found by, worked out once for the entry
       entry.hay ??= lower([entry.title, entry.text, entry.said, entry.ownerName, entry.place?.name, entry.place?.where, entry.event?.title, ...(entry.periods ?? []).map((p) => p.title), ...entry.people,
-        ...(entry.labels ?? []).flatMap((label) => [label, `#${label}`])].join(" "));
+        ...(entry.labels ?? []).flatMap((label) => [label, `#${label}`]),
+        entry.eventKind, entry.periodKind].join(" "));
       return words.every((word) => entry.hay.includes(word)) || (entry.kind === "memory" && !!also?.has(entry.id));
     });
   }
