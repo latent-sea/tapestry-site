@@ -279,3 +279,30 @@
 #app .LifeLinks .chime-pressable { min-height: 32px; padding: 4px 0; border: none; border-radius: 0; background: transparent; box-shadow: none;
   color: var(--chime-accent); white-space: nowrap; }
 #app .LifeLinks .chime-pressable:hover { text-decoration: underline; }
+
+/* the admin portal: on a laptop, wide - its parts down the side, the one chosen beside them, tables of rows */
+#app .chime-app:has(.PortalOpen) { max-width: 78rem; }
+#app .PortalDoor { max-width: 30rem; margin: 6vh auto 0; gap: 14px; }
+#app .PortalCode { width: 220px; height: 220px; image-rendering: pixelated; background: #fff; border-radius: 10px; padding: 8px; align-self: center; }
+#app .PortalKey { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; text-align: center; }
+#app .PortalOpen { gap: 28px; align-items: flex-start; }
+#app .PortalSide { flex: 0 0 13rem; gap: 2px; position: sticky; top: 12px; }
+#app .PortalName { font-weight: 800; font-size: calc(var(--chime-size-face) * 1.1); margin-bottom: 10px; }
+#app .chime-pressable.PortalNav { justify-content: flex-start; background: transparent; border: none; box-shadow: none; border-radius: 8px; min-height: 36px;
+  padding: 6px 10px; color: var(--chime-ink-soft); }
+#app .chime-pressable.PortalNav:hover { background: rgba(255, 255, 255, 0.05); }
+#app .chime-pressable.PortalNav.chime-current { background: rgba(124, 92, 255, 0.18); color: var(--chime-ink); font-weight: 700; }
+#app .chime-pressable.PortalLock { margin-top: 18px; }
+#app .PortalMain { min-width: 0; gap: 14px; }
+#app .Tiles { gap: 12px; flex-wrap: wrap; align-items: stretch; }
+#app .chime-surface.Tile { flex: 1 1 10rem; padding: 14px 16px; border-radius: 12px; background: var(--chime-raised); border: 1px solid var(--chime-lit); }
+#app .TileNumber { font-size: calc(var(--chime-size-face) * 1.9); font-weight: 800; }
+#app .TileWords { font-size: 0.85em; color: var(--chime-ink-soft); }
+#app .PortalTable { gap: 0; }
+#app .PortalRow { gap: 12px; padding: 8px 10px; border-bottom: 1px solid var(--chime-lit); align-items: baseline; width: 100%; }
+#app .PortalHead { font-weight: 700; color: var(--chime-ink-soft); font-size: 0.85em; border-bottom-width: 2px; }
+#app .PortalRow .Cell { flex: 1 1 0; min-width: 0; font-size: 0.9em; overflow-wrap: anywhere; }
+#app .PortalRow .Cell.Wide { flex: 2 1 0; }
+#app .chime-pressable.PortalPick { padding: 0; border: none; border-radius: 0; background: transparent; box-shadow: none; text-align: left; width: 100%; color: var(--chime-ink); }
+#app .chime-pressable.PortalPick:hover { background: rgba(255, 255, 255, 0.04); }
+#app .PortalActions { flex-wrap: wrap; gap: 6px 14px; }

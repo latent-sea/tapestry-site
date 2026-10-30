@@ -7,11 +7,11 @@
 // the member unless they choose otherwise first, and adding twice adds
 // nothing twice.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f9ac0b9489ec";
-import { heading, notice, problem } from "./parts.js?v=f9ac0b9489ec";
-import { ACTION } from "./look/look.js?v=f9ac0b9489ec";
-import { AUDIENCES } from "./weave.js?v=f9ac0b9489ec";
-import { parseSpan } from "./when.js?v=f9ac0b9489ec";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
+import { heading, notice, problem } from "./parts.js?v=874a7fa5f28c";
+import { ACTION } from "./look/look.js?v=874a7fa5f28c";
+import { AUDIENCES } from "./weave.js?v=874a7fa5f28c";
+import { parseSpan } from "./when.js?v=874a7fa5f28c";
 
 export const IMPORT = "import";
 

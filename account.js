@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=f9ac0b9489ec";
-import { Weave } from "./weave.js?v=f9ac0b9489ec";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
+import { Weave } from "./weave.js?v=874a7fa5f28c";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -212,6 +212,8 @@ export class Account extends Controller {
       return false;
     }
     this.problem.setValue("");
+    // when they last opened Tapestry, for the admin portal's counts: told at most every half hour, never while seeing as someone
+    if (!this.loom.seeing && Date.now() - (this.seenAt ?? 0) > 30 * 60 * 1000) { this.seenAt = Date.now(); this.loom.seen().catch?.(() => {}); }
     // pictures' addresses last an hour: kept from load to load until near half that, then asked for again as shown
     if (Date.now() - this.since > ADDRESSES_KEPT) this.forget();
     this.texts.setValue({});

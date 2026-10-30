@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=f9ac0b9489ec";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=f9ac0b9489ec";
-import { shrinkPicture } from "./backend/pictures.js?v=f9ac0b9489ec";
+import { Backend } from "./backend/backend.js?v=874a7fa5f28c";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=874a7fa5f28c";
+import { shrinkPicture } from "./backend/pictures.js?v=874a7fa5f28c";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -46,7 +46,8 @@ const by = (id) => `id=eq.${encodeURIComponent(id)}`;
 // the one looking's own (their texts, their finding) that would show through
 const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "signOut", "mayJoin",
   "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation", "findPublic", "openedNow",
-  "pushKey", "addDevice", "removeDevice"]); // a device's notifications are the one signed in's own, whoever they are seeing as
+  "pushKey", "addDevice", "removeDevice", // a device's notifications are the one signed in's own, whoever they are seeing as
+  "portalState", "portalKeep", "portalOverview", "portalMembers", "portalMember", "portalDecisions", "portalLog", "portalRequests"]); // the portal is theirs, not who they see as
 
 /**
  * The loom, or a stand-in for it, kept from changing anything while seeing as someone else: guarded.seeing is
@@ -175,12 +176,16 @@ export class Loom {
   /** A picture shrunk, kept privately and added to one of the member's memories. */
   async addPicture(memoryId, file, position = 0, caption = "") {
     const name = crypto.randomUUID();
-    const kept = await this.backend.uploadPrivatePicture(APP, `${name}.jpg`, await shrinkPicture(file, 1600));
+    const big = await shrinkPicture(file, 1600);
+    const kept = await this.backend.uploadPrivatePicture(APP, `${name}.jpg`, big);
     if (kept.status === 413) return { ok: false, data: null, error: "That picture is too big. Please choose one under 10 MB." };
     if (!kept.ok) return answer(kept);
     // and a small copy, for cards and lists: without it, the picture is shown there whole
-    const small = await this.backend.uploadPrivatePicture(APP, `${name}-thumb.jpg`, await shrinkPicture(file, THUMB, 0.8));
-    return answer(await this.backend.insert("tapestry_pictures", { memory_id: memoryId, path: kept.data.path, position, caption: caption.trim(),
+    const thumb = await shrinkPicture(file, THUMB, 0.8);
+    const small = await this.backend.uploadPrivatePicture(APP, `${name}-thumb.jpg`, thumb);
+    // its size as kept, both together: what the admin portal counts
+    const bytes = (big?.size ?? 0) + (small.ok ? thumb?.size ?? 0 : 0);
+    return answer(await this.backend.insert("tapestry_pictures", { memory_id: memoryId, path: kept.data.path, position, caption: caption.trim(), bytes,
       ...(small.ok ? { thumb_path: small.data.path } : {}) }));
   }
 
@@ -260,6 +265,62 @@ export class Loom {
   async adminSettleReport(report, removed) { return answer(await this.backend.callRpc("tapestry_admin_settle_report", { report, removed })); }
 
   // --- moderating, and support ---
+
+  // --- the admin portal: opened by a code from an authenticator app (backend.sql, "the admin portal") ---
+
+  /** The portal's door for them: { open, second_factor, admin }. */
+  async portalState() { return answer(await this.backend.callRpc("tapestry_portal_state")); }
+
+  /** The authenticator apps set up on their sign-in - the platform's own second factor, shared with its own portal: [{ id, status }]. */
+  async authenticators() { return answer(await this.backend.authenticators()); }
+
+  /** An authenticator set up, the first time: { id, totp: { picture, secret } } to scan, or type in. Counts once its first code is given. */
+  async enrolAuthenticator(name) { return answer(await this.backend.enrolAuthenticator(name)); }
+
+  /** An authenticator taken off before it counted: one set up and never finished. */
+  async removeAuthenticator(id) { return answer(await this.backend.removeAuthenticator(id)); }
+
+  /** A code from their authenticator: this sign-in raised to know them surely (aal2). */
+  async verifyAuthenticator(id, code) {
+    const raised = await this.backend.verifyAuthenticator(id, code);
+    if (raised.ok) return answer(raised);
+    // the sign-in service's words for it, said plainly
+    const words = String(raised.data?.msg ?? raised.data?.message ?? raised.data?.error_description ?? raised.error ?? "");
+    if (raised.status === 429) return { ok: false, data: null, error: "Too many tries: wait a few minutes, then enter the code showing then." };
+    if (/invalid|code|mfa/i.test(words) && raised.status < 500) return { ok: false, data: null, error: "That code isn't right: enter the six digits your authenticator app shows now." };
+    return answer(raised);
+  }
+
+  /** The portal opened for an hour, by a sign-in that has just given its code. */
+  async portalOpen() { return answer(await this.backend.callRpc("tapestry_portal_open")); }
+
+  /** The portal used: open another hour. */
+  async portalKeep() { return answer(await this.backend.callRpc("tapestry_portal_keep")); }
+
+  /** The portal closed, for this sign-in. */
+  async portalClose() { return answer(await this.backend.callRpc("tapestry_portal_close")); }
+
+  async portalOverview() { return answer(await this.backend.callRpc("tapestry_portal_overview")); }
+
+  async portalMembers() { return answer(await this.backend.callRpc("tapestry_portal_members")); }
+
+  /** One member's details, as counts - written down, and they see it was. */
+  async portalMember(member) { return answer(await this.backend.callRpc("tapestry_portal_member", { member })); }
+
+  async portalDecisions() { return answer(await this.backend.callRpc("tapestry_portal_decisions")); }
+
+  async portalLog() { return answer(await this.backend.callRpc("tapestry_portal_log")); }
+
+  async portalRequests() { return answer(await this.backend.callRpc("tapestry_portal_requests")); }
+
+  /** A privacy request or notice written down: { received, from_whom, kind, details }. */
+  async portalLogRequest(request) { return answer(await this.backend.callRpc("tapestry_portal_log_request", { request })); }
+
+  /** A request answered: done or refused, saying what was done or why not. */
+  async portalCloseRequest(request, status, outcome) { return answer(await this.backend.callRpc("tapestry_portal_close_request", { request, status, outcome })); }
+
+  /** That the member opened Tapestry, kept to the hour. */
+  async seen() { return answer(await this.backend.callRpc("tapestry_seen")); }
 
   /** What is reported, in full, for those who moderate. */
   async reportsView() { return answer(await this.backend.callRpc("tapestry_reports_view")); }

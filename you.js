@@ -18,16 +18,16 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f9ac0b9489ec";
-import { few, heading, notice, problem } from "./parts.js?v=f9ac0b9489ec";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=f9ac0b9489ec";
-import { dotOf } from "./parts.js?v=f9ac0b9489ec";
-import { SIGNS_OUT } from "./account.js?v=f9ac0b9489ec";
-import { copyOf } from "./keep.js?v=f9ac0b9489ec";
-import { parseWhen, sayWhen } from "./when.js?v=f9ac0b9489ec";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=f9ac0b9489ec";
-import { UNBLOCKS } from "./safety.js?v=f9ac0b9489ec";
-import { describePhone } from "./phone.js?v=f9ac0b9489ec";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
+import { few, heading, notice, problem } from "./parts.js?v=874a7fa5f28c";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=874a7fa5f28c";
+import { dotOf } from "./parts.js?v=874a7fa5f28c";
+import { SIGNS_OUT } from "./account.js?v=874a7fa5f28c";
+import { copyOf } from "./keep.js?v=874a7fa5f28c";
+import { parseWhen, sayWhen } from "./when.js?v=874a7fa5f28c";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=874a7fa5f28c";
+import { UNBLOCKS } from "./safety.js?v=874a7fa5f28c";
+import { describePhone } from "./phone.js?v=874a7fa5f28c";
 
 export const YOU = "you";
 
@@ -285,6 +285,11 @@ export class You extends Controller {
   }
 }
 
+/** What support, a moderator or an admin did of theirs, as a member reads it in You. */
+const LOOKED = { viewed_masked: "%s looked, masked, %s", viewed_with_consent: "%s looked, as you let them, %s", opened_member: "%s opened your account's details in the admin portal, %s",
+  changed_plan: "%s changed your plan, %s", made_admin: "%s made you an admin, %s", unmade_admin: "%s made you not an admin, %s", made_moderator: "%s made you a moderator, %s",
+  unmade_moderator: "%s made you not a moderator, %s", portal_key_reset: "%s reset your admin portal code, %s" };
+
 export function describeYou(ui, you, account, safety, phone) {
   const me = account.weave.map((w) => w.me);
   return ui.screen(YOU, [
@@ -393,7 +398,7 @@ export function describeYou(ui, you, account, safety, phone) {
       ui.row([ui.button(STOPS_SUPPORT, { style: LINK })], "Actions"),
     ]), ui.row([ui.button(LETS_SUPPORT, { style: LINK })], "Actions")),
     ui.each(me.map((m) => (m?.support_looks ?? []).map((l, i) => ({ ...l, key: `${l.at}-${i}` }))), (held) => ui.text(held.map((l) => Phrase.with(
-      l?.what === "viewed_masked" ? "%s looked, masked, %s" : l?.what === "viewed_with_consent" ? "%s looked, as you let them, %s" : "%s moderated something of yours, %s",
+      LOOKED[l?.what] ?? "%s moderated something of yours, %s",
       [l?.by ?? "", new Date(l?.at ?? 0).toLocaleString(undefined, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })])), "Meta"), (l) => l.key, "List"),
     heading(ui, "Delete my account"),
     ui.text(Phrase.of("Everything of yours - memories, pictures, events, periods, places, people, comments - deleted for good, straight away. Keep a copy first, above, if you'd like one."), "Hint").wraps(),

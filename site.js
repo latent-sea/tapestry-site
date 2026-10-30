@@ -13,44 +13,44 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=f9ac0b9489ec";
-import { Loom, guarded } from "./loom.js?v=f9ac0b9489ec";
-import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=f9ac0b9489ec";
-import * as Edit from "./editor.js?v=f9ac0b9489ec";
-import * as Folk from "./people.js?v=f9ac0b9489ec";
-import * as Where from "./places.js?v=f9ac0b9489ec";
-import * as Me from "./you.js?v=f9ac0b9489ec";
-import * as Today from "./journal.js?v=f9ac0b9489ec";
-import * as Ask from "./asking.js?v=f9ac0b9489ec";
-import * as Run from "./admin.js?v=f9ac0b9489ec";
-import * as List from "./importing.js?v=f9ac0b9489ec";
-import * as Told from "./notices.js?v=f9ac0b9489ec";
-import * as Talk from "./comments.js?v=f9ac0b9489ec";
-import * as Kind from "./safety.js?v=f9ac0b9489ec";
-import * as Pay from "./paying.js?v=f9ac0b9489ec";
-import * as Say from "./feedback.js?v=f9ac0b9489ec";
-import * as Hello from "./welcome.js?v=f9ac0b9489ec";
-import * as Ring from "./phone.js?v=f9ac0b9489ec";
-import * as Look from "./find.js?v=f9ac0b9489ec";
-import * as Take from "./taking.js?v=f9ac0b9489ec";
-import * as Parts from "./parts.js?v=f9ac0b9489ec";
-import { PlaceMap } from "./placemap.js?v=f9ac0b9489ec";
-import * as Many from "./crowd.js?v=f9ac0b9489ec";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=f9ac0b9489ec";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=f9ac0b9489ec";
-import { yearsOf } from "./woven.js?v=f9ac0b9489ec";
-import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=f9ac0b9489ec";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=f9ac0b9489ec";
-import { Space } from "./space.js?v=f9ac0b9489ec";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=f9ac0b9489ec";
-import { linksOf } from "./links.js?v=f9ac0b9489ec";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=f9ac0b9489ec";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
+import { Loom, guarded } from "./loom.js?v=874a7fa5f28c";
+import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=874a7fa5f28c";
+import * as Edit from "./editor.js?v=874a7fa5f28c";
+import * as Folk from "./people.js?v=874a7fa5f28c";
+import * as Where from "./places.js?v=874a7fa5f28c";
+import * as Me from "./you.js?v=874a7fa5f28c";
+import * as Today from "./journal.js?v=874a7fa5f28c";
+import * as Ask from "./asking.js?v=874a7fa5f28c";
+import * as Run from "./admin.js?v=874a7fa5f28c";
+import * as List from "./importing.js?v=874a7fa5f28c";
+import * as Told from "./notices.js?v=874a7fa5f28c";
+import * as Talk from "./comments.js?v=874a7fa5f28c";
+import * as Kind from "./safety.js?v=874a7fa5f28c";
+import * as Pay from "./paying.js?v=874a7fa5f28c";
+import * as Say from "./feedback.js?v=874a7fa5f28c";
+import * as Hello from "./welcome.js?v=874a7fa5f28c";
+import * as Ring from "./phone.js?v=874a7fa5f28c";
+import * as Look from "./find.js?v=874a7fa5f28c";
+import * as Take from "./taking.js?v=874a7fa5f28c";
+import * as Parts from "./parts.js?v=874a7fa5f28c";
+import { PlaceMap } from "./placemap.js?v=874a7fa5f28c";
+import * as Many from "./crowd.js?v=874a7fa5f28c";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=874a7fa5f28c";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=874a7fa5f28c";
+import { yearsOf } from "./woven.js?v=874a7fa5f28c";
+import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=874a7fa5f28c";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=874a7fa5f28c";
+import { Space } from "./space.js?v=874a7fa5f28c";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=874a7fa5f28c";
+import { linksOf } from "./links.js?v=874a7fa5f28c";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=874a7fa5f28c";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=f9ac0b9489ec")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=874a7fa5f28c")).StandIn() : new Loom());
 // the browser's notifications, stood in for when probing: headless, it has none to give
-const PUSH = probing ? new (await import("./tests/standin.js?v=f9ac0b9489ec")).StandInPush() : null;
+const PUSH = probing ? new (await import("./tests/standin.js?v=874a7fa5f28c")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -647,7 +647,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=f9ac0b9489ec").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=874a7fa5f28c").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
