@@ -4,11 +4,11 @@
 // yet - no birthday, no memory - until they finish or skip it; then never
 // again on that device. Its address (#welcome) opens it again any time.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=89aae1096cfb";
-import { LINK } from "./look/look.js?v=89aae1096cfb";
-import { notice, problem } from "./parts.js?v=89aae1096cfb";
-import { birthdayOf } from "./you.js?v=89aae1096cfb";
-import { parseSpan } from "./when.js?v=89aae1096cfb";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=f9ac0b9489ec";
+import { LINK } from "./look/look.js?v=f9ac0b9489ec";
+import { notice, problem } from "./parts.js?v=f9ac0b9489ec";
+import { birthdayOf } from "./you.js?v=f9ac0b9489ec";
+import { parseSpan } from "./when.js?v=f9ac0b9489ec";
 
 export const WELCOME = "welcome";
 export const SETS_BIRTHDAY = "sets_my_birthday_on_the_welcome";
