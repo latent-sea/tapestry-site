@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=874a7fa5f28c";
-import { linksOf } from "./links.js?v=874a7fa5f28c";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=f74905f80d78";
+import { linksOf } from "./links.js?v=f74905f80d78";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -255,8 +255,9 @@ export class Weave {
     const own = new Set(words(nameOf(self)));
     const wanted = lower(looked).trim();
     const span = kind !== "place" ? this.spanOf(kind, self) : null;
-    return list.filter((item) => item.id !== id).filter((item) => (wanted ? lower(nameOf(item)).includes(wanted)
-      : words(nameOf(item)).some((w) => own.has(w)) || (span && within(timeOf(item, "starts"), span.starts, span.ends ?? span.starts, timeOf(item, "ends")))))
+    // nothing typed, nothing offered: found as it is typed, by name
+    if (!wanted) return [];
+    return list.filter((item) => item.id !== id).filter((item) => lower(nameOf(item)).includes(wanted))
       .slice(0, 8)
       .map((item) => ({ id: item.id, label: [nameOf(item), kind !== "place" ? this.entry(kind, item).said : "",
         item.owner === this.meId ? "yours" : `${this.nameOf(item.owner)}'s`].filter(Boolean).join(" · ") }));

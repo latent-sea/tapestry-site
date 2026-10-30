@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
-import { few, heading, mark, notice, problem } from "./parts.js?v=874a7fa5f28c";
-import { CARD, DANGER, LINK } from "./look/look.js?v=874a7fa5f28c";
-import { describeIsThisYou } from "./asking.js?v=874a7fa5f28c";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=874a7fa5f28c";
-import { parseWhen, sayWhen } from "./when.js?v=874a7fa5f28c";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f74905f80d78";
+import { few, heading, mark, notice, problem } from "./parts.js?v=f74905f80d78";
+import { CARD, DANGER, LINK } from "./look/look.js?v=f74905f80d78";
+import { describeIsThisYou } from "./asking.js?v=f74905f80d78";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=f74905f80d78";
+import { parseWhen, sayWhen } from "./when.js?v=f74905f80d78";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -369,9 +369,9 @@ export function describePerson(ui, people, account, timeline, asking) {
       // two names for one person, made by mistake or by importing: the other folded into this one
       ui.when(twins.map((t) => t.length > 0), ui.column([
         heading(ui, "The same person twice?"),
-        ui.text(person.map((p) => Phrase.with("If another of your people is %s too, pick them. Merged, everything tagged with either is tagged with %s, they are in both's circles, and the other name goes.", [p?.name ?? "", p?.name ?? ""])), "Hint").wraps(),
+        ui.text(person.map((p) => Phrase.with("If another of your people is %s too, find them. Merged, everything tagged with either is tagged with %s, they are in both's circles, and the other name goes.", [p?.name ?? "", p?.name ?? ""])), "Hint").wraps(),
         few(ui, "twins", twins, (p) => p.name, (held) => ui.pressable(PICKS_TWIN, held.map((p) => ({ id: p?.id ?? "" })), [ui.text(held.map((p) => p?.name ?? ""), Themes.FACE)], "Segment")
-          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), { finds: "Find one of your people by name", keyOf: (p) => p.id, style: "Segments", keep: (p) => p.id === people.twin.read() }),
+          .currentWhile(ui.bound(() => people.twin.read() === held.read()?.id)), { sought: true, finds: "Find one of your people by name", keyOf: (p) => p.id, style: "Segments", keep: (p) => p.id === people.twin.read() }),
         ui.when(people.twin.map((t) => t !== ""), ui.column([
           ui.text(ui.bound(() => Phrase.with("Merge %s into %s? It can't be undone.", [account.weave.read().people.get(people.twin.read())?.name ?? "", person.read()?.name ?? ""])), "Warn").wraps(),
           ui.row([ui.button(MERGES, { payload: personId.map((id) => ({ id })), style: DANGER })], "Actions"),

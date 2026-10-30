@@ -11,9 +11,9 @@
 // What waits for the member's answer, and what they asked, are on their
 // thread; both sides having asked the same, it is linked at once.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
-import { few, notice, problem } from "./parts.js?v=874a7fa5f28c";
-import { ACTION, LINK } from "./look/look.js?v=874a7fa5f28c";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=f74905f80d78";
+import { few, notice, problem } from "./parts.js?v=f74905f80d78";
+import { ACTION, LINK } from "./look/look.js?v=f74905f80d78";
 
 export const ASKS_LINK = "asks_to_link_a_name";
 export const ASKS_AT_EVENT = "asks_to_be_at_an_event";
@@ -238,9 +238,9 @@ export function describeIsThisYou(ui, asking, account, personId) {
       ui.pressable(TAKES_BACK, waiting.map((r) => ({ id: r?.id ?? "" })), [ui.text(ui.words(TAKES_BACK), "Small")], LINK),
     ], "Request"), ui.when(known.map((k) => k.length > 0), ui.column([
       ui.text(Phrase.of("Already on Tapestry?"), "FieldName"),
-      ui.text(Phrase.of("Ask whichever of these they are. When they say yes, you are linked, as by an invitation."), "Hint").wraps(),
+      ui.text(Phrase.of("Find them among the people on Tapestry you know of, and ask them. When they say yes, you are linked, as by an invitation."), "Hint").wraps(),
       few(ui, "known-members", known, (m) => m.name, (held) => ui.pressable(ASKS_LINK, ui.bound(() => ({ person: personId.read(), member: held.read()?.account ?? "" })),
-        [ui.text(held.map((m) => m?.name ?? ""), "Small")], "Segment"), { finds: "Find them by name", keyOf: (m) => m.account, style: "Segments" }),
+        [ui.text(held.map((m) => m?.name ?? ""), "Small")], "Segment"), { sought: true, finds: "Find them on Tapestry by name", keyOf: (m) => m.account, style: "Segments" }),
     ]))),
   ]);
 }
@@ -305,7 +305,9 @@ export function describeMerge(ui, asking, account, kind, id) {
         ui.button(KEEPS_APART, { style: LINK }),
       ], "Actions"),
     ]), ui.column([
-      ui.field(LOOKS_FOR_TWIN, "", { changes: LOOKS_FOR_TWIN, shows: asking.twinSearch, placeholder: Phrase.of("Its name") }),
+      ui.field(LOOKS_FOR_TWIN, "", { changes: LOOKS_FOR_TWIN, shows: asking.twinSearch,
+        label: Phrase.of({ event: "Find the other event by its name", period: "Find the other period by its name", place: "Find the other place by its name" }[kind]) }),
+      ui.when(ui.bound(() => !!asking.twinSearch.read().trim() && !twins.read().length), ui.text(Phrase.of("Nothing by that name."), "Quiet")),
       ui.each(twins, (held) => ui.pressable(PICKS_TWIN, ui.bound(() => ({ kind, from: id.read(), into: held.read()?.id ?? "" })),
         [ui.text(held.map((t) => t?.label ?? ""), "MatchWords")], "Match"), (t) => t.id, "Matches"),
     ])),

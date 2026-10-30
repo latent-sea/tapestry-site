@@ -2,8 +2,8 @@
 // chooser (type to find, press to pick, or add what was typed), and the
 // little rows of names.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
-import { LINK } from "./look/look.js?v=874a7fa5f28c";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f74905f80d78";
+import { LINK } from "./look/look.js?v=f74905f80d78";
 
 /** A thread's mark: a dot in its colour, as a picture, since a colour is the thread's own. */
 export function dotOf(colour) {
@@ -91,11 +91,13 @@ export function narrowWith(made) { narrowing = made; }
  * what holds what is typed - with those kept always (keep: the ones chosen now, so they can be unchosen).
  * key names the list (one line typed for each); textOf(item) is what it is found by; finds says, in the
  * line itself, what it searches ("Find a person by name"). Options: across (a row, else a column), keyOf,
- * style, keep; browsed - a list to read rather than choose from, all of it shown until something is typed.
+ * style, keep; browsed - a list to read rather than choose from, all of it shown until something is typed;
+ * sought - one particular one looked for among them (the same person twice, who to ask): only the line,
+ * however few there are, and those holding what is typed under it as it is typed - nothing offered before.
  */
-export function few(ui, key, items, textOf, template, { finds, across = true, keyOf = null, style = across ? Themes.ROW : Themes.COLUMN, keep = null, browsed = false } = {}) {
+export function few(ui, key, items, textOf, template, { finds, across = true, keyOf = null, style = across ? Themes.ROW : Themes.COLUMN, keep = null, browsed = false, sought = false } = {}) {
   const line = narrowing ? narrowing.lineOf(key) : null;
-  const many = items.map((list) => (list ?? []).length > MANY);
+  const many = items.map((list) => sought || (list ?? []).length > MANY);
   // what is typed, as words, and those of the list holding every one; the kept ones apart
   const narrowed = ui.bound(() => {
     const list = items.read() ?? [];
@@ -106,11 +108,13 @@ export function few(ui, key, items, textOf, template, { finds, across = true, ke
   });
   const shown = ui.bound(() => {
     const { list, kept, typed, found } = narrowed.read();
+    if (sought && line) return [...kept, ...found.slice(0, MANY)];
     if (list.length <= MANY || !line || (browsed && !typed)) return list;
     return [...kept, ...(browsed ? found : found.slice(0, MANY))];
   });
   const left = ui.bound(() => {
     const { list, typed, found } = narrowed.read();
+    if (sought && line) return typed && !found.length ? Phrase.of("Nothing by that name") : "";
     if (list.length <= MANY || !line) return "";
     if (!typed) return "";
     if (!found.length) return Phrase.of("None holds that");

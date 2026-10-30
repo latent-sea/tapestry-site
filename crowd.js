@@ -8,11 +8,11 @@
 // memory likes it: the count is everyone's, who liked it its writer's alone.
 // A big event's memories come only in part with a load: opened, all of them.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=874a7fa5f28c";
-import { DANGER, LINK } from "./look/look.js?v=874a7fa5f28c";
-import { few, heading, notice, problem } from "./parts.js?v=874a7fa5f28c";
-import { headingOf, sayWhen } from "./when.js?v=874a7fa5f28c";
-import { sortEntries } from "./weave.js?v=874a7fa5f28c";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f74905f80d78";
+import { DANGER, LINK } from "./look/look.js?v=f74905f80d78";
+import { few, heading, notice, problem } from "./parts.js?v=f74905f80d78";
+import { headingOf, sayWhen } from "./when.js?v=f74905f80d78";
+import { sortEntries } from "./weave.js?v=f74905f80d78";
 
 export const SEARCHES_CROWD = "finds_in_what_it_holds";
 export const ORDERS_CROWD = "orders_what_it_holds";
@@ -407,7 +407,7 @@ export function describeCrowd(ui, crowd, account, card, opens, item, emptySaid) 
       ui.when(candidates.map((c) => c.length > 0), ui.column([
         ui.text(Phrase.of("Make someone at it an admin"), "FieldName"),
         few(ui, "crowd-admins", candidates, (c) => c.name, (held) => ui.pressable(MAKES_ADMIN, held.map((c) => ({ account: c?.account ?? "" })),
-          [ui.text(held.map((c) => c?.name ?? ""), "Small")], "Segment"), { finds: "Find someone at it by name", keyOf: (c) => c.account, style: "Segments" }),
+          [ui.text(held.map((c) => c?.name ?? ""), "Small")], "Segment"), { sought: true, finds: "Find someone at it by name", keyOf: (c) => c.account, style: "Segments" }),
       ])),
     ])),
   ]);
