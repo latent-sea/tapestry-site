@@ -272,13 +272,8 @@
 #app .chime-pressable.Tick.chime-current { border: 2px solid #7c5cff; }
 #app .TickBox { font-size: 1.3em; line-height: 1.1; }
 
-/* the life page's links under its one find line: small words in one line, not buttons */
-#app .LifeLinks { flex-wrap: wrap !important; gap: 0 16px !important; }
-/* what a line to type in finds, said in full: wrapped, never cut short */
-#app .chime-field-label { white-space: normal; overflow: visible; text-overflow: clip; }
-#app .LifeLinks .chime-pressable { min-height: 32px; padding: 4px 0; border: none; border-radius: 0; background: transparent; box-shadow: none;
-  color: var(--chime-accent); white-space: nowrap; }
-#app .LifeLinks .chime-pressable:hover { text-decoration: underline; }
+/* the life page's actions under its one find line: buttons, in the links' own colour - apart from the add buttons above */
+#app .LifeLinks { flex-wrap: wrap !important; gap: 8px !important; }
 
 /* the admin portal: on a laptop, wide - its parts down the side, the one chosen beside them, tables of rows */
 #app .chime-app:has(.PortalOpen) { max-width: 78rem; }
@@ -306,3 +301,5 @@
 #app .chime-pressable.PortalPick { padding: 0; border: none; border-radius: 0; background: transparent; box-shadow: none; text-align: left; width: 100%; color: var(--chime-ink); }
 #app .chime-pressable.PortalPick:hover { background: rgba(255, 255, 255, 0.04); }
 #app .PortalActions { flex-wrap: wrap; gap: 6px 14px; }
+/* what a line to type in finds, said in full: wrapped, never cut short */
+#app .chime-field-label { white-space: normal; overflow: visible; text-overflow: clip; }

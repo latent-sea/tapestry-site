@@ -18,16 +18,16 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f74905f80d78";
-import { few, heading, notice, problem } from "./parts.js?v=f74905f80d78";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=f74905f80d78";
-import { dotOf } from "./parts.js?v=f74905f80d78";
-import { SIGNS_OUT } from "./account.js?v=f74905f80d78";
-import { copyOf } from "./keep.js?v=f74905f80d78";
-import { parseWhen, sayWhen } from "./when.js?v=f74905f80d78";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=f74905f80d78";
-import { UNBLOCKS } from "./safety.js?v=f74905f80d78";
-import { describePhone } from "./phone.js?v=f74905f80d78";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=5735eb403b1f";
+import { few, heading, notice, problem } from "./parts.js?v=5735eb403b1f";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=5735eb403b1f";
+import { dotOf } from "./parts.js?v=5735eb403b1f";
+import { SIGNS_OUT } from "./account.js?v=5735eb403b1f";
+import { copyOf } from "./keep.js?v=5735eb403b1f";
+import { parseWhen, sayWhen } from "./when.js?v=5735eb403b1f";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=5735eb403b1f";
+import { UNBLOCKS } from "./safety.js?v=5735eb403b1f";
+import { describePhone } from "./phone.js?v=5735eb403b1f";
 
 export const YOU = "you";
 

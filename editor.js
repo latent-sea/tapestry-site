@@ -12,13 +12,13 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=f74905f80d78";
-import { EXAMPLES, parseSpan, sayWhen, saySpan, within } from "./when.js?v=f74905f80d78";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=f74905f80d78";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=f74905f80d78";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=f74905f80d78";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=f74905f80d78";
-import { DANGER, LINK } from "./look/look.js?v=f74905f80d78";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=5735eb403b1f";
+import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=5735eb403b1f";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=5735eb403b1f";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=5735eb403b1f";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=5735eb403b1f";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=5735eb403b1f";
+import { DANGER, LINK } from "./look/look.js?v=5735eb403b1f";
 
 export const EDIT = "edit";
 
@@ -230,7 +230,7 @@ export class Editor extends Controller {
       if (action === EDITS && id !== "new" && ({ memory: weave.memories, event: weave.events, period: weave.periods }[kind]?.get(id)?.owner !== weave.meId)) {
         return Phrase.of("Only its owner edits it");
       }
-      return tied && !tiedId ? Phrase.of("Nothing to add to") : null;
+      return tied && tied !== "today" && !tiedId ? Phrase.of("Nothing to add to") : null;
     }
     if ((action === SAVES || action === DELETES || action === ASKS_TO_DELETE) && this.busy.read()) return Phrase.of("Saving");
     if (action === SAVES && this.fetching.read()) return Phrase.of("Fetching all its words");
@@ -369,7 +369,7 @@ export class Editor extends Controller {
     this.fetching.setValue(false);
   }
 
-  /** A draft opened: "memory:new", "memory:new:event:<id>" (or :period:, :place:, :person:), "event:<id>"... */
+  /** A draft opened: "memory:new", "memory:new:event:<id>" (or :period:, :place:, :person:), "memory:new:today", "event:<id>"... */
   open(parameter) {
     const [kind, id, tied, tiedId] = parameter.split(":");
     const weave = this.weave();
@@ -390,6 +390,12 @@ export class Editor extends Controller {
     const periodSaid = period?.starts ? saySpan(timeOf(period, "starts"), timeOf(period, "ends") ?? { date: `${new Date().getFullYear()}-01-01`, precision: "year", about: false }, "", true) : "";
     this.eventSaidOf = event?.id ?? null;
     this.whenText.setValue(item?.starts || !event ? (item ? saySpan(timeOf(item, "starts"), timeOf(item, "ends"), kind === "period" ? "now" : "", kind === "memory") : periodSaid) : this.eventSaid);
+    // written about today: at this minute, to change if it was earlier
+    if (!item && tied === "today") {
+      const now = new Date();
+      const two = (n) => String(n).padStart(2, "0");
+      this.whenText.setValue(sayWhen({ date: `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`, precision: "day", time: clockOf(now) }));
+    }
     this.eventId.setValue(item?.event_id ?? (tied === "event" ? tiedId : null));
     this.eventTitle.setValue("");
     this.periodIds.setValue(item ? (kind === "event" ? [...(item.period_ids ?? [])] : periodsOf(item))

@@ -3,10 +3,10 @@
 // place, its owner's name or its year. Opened, it is among what the member
 // sees: an event they were at too, they ask to be at; a memory, they comment on.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=f74905f80d78";
-import { CARD } from "./look/look.js?v=f74905f80d78";
-import { notice, problem } from "./parts.js?v=f74905f80d78";
-import { sayWhen } from "./when.js?v=f74905f80d78";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=5735eb403b1f";
+import { CARD } from "./look/look.js?v=5735eb403b1f";
+import { notice, problem } from "./parts.js?v=5735eb403b1f";
+import { sayWhen } from "./when.js?v=5735eb403b1f";
 
 export const FIND = "find";
 export const TYPES_FINDING = "types_what_to_find_on_tapestry";

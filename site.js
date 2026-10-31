@@ -13,44 +13,43 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=f74905f80d78";
-import { Loom, guarded } from "./loom.js?v=f74905f80d78";
-import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=f74905f80d78";
-import * as Edit from "./editor.js?v=f74905f80d78";
-import * as Folk from "./people.js?v=f74905f80d78";
-import * as Where from "./places.js?v=f74905f80d78";
-import * as Me from "./you.js?v=f74905f80d78";
-import * as Today from "./journal.js?v=f74905f80d78";
-import * as Ask from "./asking.js?v=f74905f80d78";
-import * as Run from "./admin.js?v=f74905f80d78";
-import * as List from "./importing.js?v=f74905f80d78";
-import * as Told from "./notices.js?v=f74905f80d78";
-import * as Talk from "./comments.js?v=f74905f80d78";
-import * as Kind from "./safety.js?v=f74905f80d78";
-import * as Pay from "./paying.js?v=f74905f80d78";
-import * as Say from "./feedback.js?v=f74905f80d78";
-import * as Hello from "./welcome.js?v=f74905f80d78";
-import * as Ring from "./phone.js?v=f74905f80d78";
-import * as Look from "./find.js?v=f74905f80d78";
-import * as Take from "./taking.js?v=f74905f80d78";
-import * as Parts from "./parts.js?v=f74905f80d78";
-import { PlaceMap } from "./placemap.js?v=f74905f80d78";
-import * as Many from "./crowd.js?v=f74905f80d78";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=f74905f80d78";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=f74905f80d78";
-import { yearsOf } from "./woven.js?v=f74905f80d78";
-import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=f74905f80d78";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=f74905f80d78";
-import { Space } from "./space.js?v=f74905f80d78";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=f74905f80d78";
-import { linksOf } from "./links.js?v=f74905f80d78";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=f74905f80d78";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=5735eb403b1f";
+import { Loom, guarded } from "./loom.js?v=5735eb403b1f";
+import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=5735eb403b1f";
+import * as Edit from "./editor.js?v=5735eb403b1f";
+import * as Folk from "./people.js?v=5735eb403b1f";
+import * as Where from "./places.js?v=5735eb403b1f";
+import * as Me from "./you.js?v=5735eb403b1f";
+import * as Ask from "./asking.js?v=5735eb403b1f";
+import * as Run from "./admin.js?v=5735eb403b1f";
+import * as List from "./importing.js?v=5735eb403b1f";
+import * as Told from "./notices.js?v=5735eb403b1f";
+import * as Talk from "./comments.js?v=5735eb403b1f";
+import * as Kind from "./safety.js?v=5735eb403b1f";
+import * as Pay from "./paying.js?v=5735eb403b1f";
+import * as Say from "./feedback.js?v=5735eb403b1f";
+import * as Hello from "./welcome.js?v=5735eb403b1f";
+import * as Ring from "./phone.js?v=5735eb403b1f";
+import * as Look from "./find.js?v=5735eb403b1f";
+import * as Take from "./taking.js?v=5735eb403b1f";
+import * as Parts from "./parts.js?v=5735eb403b1f";
+import { PlaceMap } from "./placemap.js?v=5735eb403b1f";
+import * as Many from "./crowd.js?v=5735eb403b1f";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=5735eb403b1f";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=5735eb403b1f";
+import { yearsOf } from "./woven.js?v=5735eb403b1f";
+import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=5735eb403b1f";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=5735eb403b1f";
+import { Space } from "./space.js?v=5735eb403b1f";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=5735eb403b1f";
+import { linksOf } from "./links.js?v=5735eb403b1f";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=5735eb403b1f";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=f74905f80d78")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=5735eb403b1f")).StandIn() : new Loom());
 // the browser's notifications, stood in for when probing: headless, it has none to give
-const PUSH = probing ? new (await import("./tests/standin.js?v=f74905f80d78")).StandInPush() : null;
+const PUSH = probing ? new (await import("./tests/standin.js?v=5735eb403b1f")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -526,7 +525,6 @@ export class Tapestry extends ChimeApp {
       ...Folk.WORDS,
       ...Where.WORDS,
       ...Me.WORDS,
-      ...Today.WORDS,
       ...Ask.WORDS,
       ...Run.WORDS,
       ...List.WORDS,
@@ -607,7 +605,6 @@ export class Tapestry extends ChimeApp {
     })));
     this.people = this.model(new Folk.People(this.chimes, LOOM, this.account));
     this.places = this.model(new Where.Places(this.chimes, LOOM, this.account));
-    this.journal = this.model(new Today.Journal(this.chimes, LOOM, this.account));
     this.asking = this.model(new Ask.Asking(this.chimes, LOOM, this.account));
     this.admin = this.model(new Run.Admin(this.chimes, LOOM, this.account));
     this.importer = this.model(new List.Importer(this.chimes, LOOM, this.account));
@@ -630,7 +627,7 @@ export class Tapestry extends ChimeApp {
       this.nav(),
       this.seeingBar(),
       ui.stack([
-        this.door(), this.todayScreen(), this.threadScreen(), this.timelineScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
+        this.door(), this.threadScreen(), this.timelineScreen(), this.eventsScreen(), this.periodsScreen(), this.wovenScreen(), this.itemScreen(),
         this.menuScreen(), Told.describeNotices(ui, this.notices, this.asking, this.account, ITEM, Say.FEEDBACK_ITEM, ADMIN,
           Take.describeWaiting(ui, this.taking, this.account)), Run.describeAdmin(ui, this.admin, this.account), List.describeImport(ui, this.importer, this.account),
         Edit.describeEditor(ui, this.editor, this.account),
@@ -647,7 +644,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=f74905f80d78").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=5735eb403b1f").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -670,7 +667,7 @@ export class Tapestry extends ChimeApp {
       ? [ui.text(ui.words(action), "NavWords"), ui.text(waiting, "NavCount").hidesEmpty()]
       : [ui.text(ui.words(action), "NavWords")]);
     const tab = ([action, screen, onlyAdmin]) => {
-      const made = ui.pressable(action, {}, words(action), "NavLink").goesTo(screen);
+      const made = action === GOES_TODAY ? this.writesToday(words(action), "NavLink") : ui.pressable(action, {}, words(action), "NavLink").goesTo(screen);
       return onlyAdmin ? ui.when(admin, made) : made;
     };
     return ui.when(this.account.state.map((s) => s === "in"), ui.row([
@@ -697,13 +694,9 @@ export class Tapestry extends ChimeApp {
   }
 
   /** Today: the quickest way onto the thread - words for right now. */
-  todayScreen() {
-    const ui = this.ui;
-    return ui.screen(TODAY, [
-      ui.text(Phrase.of("Today"), "Title"),
-      this.freePlan(),
-      ui.when(this.account.weave.map((w) => w.writes), Today.describeToday(ui, this.journal)),
-    ]);
+  /** Writing about today: the memory form, at this minute - to change if it was earlier, and to say whatever else. */
+  writesToday(content, style) {
+    return this.ui.pressable(Edit.ADDS_MEMORY, { parameter: "memory:new:today" }, content, style).goesTo(EDIT).absentWhenRefused();
   }
 
   /** The member's events: each a time and a place or a gathering, holding everyone's memories of it. */
@@ -814,6 +807,7 @@ export class Tapestry extends ChimeApp {
     const ui = this.ui;
     const admin = this.account.weave.map((w) => !!w.me?.admin || !!w.me?.moderator); // the admin area: admins, and moderators for what is reported
     const go = ([action, screen, onlyAdmin]) => {
+      if (action === GOES_TODAY) return this.writesToday([ui.text(ui.words(action), "PersonName")], `${CARD} ListItem MenuItem`);
       const made = ui.pressable(action, {}, [ui.text(ui.words(action), "PersonName"),
         ...(action === GOES_NOTICES ? [ui.text(ui.bound(() => { const n = this.notices.count(); return n ? Phrase.counted("%d new", "%d new", n) : ""; }), "Quiet").hidesEmpty()] : [])],
       `${CARD} ListItem MenuItem`).goesTo(screen);
@@ -920,7 +914,7 @@ export class Tapestry extends ChimeApp {
       this.freePlan(),
       // all four alike: each makes something, none is lesser
       ui.row([
-        ui.when(account.weave.map((w) => w.writes), ui.pressable(GOES_TODAY, {}, [ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction").goesTo(TODAY)),
+        this.writesToday([ui.text(Phrase.of("Write about today"), Themes.FACE)], "FactoryAction"),
         ui.button(Edit.ADDS_MEMORY, { with: "memory:new", goes_to: EDIT }).absentWhenRefused(),
         ui.button(Edit.ADDS_EVENT, { with: "event:new", goes_to: EDIT }).absentWhenRefused(),
         ui.button(Edit.ADDS_PERIOD, { with: "period:new", goes_to: EDIT }).absentWhenRefused(),
@@ -1326,7 +1320,7 @@ export class Tapestry extends ChimeApp {
       const [wanted, parameter = ""] = hash.replace(/^#/, "").split("/");
       if (["memory", "event", "period"].includes(wanted) && parameter) return [ITEM, `${wanted}:${parameter}`];
       if ([PERSON, PLACE, JOIN].includes(wanted) && parameter) return [wanted, parameter];
-      if ([WOVEN, PEOPLE, PLACES, YOU, TODAY, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID, Say.FEEDBACK, Hello.WELCOME, Look.FIND].includes(wanted)) return [wanted, null];
+      if ([WOVEN, PEOPLE, PLACES, YOU, EVENTS, PERIODS, TIMELINE, MENU, ADMIN, IMPORT, Told.NOTICES, Pay.PAID, Say.FEEDBACK, Hello.WELCOME, Look.FIND].includes(wanted)) return [wanted, null];
       if (wanted === Say.FEEDBACK && parameter) return [Say.FEEDBACK_ITEM, parameter];
       if (wanted === "more") return [MENU, null]; // the menu's address before it was the menu
       return [THREAD, null];
