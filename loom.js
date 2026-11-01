@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=5735eb403b1f";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=5735eb403b1f";
-import { shrinkPicture } from "./backend/pictures.js?v=5735eb403b1f";
+import { Backend } from "./backend/backend.js?v=1432d5edb841";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=1432d5edb841";
+import { shrinkPicture } from "./backend/pictures.js?v=1432d5edb841";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -360,6 +360,9 @@ export class Loom {
 
   /** Everything Tapestry keeps about the member that their life doesn't show: for their copy. */
   async myData() { return answer(await this.backend.callRpc("tapestry_my_data")); }
+
+  /** One of the member's memories put in an event they may add to - or, with no event, taken out of the one it is in. */
+  async putInEvent(memory, event) { return answer(await this.backend.callRpc("tapestry_put_in_event", { memory, event: event || null })); }
 
   /** The member's own account deleted - everything of theirs - then their pictures' files, then signed out. */
   async deleteMe(paths = []) {
