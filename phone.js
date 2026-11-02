@@ -5,7 +5,7 @@
 // someone else's. On an iPhone or iPad they come only once Tapestry is on
 // the Home Screen - Apple's rule - so there it says how.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=1432d5edb841";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
 
 export const TURNS_ON = "turns_on_notifications";
 export const TURNS_OFF = "turns_off_notifications";

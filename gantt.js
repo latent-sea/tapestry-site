@@ -12,8 +12,8 @@
 // page's kind chips above it are its key, and its filter. Every mark is a
 // link: each says what it is to a reader who can't see it, and its time as
 // the pointer rests on it.
-import { lastDayOf } from "./when.js?v=1432d5edb841";
-import { yearMarks, yearsOf } from "./woven.js?v=1432d5edb841";
+import { lastDayOf } from "./when.js?v=8cf5114cd163";
+import { yearMarks, yearsOf } from "./woven.js?v=8cf5114cd163";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room
@@ -90,7 +90,8 @@ function axisMarks(from, to) {
 /**
  * The timeline drawn width wide, now being when it is now, but what is
  * hidden (marksOf), for the stretch range ({ from, to } in years; all of it
- * by default): everything overlapping it, a row each. Answers
+ * by default): everything overlapping it, a row each - and, while something
+ * is looked for, only what was found (found, a set of keys). Answers
  * { svg, width, height, rows, from, to } - rows being the marks' keys, top
  * to bottom - or null with nothing in it.
  */
@@ -99,12 +100,11 @@ export function drawTimeline(weave, width = 700, now = new Date(), colours = {},
   const soft = colours.soft ?? "#8e9ab8";
   const grid = colours.grid ?? "#34426a";
   const dot = colours.memory ?? "#9db8ff";
-  const lit = colours.found ?? "#f2c14e";
   const whole = extentOf(weave, now, hidden);
   if (!whole) return null;
   const from = range?.from ?? whole.from;
   const to = Math.max(range?.to ?? whole.to, from + 1 / 12);
-  const marks = marksOf(weave, now, hidden).filter((m) => m.to >= from && m.from <= to);
+  const marks = marksOf(weave, now, hidden).filter((m) => m.to >= from && m.from <= to && (!found || found.has(m.entry.key)));
   if (!marks.length) return null;
   const plot = width - 2 * SIDE;
   const x = (years) => SIDE + ((years - from) / (to - from)) * plot;
@@ -128,9 +128,6 @@ export function drawTimeline(weave, width = 700, now = new Date(), colours = {},
     if (range?.focus === entry.key) {
       out.push(`<rect x="2" y="${top - 2}" width="${width - 4}" height="${ROW}" rx="8" fill="${dot}" opacity="0.14" stroke="${dot}" stroke-opacity="0.6"/>`);
     }
-    // what a search found, picked out; the rest faint behind it
-    const hit = !!found?.has(entry.key);
-    if (hit) out.push(`<rect x="2" y="${top - 2}" width="${width - 4}" height="${ROW}" rx="8" fill="${lit}" opacity="0.18" stroke="${lit}" stroke-width="1.5"/>`);
     const x1 = clamp(x(m.from));
     const x2 = Math.max(clamp(x(m.to)), x1 + (entry.kind === "memory" ? 0 : 6));
     // its name above its mark, from its start - or, near the right edge, ending there
@@ -152,7 +149,7 @@ export function drawTimeline(weave, width = 700, now = new Date(), colours = {},
       const arrow = m.going && x(today) <= width - SIDE ? `<path d="M${x2 - 1} ${top + 17} l7 ${tall / 2} l-7 ${tall / 2} z" fill="${colour}"/>` : "";
       body = `<rect x="${x1}" y="${top + 17}" width="${x2 - x1}" height="${tall}" rx="${entry.kind === "period" ? 4 : 3}" fill="${colour}"/>${arrow}`;
     }
-    out.push(`<a class="mark"${found && !hit ? ' opacity="0.3"' : ""}${hit ? ' data-found="yes"' : ""} data-key="${escape(entry.key)}" href="#${escape(entry.key.replace(":", "/"))}" aria-label="${escape(sayOf(entry))}"><title>${escape(sayOf(entry))}</title>`
+    out.push(`<a class="mark" data-key="${escape(entry.key)}" href="#${escape(entry.key.replace(":", "/"))}" aria-label="${escape(sayOf(entry))}"><title>${escape(sayOf(entry))}</title>`
       + `<rect x="${SIDE}" y="${top}" width="${plot}" height="${ROW - 2}" fill="transparent"/>${label}${body}</a>`);
   });
   const said = `Your timeline from ${Math.floor(from)} to ${Math.ceil(to)}`;
