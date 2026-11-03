@@ -30,7 +30,7 @@ const MONTH_NAMES = MONTHS.map((name) => name[0].toUpperCase() + name.slice(1));
 export const EXAMPLES = "Try 1998, June 1998, 12 June 1998, summer 2021, Q4 2026, the 1990s, about 1995, 2004 – 2009, or age 12";
 
 /** Said when an age is written by someone whose birthday Tapestry doesn't know. */
-export const NO_BIRTHDAY = "Add your birthday in You, and a time can be an age";
+export const NO_BIRTHDAY = "Add your birthday in Settings, under Me, and a time can be an age";
 
 // the seasons, by the month each starts in, and their names said back
 const SEASONS = { spring: 3, summer: 6, autumn: 9, fall: 9, winter: 12 };

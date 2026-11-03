@@ -7,11 +7,11 @@
 // the member unless they choose otherwise first, and adding twice adds
 // nothing twice.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { heading, notice, problem } from "./parts.js?v=8cf5114cd163";
-import { ACTION } from "./look/look.js?v=8cf5114cd163";
-import { AUDIENCES } from "./weave.js?v=8cf5114cd163";
-import { parseSpan } from "./when.js?v=8cf5114cd163";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { heading, notice, problem } from "./parts.js?v=e954cd847867";
+import { ACTION } from "./look/look.js?v=e954cd847867";
+import { AUDIENCES } from "./weave.js?v=e954cd847867";
+import { parseSpan } from "./when.js?v=e954cd847867";
 
 export const IMPORT = "import";
 
@@ -82,7 +82,7 @@ export class Importer extends Controller {
     const read = readList(this.text.read());
     if (read.error) return Phrase.of("First fix the list");
     if (!read.count) return Phrase.of("Paste a list first");
-    if (!this.account.weave.read().born) return Phrase.of("First add your birthday in You");
+    if (!this.account.weave.read().born) return Phrase.of("First add your birthday in Settings, under Me");
     return null;
   }
 
@@ -142,7 +142,7 @@ export function describeImport(ui, importer, account) {
   return ui.screen(IMPORT, [
     ui.text(Phrase.of("Bring in a list"), "Title"),
     ui.text(Phrase.of("Memories written down elsewhere, a year of your life at a time. Start each year with its line - “84/85 3” is the year you were 3, from one birthday to the next - then its memories under it, one a line. A line indented under another is more of it."), "Hint").wraps(),
-    ui.when(born.map((b) => !b), ui.text(Phrase.of("First add your birthday in You: each memory's time is worked out from it."), "Warn").wraps()),
+    ui.when(born.map((b) => !b), ui.text(Phrase.of("First add your birthday in Settings, under Me: each memory's time is worked out from it."), "Warn").wraps()),
     ui.area(SETS_LIST, importer.text, "TextArea ListText"),
     ui.text(read.map((r) => r.error || (r.count ? Phrase.with("Read as %d memories, from age %d to %d.", [r.count, r.ages[0].age, r.ages.at(-1).age]) : "")), "Hint").wraps().hidesEmpty(),
     ui.each(read.map((r) => (r.error ? [] : r.ages.filter((a) => a.memories.length))), (held) => ui.text(held.map((a) => Phrase.with("Age %d: %s", [a?.age ?? 0,

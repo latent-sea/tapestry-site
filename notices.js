@@ -2,9 +2,9 @@
 // waits for their answer (backend.sql, "notices"). Its tab counts what they
 // haven't seen and what waits for them; opened, what was new is seen.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { CARD } from "./look/look.js?v=8cf5114cd163";
-import { describeAsked } from "./asking.js?v=8cf5114cd163";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { CARD } from "./look/look.js?v=e954cd847867";
+import { describeAsked } from "./asking.js?v=e954cd847867";
 
 export const NOTICES = "notices";
 export const OPENS_NOTICE = "opens_what_a_notice_is_of";
@@ -128,12 +128,11 @@ export function describeNotices(ui, notices, asking, account, itemScreen, feedba
   // new on this visit: marked seen as the screen opens, it still says so until the next load
   const fresh = (held) => held.map((n) => !!n && !n.seen);
   return ui.screen(NOTICES, [
-    ui.text(Phrase.of("Notices"), "Title"),
-    ui.text(Phrase.of("What others did that touches you, and what waits for your answer."), "Hint").wraps(),
+    ui.text(Phrase.of("Inbox"), "Title"),
     describeAsked(ui, asking, account),
     ...(waiting ? [waiting] : []),
     ui.when(ui.bound(() => list.read().length === 0 && account.weave.read().requests.length === 0 && account.weave.read().waiting().length === 0),
-      ui.text(Phrase.of("Nothing yet. When someone puts you in a memory, adds to an event you are at, or answers what you asked, it is here."), "Quiet").wraps()),
+      ui.text(Phrase.of("Nothing yet. When someone puts you in a memory, adds to something of yours, or answers you, it's here."), "Quiet").wraps()),
     ui.each(list, (held) => {
       const row = () => [ui.row([
         ui.column([

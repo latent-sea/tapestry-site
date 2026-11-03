@@ -4,10 +4,10 @@
 // turn; an admin sees everyone's, replies, and says where each stands. Each
 // side is told of the other's in Notices.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { CARD, LINK } from "./look/look.js?v=8cf5114cd163";
-import { heading, notice, problem } from "./parts.js?v=8cf5114cd163";
-import { sayAgo } from "./notices.js?v=8cf5114cd163";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { CARD, LINK } from "./look/look.js?v=e954cd847867";
+import { heading, notice, problem } from "./parts.js?v=e954cd847867";
+import { sayAgo } from "./notices.js?v=e954cd847867";
 
 export const FEEDBACK = "feedback";
 export const FEEDBACK_ITEM = "feedback_item"; // one, with its replies: its id the parameter
@@ -66,7 +66,7 @@ export class Feedback extends Controller {
     if (action === WRITES_REPLY) this.reply.setValue(payload.line);
     if (action === SENDS_FEEDBACK) {
       this.change(() => this.loom.sendFeedback(this.kind.read(), this.draft.read().trim()),
-        () => { this.draft.setValue(""); return "Sent. Thank you - you'll see the reply here, and in Notices."; });
+        () => { this.draft.setValue(""); return "Sent. Thank you - you'll see the reply here, and in your Inbox."; });
     }
     if (action === REPLIES) this.change(() => this.loom.replyFeedback(payload.id, this.reply.read().trim()), () => { this.reply.setValue(""); return ""; });
     if (action === SETS_STATUS) this.change(() => this.loom.setFeedbackStatus(payload.id, payload.status), () => "");

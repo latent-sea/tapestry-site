@@ -10,11 +10,11 @@
 // the platform, which asks for the open portal itself: nothing here decides
 // who may see what.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { heading, notice, problem } from "./parts.js?v=8cf5114cd163";
-import { CARD, DANGER, LINK } from "./look/look.js?v=8cf5114cd163";
-import { HOW_TO_INVITE } from "./people.js?v=8cf5114cd163";
-import { sayAgo } from "./notices.js?v=8cf5114cd163";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { heading, notice, problem } from "./parts.js?v=e954cd847867";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e954cd847867";
+import { HOW_TO_INVITE } from "./people.js?v=e954cd847867";
+import { sayAgo } from "./notices.js?v=e954cd847867";
 
 export const ADMIN = "admin";
 
@@ -444,7 +444,7 @@ export function describeAdmin(ui, admin, account) {
         ], "Actions"),
       ])),
     ])),
-    ui.text(Phrase.of("Opening someone's details is written down, and they see in You that you did."), "Hint").wraps(),
+    ui.text(Phrase.of("Opening someone's details is written down, and they see in their Settings that you did."), "Hint").wraps(),
   ], "Part")]));
   const members = ui.column([
     heading(ui, "Members"),

@@ -18,16 +18,16 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { few, heading, notice, problem } from "./parts.js?v=8cf5114cd163";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=8cf5114cd163";
-import { dotOf } from "./parts.js?v=8cf5114cd163";
-import { SIGNS_OUT } from "./account.js?v=8cf5114cd163";
-import { copyOf } from "./keep.js?v=8cf5114cd163";
-import { parseWhen, sayWhen } from "./when.js?v=8cf5114cd163";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=8cf5114cd163";
-import { UNBLOCKS } from "./safety.js?v=8cf5114cd163";
-import { describePhone } from "./phone.js?v=8cf5114cd163";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { few, heading, notice, problem } from "./parts.js?v=e954cd847867";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=e954cd847867";
+import { dotOf } from "./parts.js?v=e954cd847867";
+import { SIGNS_OUT } from "./account.js?v=e954cd847867";
+import { copyOf } from "./keep.js?v=e954cd847867";
+import { parseWhen, sayWhen } from "./when.js?v=e954cd847867";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=e954cd847867";
+import { UNBLOCKS } from "./safety.js?v=e954cd847867";
+import { describePhone } from "./phone.js?v=e954cd847867";
 
 export const YOU = "you";
 
@@ -293,7 +293,7 @@ const LOOKED = { viewed_masked: "%s looked, masked, %s", viewed_with_consent: "%
 export function describeYou(ui, you, account, safety, phone) {
   const me = account.weave.map((w) => w.me);
   return ui.screen(YOU, [
-    ui.text(Phrase.of("You"), "Title"),
+    ui.text(Phrase.of("Settings"), "Title"),
     ui.row([
       ui.field(SAVES_MY_NAME, "", { label: Phrase.of("The name your people see"), changes: SETS_MY_NAME, shows: you.name, autocomplete: "name" }).grow(),
       ui.button(SAVES_MY_NAME, { style: LINK }),

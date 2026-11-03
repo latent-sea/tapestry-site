@@ -12,13 +12,14 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=8cf5114cd163";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=8cf5114cd163";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=8cf5114cd163";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=8cf5114cd163";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=8cf5114cd163";
-import { DANGER, LINK } from "./look/look.js?v=8cf5114cd163";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=e954cd847867";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=e954cd847867";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=e954cd847867";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=e954cd847867";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=e954cd847867";
+import { DANGER, LINK } from "./look/look.js?v=e954cd847867";
+import { questionOf } from "./prompts.js?v=e954cd847867";
 
 export const EDIT = "edit";
 
@@ -27,6 +28,8 @@ export const ADDS_EVENT = "adds_an_event";
 export const ADDS_PERIOD = "adds_a_period";
 export const ADDS_MEMORY_TO = "adds_a_memory_to_this";
 export const EDITS = "edits_this";
+export const OPENS_DETAILS = "opens_or_closes_more_details";
+export const OPENS_AUDIENCE = "changes_who_sees_it";
 export const SETS_TITLE = "sets_the_title";
 export const SETS_TEXT = "sets_the_words";
 export const SETS_WHEN = "sets_when";
@@ -80,6 +83,8 @@ export const WORDS = {
   [ADDS_PERIOD]: ["Add a period"],
   [ADDS_MEMORY_TO]: ["Add a memory of this"],
   [EDITS]: ["Edit"],
+  [OPENS_DETAILS]: ["More details"],
+  [OPENS_AUDIENCE]: ["Change who sees it"],
   [SETS_TITLE]: ["Title"],
   [SETS_TEXT]: ["Words"],
   [SETS_WHEN]: ["When"],
@@ -132,8 +137,8 @@ const OPENS = [ADDS_MEMORY, ADDS_EVENT, ADDS_PERIOD, ADDS_MEMORY_TO, EDITS];
 const MOST = 6; // matches shown for what is typed
 
 const KIND_WORDS = {
-  memory: { made: "New memory", changed: "Edit memory", title: "Title (if you like)", text: "What do you remember?", people: "Who's in it",
-    whenHint: "As exactly as you remember it: \"now\", a day (with its time, if you like: \"12 June 1998, 2pm\"), a month, a season, a quarter (\"Q4 2026\"), a year or a decade, \"about\" for a guess - or, not sure, the edges of your guess: \"between 1983 and 1984\". Leave it empty for its event's time, or none." },
+  memory: { made: "New memory", changed: "Edit memory", title: "What happened?", text: "Tell the story", people: "Who was there",
+    whenHint: "As exactly as you remember it: a day, a month, a season, a year, \"about 1995\", or \"between 1983 and 1984\" if you're not sure." },
   event: { made: "New event", changed: "Edit event", title: "What happened", text: "Notes", people: "Who was there",
     whenHint: "As exactly as you remember it: \"12 June 1998\", \"about 1995\", or \"12 – 19 June 1998\" for something that went on." },
   period: { made: "New period", changed: "Edit period", title: "What was this time of your life", text: "Notes", people: "Who was with you",
@@ -178,6 +183,10 @@ export class Editor extends Controller {
     this.busy = this.value(false);
     this.fetching = this.value(false); // a long memory's words being fetched in full: nothing is saved until they are
     this.confirming = this.value(false);
+    this.asked = this.value(""); // the question it answers, when written from the home screen's prompt
+    this.askedNumber = null;
+    this.detailsOpen = this.value(false); // whether More details - its event, periods, kind, labels, links - is open
+    this.audienceOpen = this.value(false); // whether who sees it is open to change
     this.problem = this.value("");
     this.notice = this.value("");
   }
@@ -277,6 +286,8 @@ export class Editor extends Controller {
   told(action, payload) {
     this.notice.setValue("");
     if (OPENS.includes(action)) this.open(String(payload.parameter));
+    if (action === OPENS_DETAILS) this.detailsOpen.update((open) => !open);
+    if (action === OPENS_AUDIENCE) this.audienceOpen.update((open) => !open);
     if (action === SETS_TITLE) this.title.setValue(payload.line);
     if (action === SETS_TEXT) this.text.setValue(payload.line);
     if (action === SETS_WHEN) this.whenText.setValue(payload.line);
@@ -421,6 +432,13 @@ export class Editor extends Controller {
     this.removed.setValue([]);
     for (const search of Object.values(this.searches)) search.setValue("");
     this.confirming.setValue(false);
+    // written as the answer to a question asked on the home screen: the question shown above it
+    this.asked.setValue(!item && tied === "ask" ? questionOf(tiedId) : "");
+    this.askedNumber = !item && tied === "ask" && questionOf(tiedId) ? Number(tiedId) : null;
+    // More details starts open when there is something in it already: an event, periods, a kind, labels, links
+    this.detailsOpen.setValue(!!this.eventId.read() || this.periodIds.read().length > 0 || !!this.periodType.read() || this.labels.read().length > 0
+      || this.links.read().length > 0);
+    this.audienceOpen.setValue(false);
     this.problem.setValue("");
   }
 
@@ -702,12 +720,72 @@ export function describeEditor(ui, editor, account) {
 
   return ui.screen(EDIT, [
     ui.text(ui.bound(() => Phrase.of(KIND_WORDS[kind.read()][editor.id.read() ? "changed" : "made"])), "Title"),
+    // the question it answers, asked on the home screen
+    ui.text(editor.asked, "PromptWords").wraps().hidesEmpty(),
     ui.text(said("title"), "FieldName"),
     ui.field(SETS_TITLE, "", { changes: SETS_TITLE, shows: editor.title }),
     ui.text(Phrase.of("When"), "FieldName"),
     ui.field(SETS_WHEN, "", { changes: SETS_WHEN, shows: editor.whenText, placeholder: Phrase.of("e.g. June 1998, about 1995, 2004 – now") }),
     ui.text(said("whenHint"), "Hint").wraps(),
     ui.text(whenSaid, "Hint").wraps().hidesEmpty(),
+    // an event is a grouping of memories: what is written goes in its memories, not on it
+    ui.when(kind.map((k) => k !== "event"), ui.column([
+      ui.text(said("text"), "FieldName"),
+      ui.area(SETS_TEXT, editor.text, "TextArea Words"),
+    ], "Part"), ui.text(Phrase.of("An event holds memories: once it is saved, add yours - and everyone at it adds theirs."), "Hint").wraps()),
+    ui.when(isMemory, ui.column([
+      ui.text(Phrase.of("Pictures"), "FieldName"),
+      ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.thumb || p.path) : ""))), (p) => p.id, "EditPictures"),
+      ui.eachAcross(editor.added, (held) => thumbnail(held, held.map((p) => p?.address ?? "")), (p) => p.key, "EditPictures"),
+      ui.file(ADDS_PICTURE, Phrase.of("Add pictures"), { accept: "image/*", multiple: true }),
+      ui.when(ui.bound(() => !!editor.photoSpan()), ui.row([
+        ui.text(ui.bound(() => {
+          const offered = editor.photoSpan();
+          if (!offered) return "";
+          const day = (date) => sayWhen({ date, precision: "day" });
+          return offered.ends ? Phrase.with("These were taken from %s to %s.", [day(offered.starts), day(offered.ends)])
+            : Phrase.with("Taken on %s.", [day(offered.starts)]);
+        }), "Hint").wraps().grow(),
+        ui.button(USES_PHOTO_DATE, { style: LINK }),
+      ], "PhotoDate")),
+    ], "Part")),
+    chooser(ui, { label: said("people"), chosen: ui.bound(() => editor.chosenPeople()), unpick: UNTAGS,
+      search: editor.searches.person, looks: LOOKS_FOR_PERSON, matches: ui.bound(() => editor.personMatches()), pick: TAGS,
+      create: ADDS_NEW_PERSON, placeholder: Phrase.of("Type a name") }),
+    ui.when(ui.bound(() => isMemory.read() && !editor.eventId.read() && !editor.becomesEvent()),
+      ui.text(Phrase.of("Tag someone who is on Tapestry and it becomes an event when saved: your lives meet there, and they add their own memories of it."), "Hint").wraps()),
+    ui.when(ui.bound(() => editor.becomesEvent()), ui.column([
+      ui.text(Phrase.of("Someone tagged is on Tapestry, so this becomes an event when saved, for them to add their own memories to. What was it? Give it a short name."), "Hint").wraps(),
+      ui.field(SETS_EVENT_TITLE, "", { changes: SETS_EVENT_TITLE, shows: editor.eventTitle, label: Phrase.of("The event's name"),
+        placeholder: Phrase.of("e.g. Lake picnic - or leave it, and it takes the memory's title") }),
+    ], "Part")),
+    chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,
+      search: editor.searches.place, looks: LOOKS_FOR_PLACE, matches: ui.bound(() => editor.placeMatches()), pick: PICKS_PLACE,
+      create: ADDS_NEW_PLACE, placeholder: Phrase.of("Type a place") }),
+    // who sees it: said, and changed only when asked to
+    ui.row([
+      ui.column([ui.text(Phrase.of("Who can see it"), "FieldName"), ui.text(audience.map((a) => a.summary), "Seen").wraps()]).grow(),
+      ui.pressable(OPENS_AUDIENCE, {}, [ui.text(editor.audienceOpen.map((o) => Phrase.of(o ? "Done" : "Change")), "Small")], "QuietAction"),
+    ], "AudienceRow"),
+    ui.when(editor.audienceOpen, ui.surface("Card Audience", [ui.column([
+      heading(ui, "Who can see this"),
+      ui.row(AUDIENCES.map(([value, words]) => ui.pressable(SETS_AUDIENCE, { audience: value }, [ui.text(Phrase.of(words), Themes.FACE)], "Segment")
+        .currentWhile(editor.audience.map((a) => a === value))), "Segments"),
+      ui.text(audience.map((a) => Phrase.with("Seen by: %s", [a.summary])), "Seen").wraps(),
+      ui.text(notOn, "Hint").wraps().hidesEmpty(),
+      ui.text(Phrase.of("Let someone in, or keep someone out"), "FieldName"),
+      ui.eachAcross(ui.bound(() => editor.sharesSaid()), (held) => ui.pressable(DROPS_SHARE, held.map((c) => ({ id: c?.id ?? "" })), [
+        ui.text(held.map((c) => c?.label ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (c) => c.id, "Chips"),
+      ui.field(LOOKS_FOR_SHARE, "", { changes: LOOKS_FOR_SHARE, shows: editor.searches.share, placeholder: Phrase.of("Type a name or a circle") }),
+      ui.when(editor.searches.share.map((s) => s.trim() !== ""), ui.each(ui.bound(() => editor.shareMatches()), (held) => ui.row([
+        ui.text(held.map((m) => m?.label ?? ""), "MatchWords").grow(),
+        ui.pressable(LETS_IN, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(Phrase.of("Let in"), "Small")], LINK),
+        ui.pressable(KEEPS_OUT, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(Phrase.of("Keep out"), "Small")], LINK),
+      ], "ShareRow"), (m) => m.id, "Matches")),
+    ], "Part")])),
+    // the rest, seldom needed: what it is part of, its kind, labels, links
+    ui.pressable(OPENS_DETAILS, {}, [ui.text(ui.words(OPENS_DETAILS), "LinkWords"), ui.text(editor.detailsOpen.map((o) => (o ? "✕" : "›")), "RowMark")], "BiggerButton"),
+    ui.when(editor.detailsOpen, ui.column([
     // a period's or an event's kind: its colour on the timeline, and what it is filtered by
     ui.when(kind.map((k) => k !== "memory"), ui.column([
       ui.text(kind.map((k) => Phrase.of(k === "event" ? "What kind of event" : "What kind of time")), "FieldName"),
@@ -726,11 +804,6 @@ export function describeEditor(ui, editor, account) {
         ui.button(ADDS_PERIOD_KIND, { style: LINK }),
       ], "AddRow"),
     ], "Part")),
-    // an event is a grouping of memories: what is written goes in its memories, not on it
-    ui.when(kind.map((k) => k !== "event"), ui.column([
-      ui.text(said("text"), "FieldName"),
-      ui.area(SETS_TEXT, editor.text, "TextArea Words"),
-    ], "Part"), ui.text(Phrase.of("An event holds memories: once it is saved, add yours - and everyone at it adds theirs."), "Hint").wraps()),
     ui.when(isMemory, chooser(ui, { label: Phrase.of("Of an event - one you were at, or name a new one"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
       search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
       create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") })),
@@ -757,39 +830,12 @@ export function describeEditor(ui, editor, account) {
       ui.text(Phrase.of("Asking to be at it"), "FieldName"),
       ui.row([["anyone", "Anyone who sees it may ask"], ["none", "No one may ask"]].map(([value, words]) => ui.pressable(SETS_WHO_ASKS, { asks: value },
         [ui.text(Phrase.of(words), Themes.FACE)], "Segment").currentWhile(editor.asks.map((a) => a === value))), "Segments"),
-      ui.text(Phrase.of("Someone who sees it but wasn't put at it asks you, from the event; you say yes or no in Notices. You put people at it yourself by tagging them under Who was there."), "Hint").wraps(),
+      ui.text(Phrase.of("Someone who sees it but wasn't put at it asks you, from the event; you say yes or no in your Inbox. You put people at it yourself by tagging them under Who was there."), "Hint").wraps(),
     ], "Part")),
-    chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,
-      search: editor.searches.place, looks: LOOKS_FOR_PLACE, matches: ui.bound(() => editor.placeMatches()), pick: PICKS_PLACE,
-      create: ADDS_NEW_PLACE, placeholder: Phrase.of("Type a place") }),
     ui.when(isMemory, chooser(ui, { label: Phrase.of("Labels - yours alone, to find your memories by"), chosen: ui.bound(() => editor.chosenLabels()), unpick: DROPS_LABEL,
       search: editor.searches.label, looks: LOOKS_FOR_LABEL, matches: ui.bound(() => editor.labelMatches()), pick: PICKS_LABEL,
       create: ADDS_LABEL, placeholder: Phrase.of("e.g. school, music, holidays - Enter adds it") })),
-    chooser(ui, { label: said("people"), chosen: ui.bound(() => editor.chosenPeople()), unpick: UNTAGS,
-      search: editor.searches.person, looks: LOOKS_FOR_PERSON, matches: ui.bound(() => editor.personMatches()), pick: TAGS,
-      create: ADDS_NEW_PERSON, placeholder: Phrase.of("Type a name") }),
-    ui.when(ui.bound(() => isMemory.read() && !editor.eventId.read() && !editor.becomesEvent()),
-      ui.text(Phrase.of("Tag someone who is on Tapestry and it becomes an event when saved: your lives meet there, and they add their own memories of it."), "Hint").wraps()),
-    ui.when(ui.bound(() => editor.becomesEvent()), ui.column([
-      ui.text(Phrase.of("Someone tagged is on Tapestry, so this becomes an event when saved, for them to add their own memories to. What was it? Give it a short name."), "Hint").wraps(),
-      ui.field(SETS_EVENT_TITLE, "", { changes: SETS_EVENT_TITLE, shows: editor.eventTitle, label: Phrase.of("The event's name"),
-        placeholder: Phrase.of("e.g. Lake picnic - or leave it, and it takes the memory's title") }),
-    ], "Part")),
     ui.when(isMemory, ui.column([
-      ui.text(Phrase.of("Pictures"), "FieldName"),
-      ui.eachAcross(editor.pictures, (held) => thumbnail(held, held.map((p) => (p ? account.address(p.thumb || p.path) : ""))), (p) => p.id, "EditPictures"),
-      ui.eachAcross(editor.added, (held) => thumbnail(held, held.map((p) => p?.address ?? "")), (p) => p.key, "EditPictures"),
-      ui.file(ADDS_PICTURE, Phrase.of("Add pictures"), { accept: "image/*", multiple: true }),
-      ui.when(ui.bound(() => !!editor.photoSpan()), ui.row([
-        ui.text(ui.bound(() => {
-          const offered = editor.photoSpan();
-          if (!offered) return "";
-          const day = (date) => sayWhen({ date, precision: "day" });
-          return offered.ends ? Phrase.with("These were taken from %s to %s.", [day(offered.starts), day(offered.ends)])
-            : Phrase.with("Taken on %s.", [day(offered.starts)]);
-        }), "Hint").wraps().grow(),
-        ui.button(USES_PHOTO_DATE, { style: LINK }),
-      ], "PhotoDate")),
       ui.text(Phrase.of("Links"), "FieldName"),
       ui.text(Phrase.of("A video, a song, an article. A YouTube link plays in the memory; links in your words count too."), "Hint").wraps(),
       ui.each(editor.links, (held) => ui.row([
@@ -803,22 +849,7 @@ export function describeEditor(ui, editor, account) {
       ], "AddRow"),
       ui.text(ui.bound(() => (editor.linkText.read().trim() ? editor.would(ADDS_LINK) ?? "" : "")), "Hint").hidesEmpty(),
     ], "Part")),
-    ui.surface("Card Audience", [ui.column([
-      heading(ui, "Who can see this"),
-      ui.row(AUDIENCES.map(([value, words]) => ui.pressable(SETS_AUDIENCE, { audience: value }, [ui.text(Phrase.of(words), Themes.FACE)], "Segment")
-        .currentWhile(editor.audience.map((a) => a === value))), "Segments"),
-      ui.text(audience.map((a) => Phrase.with("Seen by: %s", [a.summary])), "Seen").wraps(),
-      ui.text(notOn, "Hint").wraps().hidesEmpty(),
-      ui.text(Phrase.of("Let someone in, or keep someone out"), "FieldName"),
-      ui.eachAcross(ui.bound(() => editor.sharesSaid()), (held) => ui.pressable(DROPS_SHARE, held.map((c) => ({ id: c?.id ?? "" })), [
-        ui.text(held.map((c) => c?.label ?? ""), "ChipWords"), ui.text(Phrase.of("Remove"), "ChipX")], "Chip"), (c) => c.id, "Chips"),
-      ui.field(LOOKS_FOR_SHARE, "", { changes: LOOKS_FOR_SHARE, shows: editor.searches.share, placeholder: Phrase.of("Type a name or a circle") }),
-      ui.when(editor.searches.share.map((s) => s.trim() !== ""), ui.each(ui.bound(() => editor.shareMatches()), (held) => ui.row([
-        ui.text(held.map((m) => m?.label ?? ""), "MatchWords").grow(),
-        ui.pressable(LETS_IN, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(Phrase.of("Let in"), "Small")], LINK),
-        ui.pressable(KEEPS_OUT, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(Phrase.of("Keep out"), "Small")], LINK),
-      ], "ShareRow"), (m) => m.id, "Matches")),
-    ], "Part")]),
+    ], "Details")),
     problem(ui, editor.problem),
     notice(ui, editor.notice),
     // a button that can't be used says nothing (the factory's look): what is missing is said here instead

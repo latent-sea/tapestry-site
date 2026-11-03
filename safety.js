@@ -4,9 +4,9 @@
 // other's, nor comments, nor asks anything (backend.sql, "blocking"), until
 // taken back in You.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { DANGER, LINK } from "./look/look.js?v=8cf5114cd163";
-import { notice, problem } from "./parts.js?v=8cf5114cd163";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { DANGER, LINK } from "./look/look.js?v=e954cd847867";
+import { notice, problem } from "./parts.js?v=e954cd847867";
 
 export const REPORTS = "reports_it";
 export const SETS_REASON = "says_why_it_is_reported";
@@ -73,7 +73,7 @@ export class Safety extends Controller {
     if (action === CONFIRMS_BLOCK) {
       const blocked = this.blocking.read();
       this.blocking.setValue("");
-      this.change(() => this.loom.block(blocked, true), "Blocked. You'll see nothing of theirs, and they nothing of yours. Unblock them in You.");
+      this.change(() => this.loom.block(blocked, true), "Blocked. You'll see nothing of theirs, and they nothing of yours. Unblock them in Settings, under Me.");
     }
     if (action === UNBLOCKS) this.change(() => this.loom.block(payload.account, false), "Unblocked.");
     return null;
@@ -113,7 +113,7 @@ export function describeReporting(ui, safety, key) {
 /** Someone about to be blocked: what it does, said first. */
 export function describeBlocking(ui, safety, account, whose) {
   return ui.when(ui.bound(() => !!safety.blocking.read() && safety.blocking.read() === whose.read()), ui.column([
-    ui.text(ui.bound(() => Phrase.with("Block %s? Neither of you will see anything of the other's, nor can they comment on yours or ask you anything. You can unblock them in You.",
+    ui.text(ui.bound(() => Phrase.with("Block %s? Neither of you will see anything of the other's, nor can they comment on yours or ask you anything. You can unblock them in Settings, under Me.",
       [account.weave.read().nameOf(whose.read())])), "Warn").wraps(),
     ui.row([ui.button(CONFIRMS_BLOCK, { style: DANGER }), ui.button(CANCELS, { style: LINK })], "Actions"),
   ], "Part"));

@@ -4,41 +4,98 @@
    Colours are the look's: --chime-<name>; a thread's own colour is drawn as
    its mark (weave.js, colourOf). */
 
-#app .chime-app { max-width: 46rem; padding-bottom: 6rem; }
+#app .chime-app { max-width: 46rem; padding-bottom: 10rem; }
 #app .chime-screen { gap: 14px; }
 #app .chime-text.Title { font-size: calc(var(--chime-size-face) * 1.9); }
 
-/* the navigation: the menu button and the tabs along the top; on a phone, the menu button stays at the
-   top and the tabs go along the bottom, a row swiped left and right for those past the edge */
-#app .TopNav { justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--chime-lit); padding-bottom: 8px; }
+/* the navigation: four tabs, each an icon over its name - along the top beside the name on a wide
+   screen; on a phone, along the bottom, all four always there, side by side */
+#app .TopNav { justify-content: flex-start; align-items: center; gap: 10px; border-bottom: 1px solid var(--chime-lit); padding-bottom: 8px; }
 #app .Wordmark { font-size: calc(var(--chime-size-face) * 1.375); font-weight: 800; overflow: visible; background: linear-gradient(90deg, var(--chime-accent-end), var(--chime-accent-2-end)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-#app .chime-pressable.MenuButton { background: none; border: 1px solid var(--chime-lit); border-radius: 999px; box-shadow: none; padding: 4px 12px; min-height: 36px; gap: 6px; align-items: center; color: var(--chime-ink); }
-#app .MenuMark { font-size: calc(var(--chime-size-face) * 1.125); line-height: 1; }
-#app .MenuWords { font-size: calc(var(--chime-size-face) * 0.875); font-weight: 600; }
-#app .Nav { gap: 4px; flex-wrap: wrap; flex: 1 1 auto; }
-#app .chime-pressable.NavLink { background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; box-shadow: none; padding: 6px 10px; min-height: 40px; color: var(--chime-ink-soft); flex: 0 0 auto; }
-#app .chime-pressable.NavLink.chime-current { border-bottom-color: var(--chime-accent); color: var(--chime-accent); }
-#app .NavWords { font-size: calc(var(--chime-size-face) * 0.938); font-weight: 600; white-space: nowrap; }
-/* how many notices wait: a small count beside the tab's name */
-#app .chime-pressable.NavLink { gap: 5px; align-items: center; }
-#app .NavCount { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--chime-accent); color: var(--chime-ground, #fff);
-  font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; box-sizing: border-box; }
-#app .MenuItem { justify-content: space-between; align-items: center; }
+#app .Nav { gap: 4px; flex: 1 1 auto; justify-content: flex-end; }
+#app .chime-pressable.NavLink { position: relative; background: none; border: none; border-radius: 12px; box-shadow: none; padding: 6px 14px; min-height: 56px;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--chime-ink-soft); }
+#app .chime-pressable.NavLink.chime-current { color: var(--chime-accent); }
+#app .chime-pressable.NavLink:hover { background: var(--chime-raised); }
+#app .NavIcon { width: 26px; height: 26px; background: currentColor; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+#app .NavWords { font-size: calc(var(--chime-size-face) * 0.813); font-weight: 700; white-space: nowrap; }
+/* how many wait in the inbox: a count on the corner of its icon */
+#app .NavCount { position: absolute; top: 4px; left: calc(50% + 6px); min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--chime-danger);
+  color: var(--chime-ground); font-size: 12px; font-weight: 800; line-height: 20px; text-align: center; box-sizing: border-box; }
+#app .NavIcon-life { -webkit-mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3z%22/%3E%3Cpath d=%22M21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z%22/%3E%3C/svg%3E'); mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3z%22/%3E%3Cpath d=%22M21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z%22/%3E%3C/svg%3E'); }
+#app .NavIcon-people { -webkit-mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%229%22 cy=%228%22 r=%223.5%22/%3E%3Cpath d=%22M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6%22/%3E%3Ccircle cx=%2217%22 cy=%229%22 r=%222.5%22/%3E%3Cpath d=%22M17 14c2.6 0 4.5 1.9 4.5 4.5%22/%3E%3C/svg%3E'); mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%229%22 cy=%228%22 r=%223.5%22/%3E%3Cpath d=%22M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6%22/%3E%3Ccircle cx=%2217%22 cy=%229%22 r=%222.5%22/%3E%3Cpath d=%22M17 14c2.6 0 4.5 1.9 4.5 4.5%22/%3E%3C/svg%3E'); }
+#app .NavIcon-inbox { -webkit-mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 13l3-8h12l3 8v6H3z%22/%3E%3Cpath d=%22M3 13h5l1 3h6l1-3h5%22/%3E%3C/svg%3E'); mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 13l3-8h12l3 8v6H3z%22/%3E%3Cpath d=%22M3 13h5l1 3h6l1-3h5%22/%3E%3C/svg%3E'); }
+#app .NavIcon-me { -webkit-mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7%22/%3E%3C/svg%3E'); mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7%22/%3E%3C/svg%3E'); }
+#app .SearchIcon { -webkit-mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%227%22/%3E%3Cpath d=%22M20 20l-4-4%22/%3E%3C/svg%3E'); mask-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%227%22/%3E%3Cpath d=%22M20 20l-4-4%22/%3E%3C/svg%3E'); }
+#app .SearchIcon { width: 20px; height: 20px; background: currentColor; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+#app .MenuItem { justify-content: space-between; align-items: center; min-height: 56px; }
+#app .RowMark { font-size: calc(var(--chime-size-face) * 1.25); color: var(--chime-ink-soft); }
 #app .TitleRow { align-items: center; gap: 12px; flex-wrap: wrap; }
 #app .HowTo { padding: 14px 16px; }
 #app .InEvent { gap: 2px; padding-left: 10px; border-left: 2px solid var(--chime-lit); }
 #app .InEventLine { font-size: calc(var(--chime-size-face) * 0.875); color: var(--chime-ink); }
 @media (max-width: 40rem) {
-  #app .TopNav { position: sticky; top: 0; z-index: 5; padding: 6px 0; background: var(--chime-ground); }
-  #app .Nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--chime-raised) 92%, transparent);
-    backdrop-filter: blur(10px); border-top: 1px solid var(--chime-lit); padding: 2px 4px calc(2px + env(safe-area-inset-bottom));
-    flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-  #app .Nav::-webkit-scrollbar { display: none; }
-  #app .chime-pressable.NavLink { border-bottom: none; border-top: 2px solid transparent; padding: 6px 12px; gap: 3px; scroll-snap-align: start; }
-  #app .chime-pressable.NavLink.chime-current { border-top-color: var(--chime-accent); }
-  #app .NavWords { font-size: calc(var(--chime-size-face) * 0.75); }
-  #app .NavCount { min-width: 16px; height: 16px; line-height: 16px; font-size: 10px; padding: 0 4px; }
+  #app .TopNav { border-bottom: none; padding: 0; }
+  #app .Wordmark { display: none; }
+  #app .Nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+    background: var(--chime-raised); border-top: 1px solid var(--chime-lit); padding: 4px 0 calc(4px + env(safe-area-inset-bottom)); }
+  #app .chime-pressable.NavLink { border-radius: 0; min-height: 64px; padding: 6px 2px; }
 }
+
+/* Your life: its name and search over its two ways to see it; the prompt; the one Add button */
+#app .LifeTop { align-items: center; gap: 12px; }
+#app .chime-pressable.IconButton { min-height: 48px; padding: 6px 16px; border-radius: 999px; gap: 8px; align-items: center; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
+#app .LifeWays { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 14px; background: var(--chime-raised); }
+#app .LifeWays .chime-pressable.Segment { min-height: 44px; border: none; border-radius: 10px; justify-content: center; font-size: var(--chime-size-face); font-weight: 700; }
+#app .Prompt { gap: 12px; padding: 18px; border-radius: 18px; background: var(--chime-raised); border: 1px solid var(--chime-lit); }
+#app .PromptLabel { font-size: calc(var(--chime-size-face) * 0.875); font-weight: 700; color: var(--chime-accent); }
+#app .PromptWords { font-size: calc(var(--chime-size-face) * 1.4); font-weight: 700; line-height: 1.25; }
+#app .chime-pressable.PromptButton { min-height: 50px; border-radius: 999px; justify-content: center; font-weight: 700; background: var(--chime-lit); border: none; box-shadow: none; color: var(--chime-ink); }
+#app .chime-pressable.PlainLink { align-self: center; background: none; border: none; box-shadow: none; min-height: 40px; padding: 6px 12px; color: var(--chime-accent); font-weight: 700; }
+#app .chime-pressable.PlainLink:hover { background: none; text-decoration: underline; }
+#app .chime-pressable.AddButton { position: fixed; right: max(20px, calc(50vw - 23rem + 20px)); bottom: 28px; z-index: 5; min-height: 56px; padding: 0 26px; border-radius: 999px; gap: 8px;
+  align-items: center; border: none; background: linear-gradient(90deg, var(--chime-accent), var(--chime-accent-end)); color: var(--chime-ground);
+  font-size: calc(var(--chime-size-face) * 1.125); font-weight: 800; box-shadow: 0 6px 20px rgb(0 0 0 / 0.45); }
+#app .AddMark { font-size: calc(var(--chime-size-face) * 1.5); line-height: 1; font-weight: 800; }
+@media (max-width: 40rem) { #app .chime-pressable.AddButton { right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); } }
+#app .EmptyLife { align-items: center; text-align: center; gap: 14px; padding: 48px 20px; }
+#app .EmptyTitle { font-size: calc(var(--chime-size-face) * 1.6); font-weight: 800; }
+#app .EmptyLine { font-size: calc(var(--chime-size-face) * 1.125); color: var(--chime-ink-soft); line-height: 1.5; }
+#app .chime-pressable.BigAction { min-height: 60px; padding: 0 30px; border-radius: 999px; gap: 10px; align-items: center; border: none; margin-top: 10px;
+  background: linear-gradient(90deg, var(--chime-accent), var(--chime-accent-end)); color: var(--chime-ground); font-size: calc(var(--chime-size-face) * 1.15); font-weight: 800; }
+
+/* what is being added, asked over the screen: a memory first, then the two less often wanted */
+#app .AddSheet { gap: 12px; min-width: min(26rem, 84vw); }
+#app .chime-pressable.AddChoice { flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px 18px; border-radius: 16px; text-align: left;
+  background: var(--chime-ground); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
+#app .chime-pressable.AddChoiceMain { background: linear-gradient(90deg, var(--chime-accent), var(--chime-accent-end)); border: none; color: var(--chime-ground); }
+#app .AddChoiceWrap { gap: 0; }
+#app .AddChoiceTitle { font-size: calc(var(--chime-size-face) * 1.2); font-weight: 800; }
+#app .AddChoiceLine { font-size: calc(var(--chime-size-face) * 0.938); }
+@media (max-width: 40rem) {
+  #app .chime-shade:has(.AddSheet) { align-items: flex-end; }
+  #app .chime-sheet:has(.AddSheet) { width: 100%; max-width: none; border-radius: 24px 24px 0 0; padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); }
+}
+
+/* a memory's page: the way back, Edit and More along the top; More's actions under them, when open */
+#app .ItemTop { align-items: center; justify-content: space-between; gap: 10px; }
+#app .ItemTools { gap: 8px; align-items: center; }
+#app .chime-pressable.BackButton { background: none; border: none; box-shadow: none; padding: 6px 6px; min-height: 44px; gap: 6px; align-items: center; color: var(--chime-accent); font-weight: 700; }
+#app .BackMark { font-size: calc(var(--chime-size-face) * 1.5); line-height: 1; }
+#app .chime-pressable.QuietAction { min-height: 44px; padding: 6px 16px; border-radius: 999px; gap: 6px; align-items: center; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
+#app .MoreMark { font-size: calc(var(--chime-size-face) * 1.1); line-height: 1; }
+#app .MorePanel { gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); }
+#app .chime-pressable.BiggerButton { justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 16px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
+#app .BiggerPanel, #app .Details { gap: 12px; }
+#app .PeopleWays { flex-wrap: wrap; }
+
+/* Me: who they are, then a row for each thing of theirs */
+#app .MeTop { align-items: center; gap: 16px; }
+#app .MeMark { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--chime-accent); color: var(--chime-ground);
+  font-size: calc(var(--chime-size-face) * 1.6); font-weight: 800; flex: 0 0 auto; }
+
+/* the editor: who sees it, said, with the way to change it */
+#app .AudienceRow { align-items: center; gap: 12px; }
 
 /* the door */
 #app .Door { max-width: 28rem; margin: 12vh auto 0; gap: 18px; text-align: center; align-items: center; }
@@ -48,7 +105,7 @@
 /* Google's button is its own page in a frame: told the page is dark, a browser paints white behind it; as light, its own corners show through */
 #app .GoogleButton { color-scheme: light; }
 /* on a phone, our own button that goes to Google and back: drawn as Google's own pill, on the page's ground */
-#app .GoogleButton .google-redirect { min-height: 44px; padding: 0 1.25rem 0 2.9rem; border: 1px solid #dadce0; border-radius: 999px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%23EA4335' d='M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z'/%3E%3Cpath fill='%234285F4' d='M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'/%3E%3Cpath fill='%23FBBC05' d='M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z'/%3E%3Cpath fill='%2334A853' d='M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z'/%3E%3C/svg%3E") no-repeat 1rem center / 20px 20px; color: #1f1f1f; font: 500 0.95rem/1 var(--chime-font, inherit); cursor: pointer; -webkit-appearance: none; appearance: none; }
+#app .GoogleButton .google-redirect { min-height: 44px; padding: 0 1.25rem 0 2.9rem; border: 1px solid #dadce0; border-radius: 999px; background: #fff url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 48 48%27%3E%3Cpath fill=%27%23EA4335%27 d=%27M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z%27/%3E%3Cpath fill=%27%234285F4%27 d=%27M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z%27/%3E%3Cpath fill=%27%23FBBC05%27 d=%27M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z%27/%3E%3Cpath fill=%27%2334A853%27 d=%27M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z%27/%3E%3C/svg%3E') no-repeat 1rem center / 20px 20px; color: #1f1f1f; font: 500 0.95rem/1 var(--chime-font, inherit); cursor: pointer; -webkit-appearance: none; appearance: none; }
 #app .Door .chime-field-holder { width: 100%; text-align: left; }
 
 /* words */

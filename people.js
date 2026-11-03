@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=8cf5114cd163";
-import { few, heading, mark, notice, problem } from "./parts.js?v=8cf5114cd163";
-import { CARD, DANGER, LINK } from "./look/look.js?v=8cf5114cd163";
-import { describeIsThisYou } from "./asking.js?v=8cf5114cd163";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=8cf5114cd163";
-import { parseWhen, sayWhen } from "./when.js?v=8cf5114cd163";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { few, heading, mark, notice, problem } from "./parts.js?v=e954cd847867";
+import { CARD, DANGER, LINK } from "./look/look.js?v=e954cd847867";
+import { describeIsThisYou } from "./asking.js?v=e954cd847867";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=e954cd847867";
+import { parseWhen, sayWhen } from "./when.js?v=e954cd847867";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -257,7 +257,7 @@ function keptOrder() {
 export function linkTo(token) { return `${location.origin}${location.pathname}#join/${token}`; }
 
 /** The member's people and circles. */
-export function describePeople(ui, people, account) {
+export function describePeople(ui, people, account, ways = null) {
   const counts = account.weave.map((w) => w.memoryCounts());
   const list = ui.bound(() => {
     const all = account.weave.read().data.people;
@@ -267,8 +267,9 @@ export function describePeople(ui, people, account) {
   });
   const circles = account.weave.map((w) => w.data.circles);
   return ui.screen(PEOPLE, [
-    ui.text(Phrase.of("Your people"), "Title"),
-    ui.text(Phrase.of("Anyone you tag or want to find things by. Invite someone to link their own life: then your lives meet wherever you tag each other."), "Hint").wraps(),
+    ui.text(Phrase.of("People"), "Title"),
+    ...(ways ? [ways] : []),
+    ui.text(Phrase.of("Add someone by name. Invite them from their page to link their own life: then your lives meet wherever you tag each other."), "Hint").wraps(),
     ui.row([
       ui.field(ADDS_PERSON, "", { changes: SETS_NEW_PERSON, shows: people.newName, placeholder: Phrase.of("Someone's name") }).grow(),
       ui.button(ADDS_PERSON),
@@ -278,16 +279,16 @@ export function describePeople(ui, people, account) {
     ui.when(list.map((l) => l.length === 0), ui.text(Phrase.of("No one yet."), "Quiet")),
     ui.when(list.map((l) => l.length > 1), ui.row([["name", "A to Z"], ["memories", "Most memories together"]].map(([order, said]) =>
       ui.pressable(ORDERS_PEOPLE, { order }, [ui.text(Phrase.of(said), Themes.FACE)], "Segment").currentWhile(people.order.map((o) => o === order))), "Segments")),
-    ui.surface("Card HowTo", [ui.column([
-      ui.text(Phrase.of("Inviting someone"), "FieldName"),
-      ...HOW_TO_INVITE.map((step) => ui.text(Phrase.of(step), "Hint").wraps()),
-    ], "Part")]),
     few(ui, "people", list, (p) => p.name, (held) => ui.pressable(OPENS_PERSON, held.map((p) => ({ parameter: p?.id ?? "" })), [ui.row([
       mark(ui, held.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6"))),
       ui.text(held.map((p) => p?.name ?? ""), "PersonName").grow(),
       ui.text(ui.bound(() => { const n = counts.read().get(held.read()?.id) ?? 0; return n ? Phrase.counted("%d memory", "%d memories", n) : ""; }), "Quiet").hidesEmpty(),
       ui.text(held.map((p) => Phrase.of(p?.account ? "On Tapestry" : p?.invite ? "Invited" : "A name")), "Quiet"),
     ], "PersonRow")], `${CARD} ListItem`).goesTo(PERSON), { finds: "Find one of your people by name", across: false, keyOf: (p) => p.id, style: "List", browsed: true }),
+    ui.surface("Card HowTo", [ui.column([
+      ui.text(Phrase.of("Inviting someone"), "FieldName"),
+      ...HOW_TO_INVITE.map((step) => ui.text(Phrase.of(step), "Hint").wraps()),
+    ], "Part")]),
     heading(ui, "Circles"),
     ui.text(Phrase.of("Groups of your people - Family, Old friends - to let in or keep out at once. Put people in a circle from their own page."), "Hint").wraps(),
     ui.row([
