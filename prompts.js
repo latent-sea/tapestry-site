@@ -9,7 +9,7 @@
 // Which questions were answered is kept on the device (an answered question
 // is not asked there again).
 
-import { Controller } from "./gd_chime/gd_chime.js?v=e954cd847867";
+import { Controller } from "./gd_chime/gd_chime.js?v=8119535153ea";
 
 export const ASKS_ANOTHER = "asks_me_something_else";
 export const WORDS = { [ASKS_ANOTHER]: ["Ask me something else"] };

@@ -5,12 +5,13 @@
 // drawn together while they share them: what they share pulls them close
 // about its time, every life pushes every other away so none lie on each
 // other, and each line is stiff, so it bends slowly and settles where it is
-// pulled rather than jumping about. Drawn flat (2D: time across, each life
+// pulled rather than jumping about. The member's own life is straight, held
+// where it is: the others bend towards it and away. Drawn flat (2D: time across, each life
 // up and down) or in space (3D: time along, each life free in the other
 // two). Plain data in, plain data out, tested by tests/test_lives.mjs.
 
-import { lastDayOf } from "./when.js?v=e954cd847867";
-import { yearsOf } from "./woven.js?v=e954cd847867";
+import { lastDayOf } from "./when.js?v=8119535153ea";
+import { yearsOf } from "./woven.js?v=8119535153ea";
 
 export const GREY = "#7d869c";
 const FADE = 2; // years a line fades in over, before the first thing with someone whose birth isn't known
@@ -85,7 +86,8 @@ export function livesOf(weave, now = new Date()) {
  * its death. Worked out by letting the lives settle: what two share pulls
  * them together about its time (a period all through it); every two alive
  * at once push apart; each line resists bending, and is held lightly to
- * where it began, so the same tapestry always settles the same way.
+ * where it began, so the same tapestry always settles the same way. The
+ * member's own (the first) is held straight, at the middle: the rest move.
  */
 /**
  * How the lives settle, each a step of five (0 to 4, 2 the middle): pull, how strongly what two share draws
@@ -182,7 +184,8 @@ export function layOut(drawn, dims = 1, rounds = 220, tuning = TUNING) {
         }
       }
     }
-    for (let a = 0; a < n; a++) {
+    // the member's own life (the first) stays straight where it is; every other moves
+    for (let a = 1; a < n; a++) {
       for (let s = 0; s < count; s++) {
         if (!alive[a][s]) continue;
         const pa = slot(a, s);
