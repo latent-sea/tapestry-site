@@ -10,11 +10,11 @@
 // the platform, which asks for the open portal itself: nothing here decides
 // who may see what.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e22a9830ec8b";
-import { heading, notice, problem } from "./parts.js?v=e22a9830ec8b";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e22a9830ec8b";
-import { HOW_TO_INVITE } from "./people.js?v=e22a9830ec8b";
-import { sayAgo } from "./notices.js?v=e22a9830ec8b";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=ecb04c4e3102";
+import { heading, notice, problem } from "./parts.js?v=ecb04c4e3102";
+import { CARD, DANGER, LINK } from "./look/look.js?v=ecb04c4e3102";
+import { HOW_TO_INVITE } from "./people.js?v=ecb04c4e3102";
+import { sayAgo } from "./notices.js?v=ecb04c4e3102";
 
 export const ADMIN = "admin";
 

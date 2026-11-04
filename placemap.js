@@ -6,13 +6,13 @@
 // come from OpenStreetMap's servers, and "Find on the map" asks
 // OpenStreetMap's Nominatim; nothing else is sent anywhere.
 
-const LEAFLET = new URL("./vendor/leaflet/", import.meta.url);
-const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+export const LEAFLET = new URL("./vendor/leaflet/", import.meta.url);
+export const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+export const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 let loading = null;
 /** Leaflet, loaded the first time a map is shown: window.L. */
-function leaflet() {
+export function leaflet() {
   loading ??= new Promise((done, failed) => {
     const style = document.createElement("link");
     style.rel = "stylesheet";

@@ -2,14 +2,15 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=e22a9830ec8b";
-import { few, heading, notice, problem } from "./parts.js?v=e22a9830ec8b";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=e22a9830ec8b";
-import { CARD, DANGER, LINK } from "./look/look.js?v=e22a9830ec8b";
-import { describeMerge } from "./asking.js?v=e22a9830ec8b";
-import { addressOf } from "./weave.js?v=e22a9830ec8b";
-import { findOnMap } from "./placemap.js?v=e22a9830ec8b";
-import { REPORTS, describeReporting } from "./safety.js?v=e22a9830ec8b";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=ecb04c4e3102";
+import { few, heading, notice, problem } from "./parts.js?v=ecb04c4e3102";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=ecb04c4e3102";
+import { CARD, DANGER, LINK } from "./look/look.js?v=ecb04c4e3102";
+import { describeMerge } from "./asking.js?v=ecb04c4e3102";
+import { addressOf } from "./weave.js?v=ecb04c4e3102";
+import { findOnMap } from "./placemap.js?v=ecb04c4e3102";
+import { memoryDots } from "./memorymap.js?v=ecb04c4e3102";
+import { REPORTS, describeReporting } from "./safety.js?v=ecb04c4e3102";
 
 // a place's address, part by part, each as a letter has it: every one may be left empty
 const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],
@@ -168,8 +169,26 @@ export class Places extends Controller {
 
 export function describePlaces(ui, places, account) {
   const list = account.weave.map((w) => w.data.places.filter((p) => p.owner === w.meId));
+  // the memories on the map: kept for each load, so the map is drawn again only when they change (site.js, keepMemoryMap)
+  const plotted = account.weave.map((w) => w.kept("memory-map", () => memoryDots(w)));
   return ui.screen(PLACES, [
     ui.text(Phrase.of("Your places"), "Title"),
+    // every memory at a place with a point, coloured by when it was
+    ui.text(Phrase.of("Your memories on the map"), "PartHeading"),
+    ui.when(plotted.map((p) => p.dots.length > 0), ui.column([
+      ui.surface("MemoryMap", []).named("memory-map"),
+      ui.row([
+        ui.text(plotted.map((p) => String(p.from ?? "")), "Quiet"),
+        ui.text("", "DateRamp").grow(),
+        ui.text(plotted.map((p) => String(p.to ?? "")), "Quiet"),
+      ], "DateKey"),
+    ])),
+    ui.text(plotted.map((p) => (p.dots.length
+      ? Phrase.counted("%d memory on the map, coloured by when: the oldest purple, the newest yellow. Press a dot to see it.",
+        "%d memories on the map, coloured by when: the oldest purple, the newest yellow. Press a dot to see it.", p.dots.length)
+      : Phrase.of("No memories on the map yet: give a place its point (open it, then press the map), and its memories are on it."))), "Hint").wraps(),
+    ui.text(plotted.map((p) => (p.missing ? Phrase.counted("%d more is at a place with no point yet.", "%d more are at places with no point yet.", p.missing) : "")), "Hint")
+      .wraps().hidesEmpty(),
     ui.text(Phrase.of("Where things happened. Open one to see everything at it."), "Hint").wraps(),
     ui.row([
       ui.field(ADDS_PLACE, "", { changes: SETS_NEW_PLACE, shows: places.newName, placeholder: Phrase.of("Grandma's house, The Crown, Leeds…") }).grow(),
