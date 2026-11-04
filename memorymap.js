@@ -1,13 +1,13 @@
 // The member's memories on a map (the Places screen): each a dot at its place's
 // point - its own place, or its event's - coloured by when it was, oldest deep
-// purple through blue and teal to the newest yellow. Several at one place
-// spread into a small ring, so none hides another. A dot pressed says what and
-// when, and opens it. Only places with a point are on it: a point is the
+// purple through blue and teal to the newest yellow. Several at one place are
+// one pie, a slice each in its own colour, oldest first. A dot or a pie pressed
+// says what and when, and opens it. Only places with a point are on it: a point is the
 // place owner's alone to see (backend.sql, places). The map's pictures come
 // from OpenStreetMap, as a place's own map's do (placemap.js).
 
-import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=be889b79f4e4";
-import { yearsOf } from "./woven.js?v=be889b79f4e4";
+import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=26e015de3eb7";
+import { yearsOf } from "./woven.js?v=26e015de3eb7";
 
 /** The colours from oldest to newest, evenly along the way. */
 export const RAMP = ["#4b2a8c", "#3b5bdb", "#1c9fc9", "#19c3b3", "#7bd389", "#f2c14e"];
@@ -25,9 +25,10 @@ export function dateColour(f) {
 }
 
 /**
- * The memories to plot: { dots, missing, from, to } - each dot { key, id, title, said, lat, lng, years, colour,
- * ring, of } (ring its place in the ring of those at one point, of how many there are); missing, how many of the
- * member's own memories are at a place with no point; from and to, the first and last year among the dots.
+ * The memories to plot: { dots, points, missing, from, to } - each dot { key, id, title, said, lat, lng, years, colour };
+ * points, the dots gathered by where they are, { lat, lng, dots } (oldest first: a pie's slices, when there are
+ * several); missing, how many of the member's own memories are at a place with no point; from and to, the first
+ * and last year among the dots.
  */
 export function memoryDots(weave) {
   const pointOf = (placeId) => {
@@ -58,11 +59,18 @@ export function memoryDots(weave) {
     if (!atPoint.has(at)) atPoint.set(at, []);
     atPoint.get(at).push(dot);
   }
-  for (const together of atPoint.values()) together.forEach((dot, i) => { dot.ring = i; dot.of = together.length; });
-  return { dots, missing, from, to };
+  const points = [...atPoint.values()].map((together) => ({ lat: together[0].lat, lng: together[0].lng, dots: together }));
+  return { dots, points, missing, from, to };
 }
 
 const escape = (text) => String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** A point's look: a dot in its one colour, or a pie of several - a slice each, oldest from the top, clockwise. */
+export function pieOf(dots) {
+  if (dots.length === 1) return dots[0].colour;
+  const step = 360 / dots.length;
+  return `conic-gradient(${dots.map((d, i) => `${d.colour} ${Math.round(i * step * 100) / 100}deg ${Math.round((i + 1) * step * 100) / 100}deg`).join(", ")})`;
+}
 
 /** The map drawn into its place on the page (#memory-map) whenever the Places screen is shown, again as the memories change. */
 export class MemoryMap {
@@ -89,18 +97,16 @@ export class MemoryMap {
     if (this.drawn === plotted) return;
     this.drawn = plotted;
     this.layer.clearLayers();
-    const SIZE = 16;
-    for (const dot of plotted.dots) {
-      // several at one point: a ring around it, a few pixels out, whatever the zoom
-      const spread = dot.of > 1 ? 9 + dot.of * 1.5 : 0;
-      const angle = (dot.ring / dot.of) * Math.PI * 2;
-      const dx = Math.round(Math.cos(angle) * spread);
-      const dy = Math.round(Math.sin(angle) * spread);
-      const icon = L.divIcon({ className: "MemoryDot", iconSize: [SIZE, SIZE], iconAnchor: [SIZE / 2 - dx, SIZE / 2 - dy],
-        html: `<span style="background:${dot.colour}"></span>` });
-      L.marker([dot.lat, dot.lng], { icon, title: `${dot.title}, ${dot.said}`, keyboard: true })
-        .bindPopup(`<a class="MemoryDotLink" href="#memory/${encodeURIComponent(dot.id)}"><strong>${escape(dot.title)}</strong><br>${escape(dot.said)}</a>`)
-        .addTo(this.layer);
+    for (const point of plotted.points) {
+      // one memory a dot; several a pie, a little bigger the more there are
+      const many = point.dots.length > 1;
+      const size = many ? Math.min(40, Math.round(20 + 4 * Math.sqrt(point.dots.length))) : 16;
+      const icon = L.divIcon({ className: `MemoryDot${many ? " MemoryPie" : ""}`, iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+        html: `<span style="background:${pieOf(point.dots)}"></span>${many ? `<b>${point.dots.length}</b>` : ""}` });
+      const said = point.dots.map((d) => `<a class="MemoryDotLink" href="#memory/${encodeURIComponent(d.id)}"><i style="background:${d.colour}"></i>`
+        + `<span><strong>${escape(d.title)}</strong><br>${escape(d.said)}</span></a>`).join("");
+      const title = many ? `${point.dots.length} memories here` : `${point.dots[0].title}, ${point.dots[0].said}`;
+      L.marker([point.lat, point.lng], { icon, title, keyboard: true }).bindPopup(`<div class="MemoryPopup">${said}</div>`, { maxHeight: 260 }).addTo(this.layer);
     }
     // zoomed out to fit every dot
     if (plotted.dots.length) {

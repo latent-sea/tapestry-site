@@ -5,9 +5,9 @@
 // Yes puts it on their life, timeline and tapestry; no takes them off it.
 // Once on it, its page lets them change their name for it.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=be889b79f4e4";
-import { ACTION, LINK } from "./look/look.js?v=be889b79f4e4";
-import { notice, problem } from "./parts.js?v=be889b79f4e4";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=26e015de3eb7";
+import { ACTION, LINK } from "./look/look.js?v=26e015de3eb7";
+import { notice, problem } from "./parts.js?v=26e015de3eb7";
 
 export const TYPES_OWN_NAME = "types_my_name_for_it";
 export const TAKES_ON = "puts_it_on_my_life";
