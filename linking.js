@@ -5,9 +5,9 @@
 // offered until something is typed. Put into someone else's event, it waits
 // for whoever runs it to approve it.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=26e015de3eb7";
-import { LINK } from "./look/look.js?v=26e015de3eb7";
-import { notice, problem } from "./parts.js?v=26e015de3eb7";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=15335c30de70";
+import { LINK } from "./look/look.js?v=15335c30de70";
+import { notice, problem } from "./parts.js?v=15335c30de70";
 
 export const FINDS_MEMORY_TO_ADD = "finds_a_memory_of_mine_to_add";
 export const ADDS_KEPT_MEMORY = "adds_a_memory_of_mine_to_it";

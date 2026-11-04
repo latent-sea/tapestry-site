@@ -6,8 +6,8 @@
 // place owner's alone to see (backend.sql, places). The map's pictures come
 // from OpenStreetMap, as a place's own map's do (placemap.js).
 
-import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=26e015de3eb7";
-import { yearsOf } from "./woven.js?v=26e015de3eb7";
+import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=15335c30de70";
+import { yearsOf } from "./woven.js?v=15335c30de70";
 
 /** The colours from oldest to newest, evenly along the way. */
 export const RAMP = ["#4b2a8c", "#3b5bdb", "#1c9fc9", "#19c3b3", "#7bd389", "#f2c14e"];
@@ -101,8 +101,8 @@ export class MemoryMap {
       // one memory a dot; several a pie, a little bigger the more there are
       const many = point.dots.length > 1;
       const size = many ? Math.min(40, Math.round(20 + 4 * Math.sqrt(point.dots.length))) : 16;
-      const icon = L.divIcon({ className: `MemoryDot${many ? " MemoryPie" : ""}`, iconSize: [size, size], iconAnchor: [size / 2, size / 2],
-        html: `<span style="background:${pieOf(point.dots)}"></span>${many ? `<b>${point.dots.length}</b>` : ""}` });
+      const icon = L.divIcon({ className: "MemoryDot", iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+        html: `<span style="background:${pieOf(point.dots)}"></span>` });
       const said = point.dots.map((d) => `<a class="MemoryDotLink" href="#memory/${encodeURIComponent(d.id)}"><i style="background:${d.colour}"></i>`
         + `<span><strong>${escape(d.title)}</strong><br>${escape(d.said)}</span></a>`).join("");
       const title = many ? `${point.dots.length} memories here` : `${point.dots[0].title}, ${point.dots[0].said}`;
