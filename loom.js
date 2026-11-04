@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=ecb04c4e3102";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=ecb04c4e3102";
-import { shrinkPicture } from "./backend/pictures.js?v=ecb04c4e3102";
+import { Backend } from "./backend/backend.js?v=be889b79f4e4";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=be889b79f4e4";
+import { shrinkPicture } from "./backend/pictures.js?v=be889b79f4e4";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -514,9 +514,11 @@ export class Loom {
   }
 
   /** A place's name, notes and address: { name, notes, street, street_2, town, region, postcode, country }, every part of its address as typed. */
+  /** A place's name, notes and address saved - and its point on the map, or none (both or neither: backend.sql). */
   async savePlace(id, place) {
     const parts = Object.fromEntries(ADDRESS.map((part) => [part, String(place[part] ?? "").trim()]));
-    return answer(await this.backend.update("tapestry_places", by(id), { name: place.name.trim(), notes: place.notes ?? "", ...parts }));
+    const point = Number.isFinite(place.lat) && Number.isFinite(place.lng) ? { lat: place.lat, lng: place.lng } : { lat: null, lng: null };
+    return answer(await this.backend.update("tapestry_places", by(id), { name: place.name.trim(), notes: place.notes ?? "", ...parts, ...point }));
   }
 
   async deletePlace(id) { return answer(await this.backend.delete("tapestry_places", by(id))); }
