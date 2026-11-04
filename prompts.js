@@ -1,18 +1,17 @@
-// The prompt on the home screen: one at a time, a different one each visit,
-// another at a press. Three sorts, taken in turn:
+// The prompt on the home screen: one at a time, a different one each visit.
+// Three sorts, taken in turn:
 //   a question to write about ("What's your first memory?"), opening a new
 //     memory with the question above it - asked until it is answered;
-//   a pointer somewhere else in Tapestry, from what the member has
-//     ("Who else was at Sam's 40th?", "See where your life crosses Mum's");
-//   a look back at the member's own life: a memory at random, a year at
-//     random, or what happened on this day.
+//   a pointer to what Tapestry can do that is a step out of sight, from what
+//     the member has: the tapestry of lives (and in 3D), a memory on the
+//     timeline with what was around it, merging an event, a person or a place
+//     set up twice, a memory put in something bigger - and who else was there;
+//   a look back: what happened on this day, in an earlier year.
+// Pointers come round twice as often as questions; a look back when there is one.
 // Which questions were answered is kept on the device (an answered question
 // is not asked there again).
 
-import { Controller } from "./gd_chime/gd_chime.js?v=8119535153ea";
-
-export const ASKS_ANOTHER = "asks_me_something_else";
-export const WORDS = { [ASKS_ANOTHER]: ["Ask me something else"] };
+import { Controller } from "./gd_chime/gd_chime.js?v=e22a9830ec8b";
 
 const ANSWERED_KEPT = "tapestry_answered";
 
@@ -135,7 +134,7 @@ export function markAnswered(n) {
 /** The question by its number, or "" for none. */
 export const questionOf = (n) => QUESTIONS[Number(n)] ?? "";
 
-const SORTS = ["ask", "point", "back"];
+const SORTS = ["point", "ask", "point", "back"];
 
 export class Prompts extends Controller {
   constructor(chimes, account, random = Math.random) {
@@ -148,21 +147,16 @@ export class Prompts extends Controller {
     this.done = this.value(answered());
   }
 
-  answers() { return [ASKS_ANOTHER]; }
-
-  told(action) {
-    if (action === ASKS_ANOTHER) this.turn.update((n) => n + 1);
-    return null;
-  }
+  answers() { return []; }
 
   /** A question was answered: taken out of what is asked. */
   answered(n) { markAnswered(n); this.done.setValue(answered()); }
 
   /**
    * The prompt now: { sort, label, words, button, via, parameter }, via naming what the button does -
-   * "write" (a new memory answering question parameter), "open" (an item, by key), "year" (the life in one year),
-   * "edit" (an item's editor, by key), "addTo" (a new memory in a period, by id), "tapestry", "people",
-   * "find" or "settings". Never null: there is always a question.
+   * "write" (a new memory answering question parameter), "open" (an item, by key),
+   * "timeline" (an item on the timeline, with what was around it, by key), "edit" (an item's editor, by key),
+   * "person" or "place" (its page, by id), "tapestry", "tapestry3d", "people", "find" or "settings". Never null: there is always a question.
    */
   current() {
     const turn = this.turn.read();
@@ -170,7 +164,8 @@ export class Prompts extends Controller {
     for (let step = 0; step < SORTS.length; step++) {
       const sort = SORTS[(turn + step) % SORTS.length];
       const list = choices[sort];
-      if (list.length) return { sort, ...list[(Math.floor(turn / SORTS.length) * 7 + this.seed) % list.length] };
+      // each turn its own one of the sort, going through the list: the same twice only once it has come round
+      if (list.length) return { sort, ...list[((turn + step) * 7 + this.seed) % list.length] };
     }
     return { sort: "ask", label: "A question for you", words: QUESTIONS[0], button: "Write about it", via: "write", parameter: "0" };
   }
@@ -186,44 +181,56 @@ export class Prompts extends Controller {
     const w = this.account.weave.read();
     const mine = w.thread(w.meId);
     const out = [];
-    // lives that cross: each of the member's people who is on Tapestry
-    for (const person of w.data.people.filter((p) => p.account).slice(0, 6)) {
-      out.push({ label: `Your life and ${person.name}'s`, words: `See where your life crosses ${person.name}'s`, button: "Show me", via: "tapestry" });
+    const quoted = (entry) => `“${entry.title}”`;
+    const TRY = "Something to try";
+    // the tapestry: lives woven together, flat or in space
+    out.push({ label: TRY, words: "See your life woven with the lives of everyone you know: a line each, drawn together where you meet.", button: "Show me the tapestry", via: "tapestry" });
+    out.push({ label: TRY, words: "The tapestry turns in 3D too: everyone's lives as threads in space, to walk among.", button: "Show it in 3D", via: "tapestry3d" });
+    for (const person of w.data.people.filter((p) => p.account).slice(0, 3)) {
+      out.push({ label: TRY, words: `See where your life crosses ${person.name}'s, on the tapestry.`, button: "Show me", via: "tapestry" });
+    }
+    // a memory on the timeline, with what was around it
+    const dated = mine.filter((e) => e.kind === "memory" && e.mine && e.title && e.when?.date);
+    for (let i = 0; i < Math.min(3, dated.length); i++) {
+      const entry = dated[(this.seed + i * 11) % dated.length];
+      out.push({ label: TRY, words: `What else was going on around ${quoted(entry)}? See it on your timeline, with everything either side.`, button: "Show me", via: "timeline", parameter: entry.key });
     }
     if (w.writes) {
-      // an event of the member's no one else is in yet
-      for (const event of mine.filter((e) => e.kind === "event" && e.mine && !(e.people ?? []).length).slice(0, 4)) {
-        out.push({ label: event.title, words: `Who else was at ${event.title}?`, button: "Add who was there", via: "edit", parameter: event.key });
+      // something set up twice, merged into one: an event, a person, a place
+      for (const event of mine.filter((e) => e.kind === "event" && e.mine).slice(0, 2)) {
+        out.push({ label: TRY, words: `Is ${quoted(event)} on someone else's life too, or set up twice? Open it, press More, and merge the two into one.`, button: "Open it", via: "open", parameter: event.key });
       }
-      // a period of the member's with little in it
-      for (const period of mine.filter((e) => e.kind === "period" && e.mine).slice(0, 4)) {
-        out.push({ label: period.title, words: `What else happened during ${period.title}?`, button: "Add a memory to it", via: "addTo", parameter: period.id });
+      const named = w.data.people.filter((p) => !p.account);
+      if (named.length > 1) {
+        const person = named[this.seed % named.length];
+        out.push({ label: TRY, words: `Typed someone in twice, under two names? On their page, merge the two into one person - ${person.name}, say.`, button: `Open ${person.name}`, via: "person", parameter: person.id });
+      }
+      const places = w.data.places ?? [];
+      if (places.length > 1) {
+        const place = places[this.seed % places.length];
+        out.push({ label: TRY, words: `The same place under two names? On its page, merge the two into one - ${place.name}, say.`, button: `Open ${place.name}`, via: "place", parameter: place.id });
+      }
+      // a memory put in something bigger: an event of its own, or a period of life
+      const loose = mine.filter((e) => e.kind === "memory" && e.mine && e.title && !e.event?.title);
+      if (loose.length) {
+        const entry = loose[(this.seed * 7) % loose.length];
+        out.push({ label: TRY, words: `Was ${quoted(entry)} part of something bigger, like a holiday? On it, press Part of something bigger?`, button: "Open it", via: "open", parameter: entry.key });
+      }
+      // an event of the member's no one else is in yet
+      for (const event of mine.filter((e) => e.kind === "event" && e.mine && !(e.people ?? []).length).slice(0, 2)) {
+        out.push({ label: TRY, words: `Who else was at ${quoted(event)}? Tag them, and it's on their life too.`, button: "Add who was there", via: "edit", parameter: event.key });
       }
     }
-    if (!w.data.people.length) out.push({ label: "Your people", words: "Who's in your life story? Add the people who matter to you.", button: "Go to People", via: "people" });
-    else out.push({ label: "Your people", words: "Invite someone to Tapestry, so your lives can meet here", button: "Go to People", via: "people" });
-    out.push({ label: "Shared with everyone", words: "See what others have shared with everyone on Tapestry", button: "Have a look", via: "find" });
-    if (!w.born) out.push({ label: "Your birthday", words: "When's your birthday? Then Tapestry can say how old you were at each memory.", button: "Add your birthday", via: "settings" });
+    if (!w.data.people.length) out.push({ label: TRY, words: "Who's in your life story? Add the people who matter to you.", button: "Go to People", via: "people" });
+    else out.push({ label: TRY, words: "Invite someone to Tapestry, so your lives can meet here.", button: "Go to People", via: "people" });
+    out.push({ label: TRY, words: "See what others have shared with everyone on Tapestry.", button: "Have a look", via: "find" });
+    if (!w.born) out.push({ label: TRY, words: "When's your birthday? Then Tapestry can say how old you were at each memory.", button: "Add your birthday", via: "settings" });
     return out;
   }
 
+  /** On this day, in an earlier year: a memory, an event or a period of theirs. (A memory or a year at random are buttons of their own.) */
   lookingBack() {
     const w = this.account.weave.read();
-    const mine = w.thread(w.meId);
-    const out = [];
-    for (const entry of w.onThisDay().slice(0, 3)) {
-      out.push({ label: "On this day", words: `${entry.title}${entry.said ? `, ${entry.said}` : ""}`, button: "Open it", via: "open", parameter: entry.key });
-    }
-    const memories = mine.filter((e) => e.kind === "memory" && e.title);
-    for (let i = 0; i < Math.min(3, memories.length); i++) {
-      const entry = memories[(this.seed + i * 13) % memories.length];
-      out.push({ label: "Remember this?", words: `${entry.title}${entry.said ? `, ${entry.said}` : ""}`, button: "Open it", via: "open", parameter: entry.key });
-    }
-    const years = [...new Set(mine.filter((e) => e.when?.date).map((e) => e.when.date.slice(0, 4)))];
-    for (let i = 0; i < Math.min(2, years.length); i++) {
-      const year = years[(this.seed + i * 5) % years.length];
-      out.push({ label: "A year of your life", words: `${year}. What was happening in your life?`, button: `See ${year}`, via: "year", parameter: year });
-    }
-    return out;
+    return w.onThisDay().slice(0, 3).map((entry) => ({ label: "On this day", words: `${entry.title}${entry.said ? `, ${entry.said}` : ""}`, button: "Open it", via: "open", parameter: entry.key }));
   }
 }

@@ -13,45 +13,45 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=8119535153ea";
-import { Loom, guarded } from "./loom.js?v=8119535153ea";
-import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=8119535153ea";
-import * as Edit from "./editor.js?v=8119535153ea";
-import * as Folk from "./people.js?v=8119535153ea";
-import * as Where from "./places.js?v=8119535153ea";
-import * as Me from "./you.js?v=8119535153ea";
-import * as Ask from "./asking.js?v=8119535153ea";
-import * as Link from "./linking.js?v=8119535153ea";
-import * as Run from "./admin.js?v=8119535153ea";
-import * as List from "./importing.js?v=8119535153ea";
-import * as Told from "./notices.js?v=8119535153ea";
-import * as Talk from "./comments.js?v=8119535153ea";
-import * as Kind from "./safety.js?v=8119535153ea";
-import * as Pay from "./paying.js?v=8119535153ea";
-import * as Say from "./feedback.js?v=8119535153ea";
-import * as Hello from "./welcome.js?v=8119535153ea";
-import * as Ring from "./phone.js?v=8119535153ea";
-import * as Look from "./find.js?v=8119535153ea";
-import * as Take from "./taking.js?v=8119535153ea";
-import * as Parts from "./parts.js?v=8119535153ea";
-import { PlaceMap } from "./placemap.js?v=8119535153ea";
-import * as Many from "./crowd.js?v=8119535153ea";
-import * as Prompt from "./prompts.js?v=8119535153ea";
-import { listed, timeline } from "./weave.js?v=8119535153ea";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=8119535153ea";
-import { yearsOf } from "./woven.js?v=8119535153ea";
-import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=8119535153ea";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=8119535153ea";
-import { Space } from "./space.js?v=8119535153ea";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=8119535153ea";
-import { linksOf } from "./links.js?v=8119535153ea";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=8119535153ea";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=e22a9830ec8b";
+import { Loom, guarded } from "./loom.js?v=e22a9830ec8b";
+import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=e22a9830ec8b";
+import * as Edit from "./editor.js?v=e22a9830ec8b";
+import * as Folk from "./people.js?v=e22a9830ec8b";
+import * as Where from "./places.js?v=e22a9830ec8b";
+import * as Me from "./you.js?v=e22a9830ec8b";
+import * as Ask from "./asking.js?v=e22a9830ec8b";
+import * as Link from "./linking.js?v=e22a9830ec8b";
+import * as Run from "./admin.js?v=e22a9830ec8b";
+import * as List from "./importing.js?v=e22a9830ec8b";
+import * as Told from "./notices.js?v=e22a9830ec8b";
+import * as Talk from "./comments.js?v=e22a9830ec8b";
+import * as Kind from "./safety.js?v=e22a9830ec8b";
+import * as Pay from "./paying.js?v=e22a9830ec8b";
+import * as Say from "./feedback.js?v=e22a9830ec8b";
+import * as Hello from "./welcome.js?v=e22a9830ec8b";
+import * as Ring from "./phone.js?v=e22a9830ec8b";
+import * as Look from "./find.js?v=e22a9830ec8b";
+import * as Take from "./taking.js?v=e22a9830ec8b";
+import * as Parts from "./parts.js?v=e22a9830ec8b";
+import { PlaceMap } from "./placemap.js?v=e22a9830ec8b";
+import * as Many from "./crowd.js?v=e22a9830ec8b";
+import * as Prompt from "./prompts.js?v=e22a9830ec8b";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=e22a9830ec8b";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=e22a9830ec8b";
+import { yearsOf } from "./woven.js?v=e22a9830ec8b";
+import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=e22a9830ec8b";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=e22a9830ec8b";
+import { Space } from "./space.js?v=e22a9830ec8b";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=e22a9830ec8b";
+import { linksOf } from "./links.js?v=e22a9830ec8b";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=e22a9830ec8b";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=8119535153ea")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=e22a9830ec8b")).StandIn() : new Loom());
 // the browser's notifications, stood in for when probing: headless, it has none to give
-const PUSH = probing ? new (await import("./tests/standin.js?v=8119535153ea")).StandInPush() : null;
+const PUSH = probing ? new (await import("./tests/standin.js?v=e22a9830ec8b")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -115,6 +115,8 @@ const ASKS_TO_LEAVE_PERIOD = "asks_before_taking_me_out_of_this_period";
 const SHOWS_MORE = "shows_more_of_the_list";
 const JUMPS_TO_YEAR = "jumps_to_a_year";
 const SHOWS_EVERYTHING = "shows_everything";
+const SHOWS_RANDOM_YEAR = "shows_a_random_year";
+const OPENS_RANDOM_MEMORY = "opens_a_random_memory";
 const FILTERS_BY_LABEL = "shows_a_label";
 const TOGGLES_PERIOD_TYPE = "shows_or_hides_a_kind_of_period";
 const TOGGLES_EVENT_TYPE = "shows_or_hides_a_kind_of_event";
@@ -124,7 +126,6 @@ const TYPES_TIMELINE_SPAN = "types_the_timelines_stretch";
 const SETS_TIMELINE_SPAN = "shows_the_timeline_for_that_stretch";
 const SHOWS_ALL_TIME = "shows_all_of_the_timeline";
 const SHOWS_IN_TIMELINE = "shows_it_in_the_timeline";
-const SHOWS_YEAR = "shows_my_life_in_that_year";
 const OPENS_TIMELINE_OPTIONS = "opens_or_closes_the_timelines_options";
 const OPENS_MORE = "opens_or_closes_more_for_it";
 const OPENS_BIGGER = "opens_or_closes_part_of_something_bigger";
@@ -239,7 +240,7 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, SHOWS_YEAR, OPENS_TIMELINE_OPTIONS, OPENS_MORE, OPENS_BIGGER, SEARCHES_THREAD, OPENS_THREAD_SEARCH, SEARCHES_WOVEN, SEARCHES_TIMELINE, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
+  answers() { return [OPENS_ITEM, OPENS_TIMELINE_OPTIONS, OPENS_MORE, OPENS_BIGGER, SEARCHES_THREAD, OPENS_THREAD_SEARCH, SEARCHES_WOVEN, SEARCHES_TIMELINE, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
     ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, SHOWS_ALL_TIME, SHOWS_IN_TIMELINE,
     TOGGLES_GREY, SHOWS_LIVES_IN, SELECTS, CLEARS_SELECTION, ZOOMS_LIVES, SHOWS_ALL_LIVES, OPENS_LIVES_SETTINGS, TUNES_LIVES, RESETS_LIVES]; }
 
@@ -365,6 +366,8 @@ class Looking extends Controller {
   thread() { const weave = this.account.weave.read(); return weave.thread(weave.meId); }
 
   would(action, payload) {
+    if (action === SHOWS_RANDOM_YEAR && !yearsOfMemories(this.thread()).length) return Phrase.of("No memories with a time yet");
+    if (action === OPENS_RANDOM_MEMORY && !this.thread().some((entry) => entry.kind === "memory")) return Phrase.of("No memories yet");
     if (action === ZOOMS_TIMELINE) {
       const whole = this.wholeTimeline();
       if (!whole) return Phrase.of("Nothing with a time yet");
@@ -415,8 +418,12 @@ class Looking extends Controller {
     if (action === OPENS_MORE) this.itemMore.update((open) => !open);
     if (action === OPENS_BIGGER) this.itemBigger.update((open) => !open);
     if (action === OPENS_TIMELINE_OPTIONS) this.timelineOptions.update((open) => !open);
-    // a year asked about on the home screen: the life shown in it alone
-    if (action === SHOWS_YEAR) { this.threadYear.setValue(payload.year); this.threadSearch.setValue(""); }
+    // a year with memories in it, picked at random - another each press - and the life shown for it alone
+    if (action === SHOWS_RANDOM_YEAR) { this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? ""); this.threadSearch.setValue(""); }
+    if (action === OPENS_RANDOM_MEMORY) {
+      const memory = pickAnother(this.thread().filter((entry) => entry.kind === "memory"), null);
+      if (memory) location.hash = `#memory/${memory.id}`;
+    }
     if (action === SHOWS_MORE) this.shownOf(payload.key).update((shown) => shown + PAGE);
     if (action === JUMPS_TO_YEAR) {
       // pressed again, back to the beginning; else from that year, the first so many of it
@@ -544,7 +551,6 @@ export class Tapestry extends ChimeApp {
       ...Take.WORDS,
       ...Parts.WORDS,
       ...Many.WORDS,
-      ...Prompt.WORDS,
       [GOES_NOTICES]: ["Inbox"],
       [GOES_TIMELINE]: ["Timeline"],
       [GOES_LIST]: ["List"],
@@ -559,7 +565,6 @@ export class Tapestry extends ChimeApp {
       [GOES_PEOPLE]: ["People"],
       [GOES_PLACES]: ["Places"],
       [GOES_YOU]: ["Me"],
-      [SHOWS_YEAR]: ["See that year"],
       [OPENS_TIMELINE_OPTIONS]: ["Options"],
       [OPENS_MORE]: ["More"],
       [OPENS_BIGGER]: ["Part of something bigger?"],
@@ -570,6 +575,8 @@ export class Tapestry extends ChimeApp {
       [SHOWS_MORE]: ["Show more"],
       [JUMPS_TO_YEAR]: ["Go to this year"],
       [SHOWS_EVERYTHING]: ["Show everything"],
+      [SHOWS_RANDOM_YEAR]: ["A random year"],
+      [OPENS_RANDOM_MEMORY]: ["A random memory"],
       [FILTERS_BY_LABEL]: ["Show the memories with this label"],
       [TOGGLES_PERIOD_TYPE]: ["Show or hide this kind"],
       [TOGGLES_EVENT_TYPE]: ["Show or hide this kind"],
@@ -660,7 +667,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=8119535153ea").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=e22a9830ec8b").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -906,6 +913,12 @@ export class Tapestry extends ChimeApp {
           .goesTo(EDIT).absentWhenRefused(),
       ], "EmptyLife"), ui.column([
         ui.when(narrowed.map((n) => !n), this.promptCard()),
+        // looking back at random, under the prompt: a memory, or a year - another each press
+        ui.row([
+          ui.pressable(OPENS_RANDOM_MEMORY, {}, [ui.text(ui.words(OPENS_RANDOM_MEMORY), Themes.FACE)], `${LINK} RandomButton`).absentWhenRefused(),
+          ui.pressable(SHOWS_RANDOM_YEAR, {}, [ui.text(year.map((y) => Phrase.of(y ? "Another random year" : "A random year")), Themes.FACE)], `${LINK} RandomButton`)
+            .absentWhenRefused(),
+        ], "RandomRow"),
         this.timeline(entries, ui.bound(() => Phrase.of(narrowed.read() ? "Nothing found." : "Nothing here yet."))),
       ])),
       this.addButton(),
@@ -967,12 +980,14 @@ export class Tapestry extends ChimeApp {
       button("open", ui.pressable(OPENS_ITEM, now.map((p) => ({ parameter: p.parameter })), words, "PromptButton").goesTo(ITEM)),
       button("edit", ui.pressable(Edit.EDITS, now.map((p) => ({ parameter: p.parameter })), words, "PromptButton").goesTo(EDIT).absentWhenRefused()),
       button("addTo", ui.pressable(Edit.ADDS_MEMORY, now.map((p) => ({ parameter: `memory:new:period:${p.parameter}` })), words, "PromptButton").goesTo(EDIT).absentWhenRefused()),
-      button("year", ui.pressable(SHOWS_YEAR, now.map((p) => ({ year: p.parameter })), words, "PromptButton")),
+      button("timeline", ui.pressable(SHOWS_IN_TIMELINE, now.map((p) => ({ key: p.parameter })), words, "PromptButton").goesTo(TIMELINE)),
+      button("person", ui.pressable(Folk.OPENS_PERSON, now.map((p) => ({ parameter: p.parameter })), words, "PromptButton").goesTo(PERSON)),
+      button("place", ui.pressable(Where.OPENS_PLACE, now.map((p) => ({ parameter: p.parameter })), words, "PromptButton").goesTo(PLACE)),
+      button("tapestry3d", ui.pressable(SHOWS_LIVES_IN, { mode: "3d" }, words, "PromptButton").goesTo(WOVEN)),
       button("tapestry", ui.pressable(GOES_WOVEN, {}, words, "PromptButton").goesTo(WOVEN)),
       button("people", ui.pressable(GOES_PEOPLE, {}, words, "PromptButton").goesTo(PEOPLE)),
       button("find", ui.pressable(GOES_FIND, {}, words, "PromptButton").goesTo(Look.FIND)),
       button("settings", ui.pressable(GOES_SETTINGS, {}, words, "PromptButton").goesTo(YOU)),
-      ui.pressable(Prompt.ASKS_ANOTHER, {}, [ui.text(ui.words(Prompt.ASKS_ANOTHER), "Small")], "PlainLink"),
     ], "Prompt");
   }
 
