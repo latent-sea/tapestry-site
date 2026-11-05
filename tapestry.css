@@ -53,8 +53,7 @@
 #app .chime-pressable.PromptButton { min-height: 50px; border-radius: 999px; justify-content: center; font-weight: 700; background: var(--chime-lit); border: none; box-shadow: none; color: var(--chime-ink); }
 #app .RandomRow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 #app .chime-pressable.RandomButton { min-height: 50px; justify-content: center; border-radius: 999px; font-weight: 700; padding: 8px 12px; }
-#app .chime-pressable.PlainLink { align-self: center; background: none; border: none; box-shadow: none; min-height: 40px; padding: 6px 12px; color: var(--chime-accent); font-weight: 700; }
-#app .chime-pressable.PlainLink:hover { background: none; text-decoration: underline; }
+
 #app .chime-pressable.AddButton { position: fixed; right: max(20px, calc(50vw - 23rem + 20px)); bottom: 28px; z-index: 5; min-height: 56px; padding: 0 26px; border-radius: 999px; gap: 8px;
   align-items: center; border: none; background: linear-gradient(90deg, var(--chime-accent), var(--chime-accent-end)); color: var(--chime-ground);
   font-size: calc(var(--chime-size-face) * 1.125); font-weight: 800; box-shadow: 0 6px 20px rgb(0 0 0 / 0.45); }
@@ -82,13 +81,21 @@
 /* a memory's page: the way back, Edit and More along the top; More's actions under them, when open */
 #app .ItemTop { align-items: center; justify-content: space-between; gap: 10px; }
 #app .ItemTools { gap: 8px; align-items: center; }
-#app .chime-pressable.BackButton { background: none; border: none; box-shadow: none; padding: 6px 6px; min-height: 44px; gap: 6px; align-items: center; color: var(--chime-accent); font-weight: 700; }
+
 #app .BackMark { font-size: calc(var(--chime-size-face) * 1.5); line-height: 1; }
 #app .chime-pressable.QuietAction { min-height: 44px; padding: 6px 16px; border-radius: 999px; gap: 6px; align-items: center; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
 #app .MoreMark { font-size: calc(var(--chime-size-face) * 1.1); line-height: 1; }
 #app .MorePanel { gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); }
 #app .chime-pressable.BiggerButton { justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 16px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
 #app .BiggerPanel, #app .Details { gap: 12px; }
+#app .BiggerSheet, #app .BiggerStep { gap: 12px; min-width: min(26rem, 84vw); }
+#app .chime-pressable.AddChoiceQuiet { background: none; border-style: dashed; }
+#app .PartOfAll { gap: 8px; }
+#app .PartOfRow { align-items: center; gap: 4px; flex-wrap: wrap; }
+@media (max-width: 40rem) {
+  #app .chime-shade:has(.BiggerSheet) { align-items: flex-end; }
+  #app .chime-sheet:has(.BiggerSheet) { width: 100%; max-width: none; max-height: 88vh; overflow-y: auto; border-radius: 24px 24px 0 0; padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); }
+}
 #app .PeopleWays { flex-wrap: wrap; }
 
 /* Me: who they are, then a row for each thing of theirs */
@@ -122,7 +129,7 @@
 
 /* buttons */
 #app .Actions { flex-wrap: wrap; gap: 10px; }
-#app .chime-pressable.Link { min-height: 36px; padding: 6px 0; }
+
 #app .LinkWords { font-size: calc(var(--chime-size-face) * 0.938); }
 #app .Segments { flex-wrap: wrap; gap: 6px; }
 #app .chime-pressable.Segment { min-height: 36px; padding: 4px 14px; font-size: calc(var(--chime-size-face) * 0.875); gap: 6px; }
@@ -288,7 +295,7 @@
 
 /* the privacy policy and the terms, at the door and in You */
 #app .Legal { gap: 18px; justify-content: center; flex-wrap: wrap; }
-#app .chime-hyperlink.LegalLink { color: var(--chime-ink-soft); text-decoration: underline; }
+
 /* the terms, in full, before they are agreed to: a box of their own to scroll */
 #app .Terms { max-height: 50vh; overflow-y: auto; padding: 12px 16px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); text-align: left; }
 #app .TermsText { gap: 8px; }
@@ -369,3 +376,26 @@
 #app .PortalActions { flex-wrap: wrap; gap: 6px 14px; }
 /* what a line to type in finds, said in full: wrapped, never cut short */
 #app .chime-field-label { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* every pressable is a button, never underlined words: its colour says what it does - teal the main thing,
+   purple another thing to do, red what deletes, dark what goes back or cancels, outlined teal what opens
+   something else (a person, a place, an event) */
+#app .chime-pressable.Link, #app .chime-pressable.PlainLink, #app .chime-pressable.BackButton, #app .chime-hyperlink.LegalLink {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 16px; border-radius: 999px;
+  font-weight: 700; text-decoration: none; box-shadow: none; text-align: center; }
+#app .chime-pressable.Link { background: color-mix(in srgb, var(--chime-accent) 10%, var(--chime-raised)); border: 1px solid color-mix(in srgb, var(--chime-accent) 55%, transparent);
+  color: var(--chime-accent); align-self: flex-start; }
+#app .chime-pressable.Link *, #app .chime-hyperlink.LegalLink * { text-decoration: none; }
+#app .chime-pressable.Link:hover { background: color-mix(in srgb, var(--chime-accent) 20%, var(--chime-raised)); }
+#app .chime-pressable.PlainLink, #app .chime-pressable.BackButton { background: var(--chime-raised); border: 1px solid var(--chime-lit); color: var(--chime-ink); }
+#app .chime-pressable.PlainLink { align-self: center; min-width: 9rem; }
+#app .chime-pressable.BackButton { align-self: flex-start; padding-left: 12px; }
+#app .chime-hyperlink.LegalLink { background: var(--chime-raised); border: 1px solid var(--chime-lit); color: var(--chime-ink-soft); min-height: 36px; padding: 6px 14px;
+  font-size: calc(var(--chime-size-face) * 0.875); }
+#app .Legal { gap: 10px; }
+
+/* buttons of one look side by side: one size, in a grid, each as wide as the widest needs (buttongrid.js) */
+#app .chime-row.ButtonGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--cell)), 1fr)); gap: 10px; align-items: stretch; }
+#app .chime-row.ButtonGrid > * { width: 100%; min-width: 0; margin: 0; justify-content: center; text-align: center; box-sizing: border-box; }
+/* a page's own tools along its top stay on one line, one size */
+#app .ItemTools.chime-row.ButtonGrid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: var(--cell); }

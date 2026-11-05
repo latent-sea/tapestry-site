@@ -6,8 +6,8 @@
 // place owner's alone to see (backend.sql, places). The map's pictures come
 // from OpenStreetMap, as a place's own map's do (placemap.js).
 
-import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=15335c30de70";
-import { yearsOf } from "./woven.js?v=15335c30de70";
+import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=ac58294b1e9d";
+import { yearsOf } from "./woven.js?v=ac58294b1e9d";
 
 /** The colours from oldest to newest, evenly along the way. */
 export const RAMP = ["#4b2a8c", "#3b5bdb", "#1c9fc9", "#19c3b3", "#7bd389", "#f2c14e"];

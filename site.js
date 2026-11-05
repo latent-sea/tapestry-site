@@ -13,46 +13,48 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=15335c30de70";
-import { Loom, guarded } from "./loom.js?v=15335c30de70";
-import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=15335c30de70";
-import * as Edit from "./editor.js?v=15335c30de70";
-import * as Folk from "./people.js?v=15335c30de70";
-import * as Where from "./places.js?v=15335c30de70";
-import * as Me from "./you.js?v=15335c30de70";
-import * as Ask from "./asking.js?v=15335c30de70";
-import * as Link from "./linking.js?v=15335c30de70";
-import * as Run from "./admin.js?v=15335c30de70";
-import * as List from "./importing.js?v=15335c30de70";
-import * as Told from "./notices.js?v=15335c30de70";
-import * as Talk from "./comments.js?v=15335c30de70";
-import * as Kind from "./safety.js?v=15335c30de70";
-import * as Pay from "./paying.js?v=15335c30de70";
-import * as Say from "./feedback.js?v=15335c30de70";
-import * as Hello from "./welcome.js?v=15335c30de70";
-import * as Ring from "./phone.js?v=15335c30de70";
-import * as Look from "./find.js?v=15335c30de70";
-import * as Take from "./taking.js?v=15335c30de70";
-import * as Parts from "./parts.js?v=15335c30de70";
-import { PlaceMap } from "./placemap.js?v=15335c30de70";
-import { MemoryMap, memoryDots } from "./memorymap.js?v=15335c30de70";
-import * as Many from "./crowd.js?v=15335c30de70";
-import * as Prompt from "./prompts.js?v=15335c30de70";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=15335c30de70";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=15335c30de70";
-import { yearsOf } from "./woven.js?v=15335c30de70";
-import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=15335c30de70";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=15335c30de70";
-import { Space } from "./space.js?v=15335c30de70";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=15335c30de70";
-import { linksOf } from "./links.js?v=15335c30de70";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=15335c30de70";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
+import { Loom, guarded } from "./loom.js?v=ac58294b1e9d";
+import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=ac58294b1e9d";
+import * as Edit from "./editor.js?v=ac58294b1e9d";
+import * as Folk from "./people.js?v=ac58294b1e9d";
+import * as Where from "./places.js?v=ac58294b1e9d";
+import * as Me from "./you.js?v=ac58294b1e9d";
+import * as Ask from "./asking.js?v=ac58294b1e9d";
+import * as Link from "./linking.js?v=ac58294b1e9d";
+import * as Big from "./bigger.js?v=ac58294b1e9d";
+import * as Run from "./admin.js?v=ac58294b1e9d";
+import * as List from "./importing.js?v=ac58294b1e9d";
+import * as Told from "./notices.js?v=ac58294b1e9d";
+import * as Talk from "./comments.js?v=ac58294b1e9d";
+import * as Kind from "./safety.js?v=ac58294b1e9d";
+import * as Pay from "./paying.js?v=ac58294b1e9d";
+import * as Say from "./feedback.js?v=ac58294b1e9d";
+import * as Hello from "./welcome.js?v=ac58294b1e9d";
+import * as Ring from "./phone.js?v=ac58294b1e9d";
+import * as Look from "./find.js?v=ac58294b1e9d";
+import * as Take from "./taking.js?v=ac58294b1e9d";
+import * as Parts from "./parts.js?v=ac58294b1e9d";
+import { PlaceMap } from "./placemap.js?v=ac58294b1e9d";
+import { keepButtonGrids } from "./buttongrid.js?v=ac58294b1e9d";
+import { MemoryMap, memoryDots } from "./memorymap.js?v=ac58294b1e9d";
+import * as Many from "./crowd.js?v=ac58294b1e9d";
+import * as Prompt from "./prompts.js?v=ac58294b1e9d";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=ac58294b1e9d";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=ac58294b1e9d";
+import { yearsOf } from "./woven.js?v=ac58294b1e9d";
+import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=ac58294b1e9d";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=ac58294b1e9d";
+import { Space } from "./space.js?v=ac58294b1e9d";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=ac58294b1e9d";
+import { linksOf } from "./links.js?v=ac58294b1e9d";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=ac58294b1e9d";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=15335c30de70")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=ac58294b1e9d")).StandIn() : new Loom());
 // the browser's notifications, stood in for when probing: headless, it has none to give
-const PUSH = probing ? new (await import("./tests/standin.js?v=15335c30de70")).StandInPush() : null;
+const PUSH = probing ? new (await import("./tests/standin.js?v=ac58294b1e9d")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -129,7 +131,6 @@ const SHOWS_ALL_TIME = "shows_all_of_the_timeline";
 const SHOWS_IN_TIMELINE = "shows_it_in_the_timeline";
 const OPENS_TIMELINE_OPTIONS = "opens_or_closes_the_timelines_options";
 const OPENS_MORE = "opens_or_closes_more_for_it";
-const OPENS_BIGGER = "opens_or_closes_part_of_something_bigger";
 // a timeline shows this many at first, and as many more at each press: a life of hundreds of memories stays quick
 const PAGE = 50;
 
@@ -222,7 +223,6 @@ class Looking extends Controller {
     this.timelineSpan = this.value(""); // the stretch typed, as a time is: "2004 – 2010", "June 2012 – March 2013"
     this.timelineOptions = this.value(false); // whether the timeline's filters, zoom and search are open
     this.itemMore = this.value(false); // whether a memory's, event's or period's further actions (its ⋯) are open
-    this.itemBigger = this.value(false); // whether "Part of something bigger?" is open on a memory
     this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
     this.pages = new Map(); // each timeline's own: how many of it are shown
@@ -241,7 +241,7 @@ class Looking extends Controller {
     return this.pages.get(key);
   }
 
-  answers() { return [OPENS_ITEM, OPENS_TIMELINE_OPTIONS, OPENS_MORE, OPENS_BIGGER, SEARCHES_THREAD, OPENS_THREAD_SEARCH, SEARCHES_WOVEN, SEARCHES_TIMELINE, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
+  answers() { return [OPENS_ITEM, OPENS_TIMELINE_OPTIONS, OPENS_MORE, SEARCHES_THREAD, OPENS_THREAD_SEARCH, SEARCHES_WOVEN, SEARCHES_TIMELINE, FLIPS_ORDER, TOGGLES_THREAD, LEAVES_EVENT, ASKS_TO_LEAVE, STAYS_ON, LEAVES_PERIOD, ASKS_TO_LEAVE_PERIOD, SHOWS_MORE, JUMPS_TO_YEAR, SHOWS_RANDOM_YEAR, SHOWS_EVERYTHING, FILTERS_BY_LABEL, OPENS_RANDOM_MEMORY, TOGGLES_PERIOD_TYPE, TOGGLES_EVENT_TYPE, TOGGLES_PART,
     ZOOMS_TIMELINE, TYPES_TIMELINE_SPAN, SETS_TIMELINE_SPAN, SHOWS_ALL_TIME, SHOWS_IN_TIMELINE,
     TOGGLES_GREY, SHOWS_LIVES_IN, SELECTS, CLEARS_SELECTION, ZOOMS_LIVES, SHOWS_ALL_LIVES, OPENS_LIVES_SETTINGS, TUNES_LIVES, RESETS_LIVES]; }
 
@@ -415,9 +415,8 @@ class Looking extends Controller {
 
   told(action, payload) {
     // something else opened: its further actions closed, as they start
-    if (action === OPENS_ITEM) { this.itemMore.setValue(false); this.itemBigger.setValue(false); }
+    if (action === OPENS_ITEM) this.itemMore.setValue(false);
     if (action === OPENS_MORE) this.itemMore.update((open) => !open);
-    if (action === OPENS_BIGGER) this.itemBigger.update((open) => !open);
     if (action === OPENS_TIMELINE_OPTIONS) this.timelineOptions.update((open) => !open);
     // a year with memories in it, picked at random - another each press - and the life shown for it alone
     if (action === SHOWS_RANDOM_YEAR) { this.threadYear.setValue(pickAnother(yearsOfMemories(this.thread()), this.threadYear.read()) ?? ""); this.threadSearch.setValue(""); }
@@ -552,6 +551,7 @@ export class Tapestry extends ChimeApp {
       ...Take.WORDS,
       ...Parts.WORDS,
       ...Many.WORDS,
+      ...Big.WORDS,
       [GOES_NOTICES]: ["Inbox"],
       [GOES_TIMELINE]: ["Timeline"],
       [GOES_LIST]: ["List"],
@@ -568,7 +568,6 @@ export class Tapestry extends ChimeApp {
       [GOES_YOU]: ["Me"],
       [OPENS_TIMELINE_OPTIONS]: ["Options"],
       [OPENS_MORE]: ["More"],
-      [OPENS_BIGGER]: ["Part of something bigger?"],
       [OPENS_ITEM]: ["Open"],
       [SHOWS_PICTURE]: ["Show the picture"],
       [SHOWS_EARLIER]: ["Previous"],
@@ -625,6 +624,8 @@ export class Tapestry extends ChimeApp {
     this.places = this.model(new Where.Places(this.chimes, LOOM, this.account));
     this.asking = this.model(new Ask.Asking(this.chimes, LOOM, this.account));
     this.linking = this.model(new Link.Linking(this.chimes, LOOM, this.account));
+    // Part of something bigger?: its sheet taken down as the phone's Back would
+    this.bigger = this.model(new Big.Bigger(this.chimes, LOOM, this.account, () => Frames.defer(() => this.commands.dispatch(Chimes.GLOBAL, Driver.GOES_BACK, {}))));
     this.admin = this.model(new Run.Admin(this.chimes, LOOM, this.account));
     this.importer = this.model(new List.Importer(this.chimes, LOOM, this.account));
     this.notices = this.model(new Told.Notices(this.chimes, LOOM, this.account));
@@ -641,6 +642,7 @@ export class Tapestry extends ChimeApp {
     this.phone = this.model(new Ring.Phone(this.chimes, LOOM, this.account, PUSH ?? Ring.browserPush()));
     this.prompts = this.model(new Prompt.Prompts(this.chimes, this.account));
     this.addSheet = this.adding();
+    this.biggerSheet = Big.describeBigger(ui, this.bigger, this.account);
     this.you = this.model(new Me.You(this.chimes, LOOM, this.account, (size) => FactoryLook.make(PALETTE, size).dress(this.element)));
     // a person's or a place's everything: which way round it reads said, and changed, above it
     const timelineOf = (entries, empty, woven = false) => ui.column([ui.when(entries.map((l) => l.length > 1), this.ordering()), this.timeline(entries, empty, woven)]);
@@ -668,10 +670,11 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=15335c30de70").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=ac58294b1e9d").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
+    keepButtonGrids(element);
     this.started.then((stood) => { if (stood) { this.keepAddress(); this.keepDoor(); this.keepFresh(); this.keepLives(); this.keepTimeline(); this.keepPlaceMap(); this.keepMemoryMap(); this.keepCrowd(); } });
     return this;
   }
@@ -1325,8 +1328,9 @@ export class Tapestry extends ChimeApp {
             "LinkOut")), (l) => l.url, "Links"),
         ui.when(entry.map((e) => !!e?.place), ui.pressable(Where.OPENS_PLACE, entry.map((e) => ({ parameter: e?.place?.id ?? "" })),
           [ui.text(entry.map((e) => Phrase.with("At %s", [e?.place?.name ?? ""])), "LinkWords")], "Link").goesTo(PLACE)),
-        ofEvent,
-        duringPeriods,
+        ui.when(memoryOfMine, Big.describePartOf(ui, this.bigger, account, ui.bound(() => (kindOf() === "memory" ? idOf() : "")),
+          ui.pressable(Big.OPENS_BIGGER, ui.bound(() => ({ parameter: idOf() })), [ui.text(ui.words(Big.OPENS_BIGGER), "LinkWords"), ui.text("›", "RowMark")], "BiggerButton")
+            .opens(this.biggerSheet)), ui.column([ofEvent, duringPeriods])),
         ui.eachAcross(entry.map((e) => e?.labels ?? []), (l) => ui.pressable(FILTERS_BY_LABEL, l.map((x) => ({ label: x ?? "", only: true })),
           [ui.text(l.map((x) => `#${x ?? ""}`), "Small")], "Segment LabelChip").goesTo(THREAD), null, "Labels"),
         ui.when(people.map((p) => p.length > 0), ui.column([
@@ -1344,17 +1348,6 @@ export class Tapestry extends ChimeApp {
           ui.when(ui.bound(() => kindOf() === "period" && account.weave.read().isAtPeriod(item.read(), account.weave.read().meId)),
             ui.button(Edit.ADDS_MEMORY, { with: ui.bound(() => `memory:new:period:${idOf()}`), goes_to: EDIT })),
         ], "Actions"),
-        // a memory of the member's: put in an event they have, or made into one, or into a period of their life
-        ui.when(memoryOfMine, ui.column([
-          ui.pressable(OPENS_BIGGER, {}, [ui.text(ui.words(OPENS_BIGGER), "LinkWords"), ui.text(this.looking.itemBigger.map((o) => (o ? "✕" : "›")), "RowMark")], "BiggerButton"),
-          ui.when(this.looking.itemBigger, ui.column([
-            Link.describePutInEvent(ui, this.linking, account, ui.bound(() => (kindOf() === "memory" ? idOf() : ""))),
-            ui.row([
-              ui.button(Ask.MAKES_EVENT, { payload: ui.bound(() => ({ id: kindOf() === "memory" ? idOf() : "" })), style: LINK }).absentWhenRefused(),
-              ui.button(Ask.MAKES_PERIOD, { payload: ui.bound(() => ({ id: kindOf() === "memory" ? idOf() : "" })), style: LINK }).absentWhenRefused(),
-            ], "Actions"),
-          ], "BiggerPanel")),
-        ], "Bigger")),
         // a memory already kept put in this event
         Link.describeAddKept(ui, this.linking, account, ui.bound(() => (kindOf() === "event" ? idOf() : ""))),
         Take.describeTaking(ui, this.taking, account, entry),
@@ -1366,8 +1359,6 @@ export class Tapestry extends ChimeApp {
         problem(ui, this.looking.problem),
         Kind.describeReporting(ui, this.safety, ui.bound(() => (entry.read() ? `${kindOf()}:${idOf()}` : ""))),
         Kind.describeBlocking(ui, this.safety, account, ui.bound(() => entry.read()?.owner ?? "")),
-        Ask.describeNamingEvent(ui, this.asking, ui.bound(() => (kindOf() === "memory" ? idOf() : ""))),
-        Ask.describeNamingPeriod(ui, this.asking, account, ui.bound(() => (kindOf() === "memory" ? idOf() : ""))),
         problem(ui, this.asking.problem),
         notice(ui, this.asking.notice),
         ui.when(ui.bound(() => kindOf() === "event" && this.looking.leaving.read() === idOf()), ui.column([
@@ -1589,7 +1580,13 @@ export class Tapestry extends ChimeApp {
       this.account.weave.read();
       if (!this.driver.getTop().includes(ITEM)) return;
       const key = String(this.driver.getParameter(ITEM) ?? "");
-      Frames.defer(() => this.crowd.open(key));
+      Frames.defer(() => {
+        this.crowd.open(key);
+        if (key !== this.itemSaid) {
+          this.itemSaid = key;
+          for (const said of [this.asking.notice, this.asking.problem, this.linking.notice, this.linking.problem]) said.setValue("");
+        }
+      });
     });
   }
 

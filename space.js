@@ -7,7 +7,7 @@
 // a knot opens what it is; in select mode a box drawn over it catches the
 // lives through it. The browser's alone: lives.js works out what it draws.
 
-import { caught, placeAt } from "./lives.js?v=15335c30de70";
+import { caught, placeAt } from "./lives.js?v=ac58294b1e9d";
 
 const YEAR = 0.6; // a year along the time's way, in the space's units
 const PLACE = 1.6; // a place apart (layOut), in them

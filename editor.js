@@ -12,14 +12,14 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=15335c30de70";
-import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=15335c30de70";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=15335c30de70";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=15335c30de70";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=15335c30de70";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=15335c30de70";
-import { DANGER, LINK } from "./look/look.js?v=15335c30de70";
-import { questionOf } from "./prompts.js?v=15335c30de70";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
+import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=ac58294b1e9d";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=ac58294b1e9d";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=ac58294b1e9d";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=ac58294b1e9d";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=ac58294b1e9d";
+import { DANGER, LINK } from "./look/look.js?v=ac58294b1e9d";
+import { questionOf } from "./prompts.js?v=ac58294b1e9d";
 
 export const EDIT = "edit";
 
@@ -798,7 +798,7 @@ export function describeEditor(ui, editor, account) {
           return dotOf(kind.read() === "event" ? w.eventKindColour(held.read()?.type) : w.kindColour(held.read()?.type));
         }), "SmallDot", ""), ui.text(held.map((k) => k?.said ?? ""), Themes.FACE)], "Segment")
         .currentWhile(ui.bound(() => editor.periodType.read() === (held.read()?.type ?? ""))),
-      { finds: kind.map((k) => Phrase.of(k === "event" ? "Find a kind of event" : "Find a kind of period")), keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === editor.periodType.read() }),
+      { finds: "Find a kind by its name", keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === editor.periodType.read() }),
       ui.row([
         ui.field(ADDS_PERIOD_KIND, "", { changes: SETS_NEW_KIND, shows: editor.newKind, placeholder: Phrase.of("Or a kind of your own") }).grow(),
         ui.button(ADDS_PERIOD_KIND, { style: LINK }),
