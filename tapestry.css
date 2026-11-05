@@ -89,9 +89,15 @@
 #app .chime-pressable.BiggerButton { justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 16px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
 #app .BiggerPanel, #app .Details { gap: 12px; }
 #app .BiggerSheet, #app .BiggerStep { gap: 12px; min-width: min(26rem, 84vw); }
-#app .chime-pressable.AddChoiceQuiet { background: none; border-style: dashed; }
 #app .PartOfAll { gap: 8px; }
-#app .PartOfRow { align-items: center; gap: 4px; flex-wrap: wrap; }
+/* what a memory is part of: the button that opens it, with an X on its right to take it out, one piece */
+#app .PartOfRow { align-items: stretch; gap: 0; flex-wrap: nowrap; align-self: flex-start; max-width: 100%; }
+#app .chime-pressable.TakeOut { min-height: 44px; min-width: 44px; padding: 0 14px 0 10px; border-radius: 0 999px 999px 0; box-shadow: none;
+  background: color-mix(in srgb, var(--chime-accent) 10%, var(--chime-raised)); border: 1px solid color-mix(in srgb, var(--chime-accent) 55%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--chime-accent) 25%, transparent); color: var(--chime-ink-soft); justify-content: center; align-items: center; }
+#app .chime-pressable.TakeOut:hover { color: var(--chime-danger); background: color-mix(in srgb, var(--chime-danger) 12%, var(--chime-raised)); }
+#app .TakeOutMark { font-size: calc(var(--chime-size-face) * 1.05); font-weight: 800; line-height: 1; }
+#app .SeenNot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 40rem) {
   #app .chime-shade:has(.BiggerSheet) { align-items: flex-end; }
   #app .chime-sheet:has(.BiggerSheet) { width: 100%; max-width: none; max-height: 88vh; overflow-y: auto; border-radius: 24px 24px 0 0; padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); }
@@ -399,3 +405,19 @@
 #app .chime-row.ButtonGrid > * { width: 100%; min-width: 0; margin: 0; justify-content: center; text-align: center; box-sizing: border-box; }
 /* a page's own tools along its top stay on one line, one size */
 #app .ItemTools.chime-row.ButtonGrid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: var(--cell); }
+#app .chime-pressable.AddPlace { align-self: flex-start; margin: 4px 0 0; }
+/* a light card in an event's or period's list: its likes, New and ⋯ to the right of its one line, beside its words, never over them;
+   on a narrow screen its date left out when it is in order of when, under its days or years - kept in the other orders, which have no headings */
+#app .CrowdCard .chime-pressable.LightEntry { padding-bottom: 8px; padding-right: 150px; }
+#app .CrowdCard:has(.LightEntry) .CrowdCorner { top: 50%; bottom: auto; transform: translateY(-50%); }
+@media (max-width: 40rem) { #app .Timeline:has(.YearHeading) .CrowdCard .LightWhen { display: none; } }
+/* what a memory is part of, in its own colour: an event teal, a period of life purple */
+#app .chime-pressable.Link.PartPeriod, #app .PartOfRow.PartPeriod > .chime-pressable.TakeOut, #app .PartOfRow.PartPeriod > .PartWords {
+  background: color-mix(in srgb, var(--chime-accent-2) 14%, var(--chime-raised)); border-color: color-mix(in srgb, var(--chime-accent-2) 60%, transparent); color: #c3b5ff; }
+#app .chime-pressable.Link.PartPeriod { align-self: flex-start; }
+#app .chime-pressable.Link.PartEvent { align-self: flex-start; }
+#app .PartOfRow.PartPeriod > .chime-pressable.TakeOut { border-left-color: color-mix(in srgb, var(--chime-accent-2) 30%, transparent); color: var(--chime-ink-soft); }
+/* in the editor, where it is changed: words in the same pill, with the X */
+#app .PartOfRow > .PartWords { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px 8px 16px; border-radius: 999px 0 0 999px; border: 1px solid; border-right: none;
+  font-weight: 700; font-size: calc(var(--chime-size-face) * 0.938); }
+#app .PartOfRow.PartEvent > .PartWords { background: color-mix(in srgb, var(--chime-accent) 10%, var(--chime-raised)); border-color: color-mix(in srgb, var(--chime-accent) 55%, transparent); color: var(--chime-accent); }

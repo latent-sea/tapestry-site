@@ -10,8 +10,8 @@
 // up and down) or in space (3D: time along, each life free in the other
 // two). Plain data in, plain data out, tested by tests/test_lives.mjs.
 
-import { lastDayOf } from "./when.js?v=ac58294b1e9d";
-import { yearsOf } from "./woven.js?v=ac58294b1e9d";
+import { lastDayOf } from "./when.js?v=5fb9a6608b7f";
+import { yearsOf } from "./woven.js?v=5fb9a6608b7f";
 
 export const GREY = "#7d869c";
 const FADE = 2; // years a line fades in over, before the first thing with someone whose birth isn't known

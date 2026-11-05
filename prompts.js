@@ -11,7 +11,7 @@
 // Which questions were answered is kept on the device (an answered question
 // is not asked there again).
 
-import { Controller } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
+import { Controller } from "./gd_chime/gd_chime.js?v=5fb9a6608b7f";
 
 const ANSWERED_KEPT = "tapestry_answered";
 
@@ -214,7 +214,7 @@ export class Prompts extends Controller {
       const loose = mine.filter((e) => e.kind === "memory" && e.mine && e.title && !e.event?.title);
       if (loose.length) {
         const entry = loose[(this.seed * 7) % loose.length];
-        out.push({ label: TRY, words: `Was ${quoted(entry)} part of something bigger, like a holiday? On it, press Part of something bigger?`, button: "Open it", via: "open", parameter: entry.key });
+        out.push({ label: TRY, words: `Was ${quoted(entry)} part of something bigger, like a holiday? Edit it, and press Part of something bigger?`, button: "Edit it", via: "edit", parameter: entry.key });
       }
       // an event of the member's no one else is in yet
       for (const event of mine.filter((e) => e.kind === "event" && e.mine && !(e.people ?? []).length).slice(0, 2)) {

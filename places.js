@@ -2,15 +2,15 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
-import { few, heading, notice, problem } from "./parts.js?v=ac58294b1e9d";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=ac58294b1e9d";
-import { CARD, DANGER, LINK } from "./look/look.js?v=ac58294b1e9d";
-import { describeMerge } from "./asking.js?v=ac58294b1e9d";
-import { addressOf } from "./weave.js?v=ac58294b1e9d";
-import { findOnMap } from "./placemap.js?v=ac58294b1e9d";
-import { memoryDots } from "./memorymap.js?v=ac58294b1e9d";
-import { REPORTS, describeReporting } from "./safety.js?v=ac58294b1e9d";
+import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=5fb9a6608b7f";
+import { few, heading, notice, problem } from "./parts.js?v=5fb9a6608b7f";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=5fb9a6608b7f";
+import { CARD, DANGER, LINK } from "./look/look.js?v=5fb9a6608b7f";
+import { describeMerge } from "./asking.js?v=5fb9a6608b7f";
+import { addressOf } from "./weave.js?v=5fb9a6608b7f";
+import { findOnMap } from "./placemap.js?v=5fb9a6608b7f";
+import { memoryDots } from "./memorymap.js?v=5fb9a6608b7f";
+import { REPORTS, describeReporting } from "./safety.js?v=5fb9a6608b7f";
 
 // a place's address, part by part, each as a letter has it: every one may be left empty
 const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],
@@ -22,6 +22,7 @@ export const PLACE = "place";
 
 export const SETS_NEW_PLACE = "sets_a_new_places_name";
 export const ADDS_PLACE = "adds_a_place";
+export const STARTS_PLACE = "starts_adding_a_place";
 export const OPENS_PLACE = "opens_a_place";
 export const SETS_PLACE_NAME = "sets_the_places_name";
 export const SETS_PLACE_NOTES = "sets_the_places_notes";
@@ -35,7 +36,8 @@ export const CLEARS_POINT = "takes_off_the_places_point";
 
 export const WORDS = {
   [SETS_NEW_PLACE]: ["Place"],
-  [ADDS_PLACE]: ["Add"],
+  [ADDS_PLACE]: ["Add the place"],
+  [STARTS_PLACE]: ["Add a place"],
   [OPENS_PLACE]: ["Open"],
   [SETS_PLACE_NAME]: ["Its name"],
   [SETS_PLACE_NOTES]: ["Notes"],
@@ -97,6 +99,7 @@ export class Places extends Controller {
     if (action === SETS_PLACE_NAME) this.name.setValue(payload.line);
     if (action === SETS_PLACE_NOTES) this.notes.setValue(payload.line);
     if (action === SETS_ADDRESS) this.address.update((typed) => ({ ...typed, [payload.part]: payload.line }));
+    if (action === STARTS_PLACE) this.newName.setValue("");
     if (action === ADDS_PLACE) this.add();
     if (action === SAVES_PLACE) {
       const point = this.point.read();
@@ -142,7 +145,9 @@ export class Places extends Controller {
     if (!made.ok) { this.problem.setValue(made.error); return; }
     this.newName.setValue("");
     this.fresh.setValue(made.data.id);
-    location.hash = `#place/${made.data.id}`;
+    // its name asked over the screen: that taken down first, then its form opened
+    this.close?.();
+    setTimeout(() => { location.hash = `#place/${made.data.id}`; }, 60);
   }
 
   /** A place's page opened: its name and notes ready to change. */
@@ -190,10 +195,16 @@ export function describePlaces(ui, places, account) {
     ui.text(plotted.map((p) => (p.missing ? Phrase.counted("%d more is at a place with no point yet.", "%d more are at places with no point yet.", p.missing) : "")), "Hint")
       .wraps().hidesEmpty(),
     ui.text(Phrase.of("Where things happened. Open one to see everything at it."), "Hint").wraps(),
-    ui.row([
-      ui.field(ADDS_PLACE, "", { changes: SETS_NEW_PLACE, shows: places.newName, placeholder: Phrase.of("Grandma's house, The Crown, Leeds…") }).grow(),
+    // a new place: its name asked over the screen, then its own page to say more
+    ui.pressable(STARTS_PLACE, {}, [ui.text("+", "AddMark"), ui.text(ui.words(STARTS_PLACE), Themes.FACE)], "BigAction AddPlace").opens(ui.popUp("add-place", () => ui.column([
+      ui.text(Phrase.of("Add a place"), "Title"),
+      ui.field(ADDS_PLACE, "", { changes: SETS_NEW_PLACE, shows: places.newName, label: Phrase.of("What is it called?"),
+        placeholder: Phrase.of("Grandma's house, The Crown, Leeds…") }).takesFocus(),
+      ui.text(Phrase.of("Then you can give it an address, and put it on the map."), "Hint").wraps(),
       ui.button(ADDS_PLACE),
-    ], "AddRow"),
+      problem(ui, places.problem),
+      ui.pressable(Ui.CLOSES, {}, [ui.text(Phrase.of("Cancel"), Themes.FACE)], "PlainLink"),
+    ], "AddSheet"))),
     problem(ui, places.problem),
     notice(ui, places.notice),
     ui.when(list.map((l) => l.length === 0), ui.text(Phrase.of("No places yet."), "Quiet")),

@@ -4,9 +4,9 @@
 // other's, nor comments, nor asks anything (backend.sql, "blocking"), until
 // taken back in You.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
-import { DANGER, LINK } from "./look/look.js?v=ac58294b1e9d";
-import { notice, problem } from "./parts.js?v=ac58294b1e9d";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=5fb9a6608b7f";
+import { DANGER, LINK } from "./look/look.js?v=5fb9a6608b7f";
+import { notice, problem } from "./parts.js?v=5fb9a6608b7f";
 
 export const REPORTS = "reports_it";
 export const SETS_REASON = "says_why_it_is_reported";

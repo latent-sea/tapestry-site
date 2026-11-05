@@ -12,14 +12,14 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
-import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=ac58294b1e9d";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=ac58294b1e9d";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=ac58294b1e9d";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=ac58294b1e9d";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=ac58294b1e9d";
-import { DANGER, LINK } from "./look/look.js?v=ac58294b1e9d";
-import { questionOf } from "./prompts.js?v=ac58294b1e9d";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=5fb9a6608b7f";
+import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=5fb9a6608b7f";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=5fb9a6608b7f";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=5fb9a6608b7f";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=5fb9a6608b7f";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=5fb9a6608b7f";
+import { DANGER, LINK } from "./look/look.js?v=5fb9a6608b7f";
+import { questionOf } from "./prompts.js?v=5fb9a6608b7f";
 
 export const EDIT = "edit";
 
@@ -46,6 +46,7 @@ export const DROPS_PLACE = "drops_the_place";
 export const ADDS_NEW_PLACE = "adds_a_new_place";
 export const ADDS_NEW_EVENT = "adds_a_new_event";
 export const ADDS_NEW_PERIOD = "adds_a_new_period";
+export const CLEARS_NEW_EVENT = "keeps_it_out_of_a_new_event";
 export const LOOKS_FOR_LABEL = "looks_for_a_label";
 export const PICKS_LABEL = "picks_a_label";
 export const ADDS_LABEL = "adds_a_label";
@@ -101,6 +102,7 @@ export const WORDS = {
   [ADDS_NEW_PLACE]: ["Add it as a new place"],
   [ADDS_NEW_EVENT]: ["Make it a new event"],
   [ADDS_NEW_PERIOD]: ["Make it a new period"],
+  [CLEARS_NEW_EVENT]: ["Take it out"],
   [LOOKS_FOR_LABEL]: ["Find a label"],
   [PICKS_LABEL]: ["Add this label"],
   [ADDS_LABEL]: ["Add it as a label"],
@@ -148,7 +150,7 @@ const KIND_WORDS = {
 const matching = (looked, label) => label.toLowerCase().includes(looked.trim().toLowerCase());
 
 export class Editor extends Controller {
-  /** Through the loom; done(deleted) is called once a draft is saved or deleted. */
+  /** Through the loom; done(deleted, key, turned) is called once a draft is saved or deleted - turned, its key when a memory was turned into it. */
   constructor(chimes, loom, account, done) {
     super(chimes);
     this.loom = loom;
@@ -183,6 +185,9 @@ export class Editor extends Controller {
     this.busy = this.value(false);
     this.fetching = this.value(false); // a long memory's words being fetched in full: nothing is saved until they are
     this.confirming = this.value(false);
+    this.newEvent = this.value(""); // a new event to make with it in it when it is saved, by this name; "" for none
+    this.turnedFrom = null; // the saved memory this draft, turned into an event or a period, replaces when it is saved
+    this.turned = false; // saved as what a memory was turned into: what it became is opened
     this.asked = this.value(""); // the question it answers, when written from the home screen's prompt
     this.askedNumber = null;
     this.detailsOpen = this.value(false); // whether More details - its event, periods, kind, labels, links - is open
@@ -304,6 +309,7 @@ export class Editor extends Controller {
       if (!this.placeId.read()) this.placeId.setValue(this.weave().events.get(payload.id)?.place_id ?? null);
     }
     if (action === DROPS_EVENT) this.eventId.setValue(null);
+    if (action === CLEARS_NEW_EVENT) this.newEvent.setValue("");
     if (action === PICKS_PERIOD) { this.periodIds.update((ids) => (ids.includes(payload.id) ? ids : [...ids, payload.id])); this.searches.period.setValue(""); }
     if (action === DROPS_PERIOD) this.periodIds.update((ids) => ids.filter((id) => id !== payload.id));
     if (action === PICKS_PLACE) { this.placeId.setValue(payload.id); this.searches.place.setValue(""); }
@@ -439,7 +445,29 @@ export class Editor extends Controller {
     this.detailsOpen.setValue(!!this.eventId.read() || this.periodIds.read().length > 0 || !!this.periodType.read() || this.labels.read().length > 0
       || this.links.read().length > 0);
     this.audienceOpen.setValue(false);
+    this.newEvent.setValue("");
+    this.turnedFrom = null;
+    this.turned = false;
     this.problem.setValue("");
+  }
+
+  /**
+   * The draft, a memory, turned into an event or a period there and then (bigger.js): what it keeps - its title (as
+   * named), time, place, people, who sees it, and for a period its words as its notes - carried over; saved, it is
+   * that, and a saved memory it was is replaced by it.
+   */
+  turnInto(kind, name, periodKind) {
+    if (this.kind.read() !== "memory") return;
+    this.turnedFrom = this.id.read() || null;
+    this.kind.setValue(kind);
+    this.id.setValue(null);
+    if (name) this.title.setValue(name);
+    this.periodType.setValue(periodKind ?? "");
+    this.eventId.setValue(null);
+    this.newEvent.setValue("");
+    if (kind === "period") this.periodIds.setValue([]);
+    this.notice.setValue(Phrase.of(this.turnedFrom ? `It is ${kind === "event" ? "an event" : "a period"} now: saved, it replaces the memory.`
+      : `It is ${kind === "event" ? "an event" : "a period"} now.`));
   }
 
   tag(personId) { this.tags.update((tags) => (tags.includes(personId) ? tags : [...tags, personId])); }
@@ -548,8 +576,24 @@ export class Editor extends Controller {
     this.problem.setValue("");
     // a kind typed but not added yet is added, and is this one's: saved without Enter, it isn't lost
     if (kind !== "memory" && this.newKind.read().trim()) await this.addKind(this.newKind.read());
+    // a saved memory turned into an event or a period: made so first, then what the form says saved on it
+    if (this.turnedFrom && kind !== "memory") {
+      const title = this.title.read().trim();
+      const made = kind === "event" ? await this.loom.eventFromMemory(this.turnedFrom, title) : await this.loom.periodOfMemory(this.turnedFrom, title, this.periodType.read());
+      if (!made.ok) { this.busy.setValue(false); this.problem.setValue(made.error); return; }
+      this.id.setValue(kind === "event" ? made.data : made.data.period);
+      this.turnedFrom = null;
+      this.turned = true;
+      await this.account.load();
+    }
     const save = { memory: (g) => this.loom.saveMemory(g), event: (g) => this.loom.saveEvent(g), period: (g) => this.loom.savePeriod(g) }[kind];
     const saved = await save(this.given());
+    // a new event with it in it, named as they said
+    if (saved.ok && kind === "memory" && this.newEvent.read().trim()) {
+      const made = await this.loom.eventOfMemory(saved.data, this.newEvent.read().trim());
+      if (!made.ok) this.problem.setValue(made.error);
+      else this.newEvent.setValue("");
+    }
     if (saved.ok && kind === "memory") {
       for (const gone of this.removed.read()) await this.loom.removePicture(gone.id, gone.path, gone.thumb);
       const typed = this.captions.read();
@@ -572,7 +616,9 @@ export class Editor extends Controller {
     this.busy.setValue(false);
     if (!saved.ok) { this.problem.setValue(saved.error); return; }
     this.id.setValue(saved.data);
-    if (!this.problem.read()) this.done(false, `${kind}:${saved.data}`);
+    const turned = this.turned;
+    this.turned = false;
+    if (!this.problem.read()) this.done(false, `${kind}:${saved.data}`, turned ? `${kind}:${saved.data}` : "");
   }
 
   async delete() {
@@ -694,7 +740,7 @@ export class Editor extends Controller {
 }
 
 /** The screen a draft is written on. */
-export function describeEditor(ui, editor, account) {
+export function describeEditor(ui, editor, account, partOf = null) {
   const kind = editor.kind;
   const said = (key) => kind.map((k) => Phrase.of(KIND_WORDS[k][key]));
   const isMemory = kind.map((k) => k === "memory");
@@ -762,6 +808,8 @@ export function describeEditor(ui, editor, account) {
     chooser(ui, { label: Phrase.of("Where"), chosen: ui.bound(() => editor.chosenPlace()), unpick: DROPS_PLACE,
       search: editor.searches.place, looks: LOOKS_FOR_PLACE, matches: ui.bound(() => editor.placeMatches()), pick: PICKS_PLACE,
       create: ADDS_NEW_PLACE, placeholder: Phrase.of("Type a place") }),
+    // what a memory is part of - an event, periods of their life - and the sheet to choose more from (bigger.js)
+    ...(partOf ? [partOf] : []),
     // who sees it: said, and changed only when asked to
     ui.row([
       ui.column([ui.text(Phrase.of("Who can see it"), "FieldName"), ui.text(audience.map((a) => a.summary), "Seen").wraps()]).grow(),
@@ -804,9 +852,6 @@ export function describeEditor(ui, editor, account) {
         ui.button(ADDS_PERIOD_KIND, { style: LINK }),
       ], "AddRow"),
     ], "Part")),
-    ui.when(isMemory, chooser(ui, { label: Phrase.of("Of an event - one you were at, or name a new one"), chosen: ui.bound(() => editor.chosenEvent()), unpick: DROPS_EVENT,
-      search: editor.searches.event, looks: LOOKS_FOR_EVENT, matches: ui.bound(() => editor.eventMatches()), pick: PICKS_EVENT,
-      create: ADDS_NEW_EVENT, placeholder: Phrase.of("Type to find an event, or name a new one") })),
     // someone else's event, or someone else's period: what goes into it waits for them
     ui.text(ui.bound(() => {
       const weave = account.weave.read();
@@ -817,8 +862,8 @@ export function describeEditor(ui, editor, account) {
       const names = [...(event && !runs(event) ? [weave.nameOf(event.owner)] : []), ...others.map((p) => weave.nameOf(p.owner))];
       return names.length ? Phrase.with("It goes on your life at once. Others see it there only once %s approves it - until then it is there for you alone.", [[...new Set(names)].join(" and ")]) : "";
     }), "Hint").wraps().hidesEmpty(),
-    // the periods it was during: every one of the member's overlapping its time offered at once, or one found or named
-    ui.when(kind.map((k) => k !== "period"), chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()),
+    // an event's periods: every one of the member's overlapping its time offered at once, or one found or named (a memory's: partOf)
+    ui.when(kind.map((k) => k === "event"), chooser(ui, { label: Phrase.of("During periods of your life - as many as it was during"), chosen: ui.bound(() => editor.chosenPeriods()),
       unpick: DROPS_PERIOD, search: editor.searches.period, looks: LOOKS_FOR_PERIOD, matches: ui.bound(() => editor.periodMatches()), pick: PICKS_PERIOD,
       create: ADDS_NEW_PERIOD, placeholder: Phrase.of("Type to find a period, or name a new one"),
       offered: ui.bound(() => editor.overlapping()), offeredSaid: Phrase.of("Your periods overlapping its time - press one to add it:") })),

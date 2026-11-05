@@ -1,5 +1,5 @@
-// "Part of something bigger?" on a memory of the member's own: one sheet, five
-// plain choices, each one step -
+// "Part of something bigger?", in the editor of a memory of the member's own:
+// one sheet, five plain choices, each one step -
 //   put it in an event they have (theirs, or one they were at), those around
 //     its time offered at once, others found by typing;
 //   start a new event with it in it - the memory stays, inside it;
@@ -8,13 +8,15 @@
 //   put it in a period of their life, those it falls within offered at once;
 //   turn it into a period - the memory replaced, or kept during it when a
 //     period can't hold what it has, said first.
-// Done, the sheet closes and the memory's page says what it is part of, with
-// the way to take it out. What is said is said of that memory alone.
+// Done, the sheet closes and the editor says what it is part of, each a
+// button with an X to take it out; all of it kept when it is saved. The
+// memory's own page only says what it is part of, each opening it.
 
-import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=ac58294b1e9d";
-import { DANGER, LINK } from "./look/look.js?v=ac58294b1e9d";
-import { few, problem } from "./parts.js?v=ac58294b1e9d";
-import { yearsOf } from "./woven.js?v=ac58294b1e9d";
+import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=5fb9a6608b7f";
+import { DANGER, LINK } from "./look/look.js?v=5fb9a6608b7f";
+import { few } from "./parts.js?v=5fb9a6608b7f";
+import { yearsOf } from "./woven.js?v=5fb9a6608b7f";
+import { CLEARS_NEW_EVENT, DROPS_EVENT, DROPS_PERIOD } from "./editor.js?v=5fb9a6608b7f";
 
 export const OPENS_BIGGER = "opens_part_of_something_bigger";
 export const CHOOSES_WAY = "chooses_how_it_is_part_of_something_bigger";
@@ -28,8 +30,7 @@ export const STARTS_EVENT = "starts_a_new_event_with_it_in_it";
 export const TURNS_INTO_EVENT = "turns_it_into_an_event";
 export const CHOOSES_KIND = "chooses_the_periods_kind";
 export const TURNS_INTO_PERIOD = "turns_it_into_a_period";
-export const TAKES_OUT_OF_EVENT = "takes_it_out_of_its_event";
-export const TAKES_OUT_OF_PERIOD = "takes_it_out_of_that_period";
+export const MAKES_PERIOD = "makes_a_new_period_with_it_in_it";
 
 export const WORDS = {
   [OPENS_BIGGER]: ["Part of something bigger?"],
@@ -44,8 +45,7 @@ export const WORDS = {
   [TURNS_INTO_EVENT]: ["Yes, turn it into an event"],
   [CHOOSES_KIND]: ["This kind"],
   [TURNS_INTO_PERIOD]: ["Yes, turn it into a period"],
-  [TAKES_OUT_OF_EVENT]: ["Take it out"],
-  [TAKES_OUT_OF_PERIOD]: ["Take it out"],
+  [MAKES_PERIOD]: ["Make this period"],
 };
 
 /** The five ways, in the sheet's order: [way, what it is, what it does]. */
@@ -61,29 +61,33 @@ const SHOWN = 8;
 const words = (line) => String(line ?? "").toLowerCase().split(/\s+/).filter(Boolean);
 
 export class Bigger extends Controller {
-  /** Through the loom; close() takes the sheet down. */
-  constructor(chimes, loom, account, close) {
+  /** close() takes the sheet down. */
+  constructor(chimes, account, close) {
     super(chimes);
-    this.loom = loom;
     this.account = account;
     this.close = close;
-    this.memoryId = this.value("");
     this.way = this.value(""); // "" while choosing; else one of WAYS
     this.eventLine = this.value("");
     this.periodLine = this.value("");
     this.name = this.value("");
     this.kind = this.value("");
-    this.busy = this.value(false);
-    this.problem = this.value("");
-    this.said = this.value({ memory: "", words: "" }); // what was done, said on that memory's page alone
+    this.editor = null; // the editor, handed over by the app
   }
 
   answers() { return Object.keys(WORDS); }
 
-  memory() { return this.account.weave.read().memories.get(this.memoryId.read()) ?? null; }
+  memory() { return this.draft(); }
+
+  /** The memory being written, as far as what it is part of goes: its words, pictures, time, event and periods as they stand. */
+  draft() {
+    const e = this.editor;
+    const saved = e.id.read() ? this.account.weave.read().memories.get(e.id.read()) : null;
+    return { id: e.id.read() ?? "", title: e.title.read(), body: e.text.read(), starts: e.span().starts?.date ?? null,
+      event_id: e.eventId.read() ?? (e.newEvent.read() ? "new" : null), period_ids: e.periodIds.read(),
+      pictures: [...e.pictures.read(), ...e.added.read()], links: e.links.read(), comments: saved?.comments ?? [] };
+  }
 
   would(action, payload) {
-    if (this.busy.read()) return Phrase.of("Saving");
     if ([STARTS_EVENT, TURNS_INTO_EVENT, TURNS_INTO_PERIOD].includes(action) && !this.name.read().trim()) return Phrase.of("Give it a name");
     if (action === CHOOSES_WAY && payload?.way !== "period" && payload?.way !== "event" && !this.memory()?.starts) return Phrase.of("Give it a date first");
     if (action === CHOOSES_WAY && payload?.way === "turn" && this.memory()?.event_id) return Phrase.of("Take it out of its event first");
@@ -91,10 +95,9 @@ export class Bigger extends Controller {
   }
 
   told(action, payload) {
-    this.problem.setValue("");
     if (action === OPENS_BIGGER) {
-      this.memoryId.setValue(payload.parameter);
-      this.way.setValue("");
+      // in an event already: straight to its periods
+      this.way.setValue(payload.way ?? "");
       this.eventLine.setValue("");
       this.periodLine.setValue("");
     }
@@ -109,42 +112,25 @@ export class Bigger extends Controller {
     if (action === FINDS_PERIOD) this.periodLine.setValue(payload.line);
     if (action === NAMES_IT) this.name.setValue(payload.line);
     if (action === CHOOSES_KIND) this.kind.setValue(payload.type);
-    const id = this.memoryId.read();
-    const title = (list, at) => this.account.weave.read()[list].get(at)?.title ?? "";
-    if (action === PUTS_IN_EVENT) this.run(() => this.loom.putInEvent(id, payload.event), () => Phrase.with("Put in %s.", [title("events", payload.event)]));
-    if (action === PUTS_IN_PERIOD) this.run(() => this.loom.putInPeriod(id, payload.period, true), () => Phrase.with("Put in %s.", [title("periods", payload.period)]));
-    if (action === STARTS_EVENT) this.run(() => this.loom.eventOfMemory(id, this.name.read().trim()), () => Phrase.of("It is in its own event now: everyone at it can add theirs."), (made) => `#event/${made}`);
-    if (action === TURNS_INTO_EVENT) this.run(() => this.loom.eventFromMemory(id, this.name.read().trim()), () => Phrase.of("It is an event now."), (made) => `#event/${made}`);
-    if (action === TURNS_INTO_PERIOD) this.run(() => this.loom.periodOfMemory(id, this.name.read().trim(), this.kind.read()),
-      () => "", (made) => `#period/${made.period}`);
-    // on the memory's own page, out of what it is part of
-    if (action === TAKES_OUT_OF_EVENT) this.run(() => this.loom.putInEvent(payload.memory, null), () => Phrase.of("Taken out of the event: it keeps its time."), null, payload.memory);
-    if (action === TAKES_OUT_OF_PERIOD) this.run(() => this.loom.putInPeriod(payload.memory, payload.period, false), () => Phrase.of("Taken out of the period."), null, payload.memory);
+    // into the draft, kept when it is saved
+    if ([PUTS_IN_EVENT, PUTS_IN_PERIOD, STARTS_EVENT, TURNS_INTO_EVENT, TURNS_INTO_PERIOD, MAKES_PERIOD].includes(action)) {
+      const e = this.editor;
+      if (action === PUTS_IN_EVENT) { e.eventId.setValue(payload.event); e.newEvent.setValue(""); }
+      if (action === PUTS_IN_PERIOD) e.periodIds.update((ids) => (ids.includes(payload.period) ? ids : [...ids, payload.period]));
+      if (action === STARTS_EVENT) { e.newEvent.setValue(this.name.read().trim()); e.eventId.setValue(null); }
+      if (action === TURNS_INTO_EVENT) e.turnInto("event", this.name.read().trim(), "");
+      if (action === TURNS_INTO_PERIOD) e.turnInto("period", this.name.read().trim(), this.kind.read());
+      if (action === MAKES_PERIOD) e.addPeriod(this.periodLine.read().trim());
+      this.way.setValue("");
+      this.close();
+    }
     return null;
   }
 
-  /** Done on the platform, then loaded: the sheet closed, and what was done said on the memory's page, or what it became opened. */
-  async run(work, said, goes = null, memory = this.memoryId.read()) {
-    this.busy.setValue(true);
-    const done = await work();
-    await this.account.load();
-    if (this.disposed) return;
-    this.busy.setValue(false);
-    if (!done.ok) { this.problem.setValue(done.error); this.said.setValue({ memory, words: done.error }); return; }
-    this.said.setValue({ memory, words: said() });
-    if (this.way.read() && memory === this.memoryId.read()) { this.way.setValue(""); this.close(); }
-    if (goes) setTimeout(() => { location.hash = goes(done.data); }, 60);
-  }
-
-  /** What was said, of this memory only. */
-  saidOf(memoryId) { const s = this.said.read(); return s.memory === memoryId ? s.words : ""; }
-
   /** A memory's time, in years: { from, to }, or null with none. */
-  spanOf(memory) {
-    const entry = memory ? this.account.weave.read().entry("memory", memory) : null;
-    if (!entry?.when?.date) return null;
-    const from = yearsOf(entry.when);
-    return { from, to: entry.until?.date ? yearsOf(entry.until) : from };
+  spanOf() {
+    const { starts, ends } = this.editor.span();
+    return starts?.date ? { from: yearsOf(starts), to: ends?.date ? yearsOf(ends) : yearsOf(starts) } : null;
   }
 
   /** The events it may go in: around its time at once (two years either side, nearest first), or those holding what is typed. */
@@ -161,10 +147,9 @@ export class Bigger extends Controller {
   }
 
   /** The periods it may go in: those it falls within at once, or those holding what is typed. */
-  periods() {
+  periods(memory = this.memory(), line = this.periodLine.read()) {
     const weave = this.account.weave.read();
-    const memory = this.memory();
-    const typed = words(this.periodLine.read());
+    const typed = words(line);
     const span = this.spanOf(memory);
     const inAlready = new Set(memory?.period_ids ?? []);
     const now = new Date().getFullYear() + 1;
@@ -213,9 +198,9 @@ export function describeBigger(ui, bigger, account) {
     step("", [
       ui.text(Phrase.of("Part of something bigger?"), "Title"),
       ...WAYS.map(([name, title, line]) => ui.pressable(CHOOSES_WAY, { way: name }, [ui.text(Phrase.of(title), "AddChoiceTitle"), ui.text(Phrase.of(line), "AddChoiceLine").wraps()],
-        name.startsWith("turn") ? "AddChoice AddChoiceQuiet" : "AddChoice")),
+        "AddChoice")),
       // a way that can't be taken now says why, rather than vanishing
-      ui.when(ui.bound(() => !bigger.memory()?.starts), ui.text(Phrase.of("Give it a date first (with Edit) to start or turn it into an event or a period."), "Hint").wraps()),
+      ui.when(ui.bound(() => !bigger.memory()?.starts), ui.text(Phrase.of("Give it a date first to start or turn it into an event or a period."), "Hint").wraps()),
       ui.when(ui.bound(() => !!bigger.memory()?.event_id), ui.text(Phrase.of("It is part of an event already: take it out of that first to turn it into one."), "Hint").wraps()),
       ui.pressable(Ui.CLOSES, {}, [ui.text(Phrase.of("Cancel"), Themes.FACE)], "PlainLink"),
     ]),
@@ -224,7 +209,6 @@ export function describeBigger(ui, bigger, account) {
       ui.text(ui.bound(() => Phrase.of(bigger.eventLine.read().trim() ? "Found:" : "Your events around its time:")), "Hint"),
       list(events, PUTS_IN_EVENT, (e) => ({ event: e?.id ?? "" }), ui.bound(() => Phrase.of(bigger.eventLine.read().trim() ? "None of your events by that name." : "None around its time: find one by its name."))),
       ui.field(FINDS_EVENT, "", { changes: FINDS_EVENT, shows: bigger.eventLine, label: Phrase.of("Or find another: type its name") }),
-      problem(ui, bigger.problem),
       back2(),
     ]),
     step("new", [
@@ -232,7 +216,6 @@ export function describeBigger(ui, bigger, account) {
       ui.text(Phrase.of("A new event with this memory inside it, at its time and place, with its people. Others who were there can add their own memories to it."), "Hint").wraps(),
       name("e.g. Lake picnic"),
       ui.button(STARTS_EVENT),
-      problem(ui, bigger.problem),
       back2(),
     ]),
     step("turn", [
@@ -241,7 +224,6 @@ export function describeBigger(ui, bigger, account) {
       ui.text(Phrase.of("The event keeps its title, time, place, people and periods."), "Hint").wraps(),
       name("e.g. Sam's 40th"),
       ui.button(TURNS_INTO_EVENT, { style: DANGER }),
-      problem(ui, bigger.problem),
       back2(),
     ]),
     step("period", [
@@ -249,8 +231,11 @@ export function describeBigger(ui, bigger, account) {
       ui.text(ui.bound(() => Phrase.of(bigger.periodLine.read().trim() ? "Found:" : "Your periods it falls within:")), "Hint"),
       list(periods, PUTS_IN_PERIOD, (p) => ({ period: p?.id ?? "" }), ui.bound(() => Phrase.of(bigger.periodLine.read().trim() ? "None of your periods by that name." : "None around its time: find one by its name."))),
       ui.field(FINDS_PERIOD, "", { changes: FINDS_PERIOD, shows: bigger.periodLine, label: Phrase.of("Or find another: type its name") }),
-      problem(ui, bigger.problem),
-      back2(),
+      // a name typed that is none of theirs: a new period by that name, over its time for now
+      ui.when(ui.bound(() => !!bigger.periodLine.read().trim() && !bigger.periods().some((p) => p.title.toLowerCase() === bigger.periodLine.read().trim().toLowerCase())),
+        ui.pressable(MAKES_PERIOD, {}, [ui.text(ui.bound(() => Phrase.with("Make a new period: “%s”", [bigger.periodLine.read().trim()])), Themes.FACE)], LINK)),
+      // come straight here (a memory in an event), Back closes the sheet; else back to the ways
+      ui.when(ui.bound(() => !!bigger.memory()?.event_id), ui.pressable(Ui.CLOSES, {}, [ui.text(ui.words(BACK_TO_WAYS), Themes.FACE)], "PlainLink"), back2()),
     ]),
     step("turnPeriod", [
       heading("turnPeriod"),
@@ -262,30 +247,50 @@ export function describeBigger(ui, bigger, account) {
           .currentWhile(ui.bound(() => bigger.kind.read() === (held.read()?.type ?? ""))),
         { finds: "Find a kind by its name", keyOf: (k) => k.type || "none", style: "Segments", keep: (k) => k.type === bigger.kind.read() }),
       ui.button(TURNS_INTO_PERIOD, { style: DANGER }),
-      problem(ui, bigger.problem),
       back2(),
     ]),
   ], "BiggerSheet"));
 }
 
-/** On the memory's page: the event and the periods it is part of, each with the way to take it out; and what was just done. */
-export function describePartOf(ui, bigger, account, memoryId, opener) {
+/** Take it out, as an X on the right of what it takes it out of: its words there for a reader who can't see it. */
+const cross = (ui, action) => [ui.text("✕", "TakeOutMark"), ui.text(ui.words(action), "SeenNot")];
+
+/** On the memory's page: the event and the periods it is part of, each a button opening it. Changed in Edit alone. */
+export function describePartOf(ui, account, memoryId) {
   const memory = ui.bound(() => account.weave.read().memories.get(memoryId.read()) ?? null);
   const event = ui.bound(() => { const m = memory.read(); return m?.event_id ? account.weave.read().events.get(m.event_id) ?? null : null; });
   const periods = ui.bound(() => (memory.read()?.period_ids ?? []).map((id) => account.weave.read().periods.get(id)).filter(Boolean));
   return ui.column([
-    ui.when(event, ui.row([
-      ui.pressable("opens_it", ui.bound(() => ({ parameter: `event:${event.read()?.id ?? ""}` })),
-        [ui.text(ui.bound(() => Phrase.with("Part of %s%s", [event.read()?.title ?? "", memory.read()?.approval === "waiting" ? ", waiting to be approved" : ""])), "LinkWords")], "Link")
-        .goesTo("item"),
-      ui.pressable(TAKES_OUT_OF_EVENT, memoryId.map((id) => ({ memory: id })), [ui.text(ui.words(TAKES_OUT_OF_EVENT), "Small")], "PlainLink"),
-    ], "PartOfRow")),
-    ui.each(periods, (held) => ui.row([
-      ui.pressable("opens_it", held.map((p) => ({ parameter: `period:${p?.id ?? ""}` })), [ui.text(held.map((p) => Phrase.with("During %s", [p?.title ?? ""])), "LinkWords")], "Link")
-        .goesTo("item"),
-      ui.pressable(TAKES_OUT_OF_PERIOD, ui.bound(() => ({ memory: memoryId.read(), period: held.read()?.id ?? "" })), [ui.text(ui.words(TAKES_OUT_OF_PERIOD), "Small")], "PlainLink"),
-    ], "PartOfRow"), (p) => p.id, "PartOf"),
-    opener,
-    ui.text(ui.bound(() => bigger.saidOf(memoryId.read())), "Notice").wraps().hidesEmpty(),
+    ui.when(event, ui.pressable("opens_it", ui.bound(() => ({ parameter: `event:${event.read()?.id ?? ""}` })),
+      [ui.text(ui.bound(() => Phrase.with("Part of %s%s", [event.read()?.title ?? "", memory.read()?.approval === "waiting" ? ", waiting to be approved" : ""])), "LinkWords")],
+      "Link PartEvent").goesTo("item")),
+    ui.each(periods, (held) => ui.pressable("opens_it", held.map((p) => ({ parameter: `period:${p?.id ?? ""}` })),
+      [ui.text(held.map((p) => Phrase.with("During %s", [p?.title ?? ""])), "LinkWords")], "Link PartPeriod").goesTo("item"), (p) => p.id, "PartOf"),
   ], "PartOfAll");
+}
+
+/** The opener's words: Part of something bigger? while it is part of nothing, Part of something else? once it is. */
+const openerSaid = (partOfAnything) => Phrase.of(partOfAnything ? "Part of something else?" : "Part of something bigger?");
+
+/**
+ * In the editor: what the draft is part of, each a button with an X - kept when it is saved - and the
+ * sheet to choose more from, its choices going into the draft.
+ */
+export function describeEditPartOf(ui, bigger, editor, account, sheet) {
+  const weave = account.weave;
+  const event = ui.bound(() => (editor.eventId.read() ? weave.read().events.get(editor.eventId.read()) ?? null : null));
+  const periods = ui.bound(() => editor.periodIds.read().map((id) => weave.read().periods.get(id)).filter(Boolean));
+  const any = ui.bound(() => !!editor.eventId.read() || !!editor.newEvent.read() || editor.periodIds.read().length > 0);
+  const chip = (words, action, payload, look) => ui.row([
+    ui.text(words, "PartWords"),
+    ui.pressable(action, payload, cross(ui, action), "TakeOut"),
+  ], `PartOfRow ${look}`);
+  return ui.when(editor.kind.map((k) => k === "memory"), ui.column([
+    ui.when(event, chip(ui.bound(() => Phrase.with("Part of %s", [event.read()?.title ?? ""])), DROPS_EVENT, {}, "PartEvent")),
+    ui.when(editor.newEvent, chip(ui.bound(() => Phrase.with("Part of %s (new)", [editor.newEvent.read()])), CLEARS_NEW_EVENT, {}, "PartEvent")),
+    ui.each(periods, (held) => chip(held.map((p) => Phrase.with("During %s", [p?.title ?? ""])), DROPS_PERIOD, held.map((p) => ({ id: p?.id ?? "" })), "PartPeriod"),
+      (p) => p.id, "PartOf"),
+    ui.pressable(OPENS_BIGGER, ui.bound(() => ({ way: editor.eventId.read() || editor.newEvent.read() ? "period" : "" })),
+      [ui.text(any.map((a) => openerSaid(a)), "LinkWords"), ui.text("›", "RowMark")], "BiggerButton").opens(sheet),
+  ], "PartOfAll"));
 }
