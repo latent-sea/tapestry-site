@@ -18,16 +18,16 @@ export function keptTextSize() {
   try { return Number(localStorage.getItem(TEXT_KEPT)) || 1; } catch { return 1; }
 }
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { few, heading, notice, problem } from "./parts.js?v=20b89f4c3519";
-import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=20b89f4c3519";
-import { dotOf } from "./parts.js?v=20b89f4c3519";
-import { SIGNS_OUT } from "./account.js?v=20b89f4c3519";
-import { copyOf } from "./keep.js?v=20b89f4c3519";
-import { parseWhen, sayWhen } from "./when.js?v=20b89f4c3519";
-import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=20b89f4c3519";
-import { UNBLOCKS } from "./safety.js?v=20b89f4c3519";
-import { describePhone } from "./phone.js?v=20b89f4c3519";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { few, heading, notice, problem } from "./parts.js?v=779517fc44e5";
+import { AUDIENCES, CARD_PARTS, Weave, withKind, withoutKind } from "./weave.js?v=779517fc44e5";
+import { dotOf } from "./parts.js?v=779517fc44e5";
+import { SIGNS_OUT } from "./account.js?v=779517fc44e5";
+import { copyOf } from "./keep.js?v=779517fc44e5";
+import { parseWhen, sayWhen } from "./when.js?v=779517fc44e5";
+import { DANGER, LINK, TEXT_SIZES } from "./look/look.js?v=779517fc44e5";
+import { UNBLOCKS } from "./safety.js?v=779517fc44e5";
+import { describePhone } from "./phone.js?v=779517fc44e5";
 
 export const YOU = "you";
 
@@ -133,7 +133,7 @@ export class You extends Controller {
 
   answers() { return Object.keys(WORDS); }
 
-  would(action) {
+  would(action, payload) {
     if (this.busy.read() && action !== SETS_MY_NAME) return Phrase.of(action === KEEPS_COPY ? "Making your copy" : "Saving");
     if (action === SAVES_MY_NAME && !this.name.read().trim()) return Phrase.of("Your name can't be empty");
     if (action === SAVES_BIRTHDAY && birthdayOf(this.birthday.read()).error) return Phrase.of(birthdayOf(this.birthday.read()).error);

@@ -24,17 +24,17 @@
 // is a function of the parameter it is entered with, handed in as a bound
 // value. Every pop-up owns its way out: CLOSES, which goes back.
 
-import { Bound } from "./bound.js?v=20b89f4c3519";
-import { Chimes } from "./chimes.js?v=20b89f4c3519";
-import { Desc } from "./desc.js?v=20b89f4c3519";
-import { Driver } from "./driver.js?v=20b89f4c3519";
-import { Frames } from "./frames.js?v=20b89f4c3519";
-import { Language } from "./language.js?v=20b89f4c3519";
-import { OwnBell } from "./own_bell.js?v=20b89f4c3519";
-import { Phrase } from "./phrase.js?v=20b89f4c3519";
-import { Place } from "./place.js?v=20b89f4c3519";
-import { Pressables, Themes } from "./themes.js?v=20b89f4c3519";
-import { Value } from "./value.js?v=20b89f4c3519";
+import { Bound } from "./bound.js?v=779517fc44e5";
+import { Chimes } from "./chimes.js?v=779517fc44e5";
+import { Desc } from "./desc.js?v=779517fc44e5";
+import { Driver } from "./driver.js?v=779517fc44e5";
+import { Frames } from "./frames.js?v=779517fc44e5";
+import { Language } from "./language.js?v=779517fc44e5";
+import { OwnBell } from "./own_bell.js?v=779517fc44e5";
+import { Phrase } from "./phrase.js?v=779517fc44e5";
+import { Place } from "./place.js?v=779517fc44e5";
+import { Pressables, Themes } from "./themes.js?v=779517fc44e5";
+import { Value } from "./value.js?v=779517fc44e5";
 
 const DRAWN = "drawn";
 let fieldsMade = 0; // every field's own id, so its label names it
@@ -621,6 +621,8 @@ const BUILDERS = {
     if (autocomplete) made.autocomplete = autocomplete;
     if (named) { named.htmlFor = made.id; ui.draws(named, () => { named.textContent = Language.said(label); }); }
     if (placeholder) ui.draws(made, () => { made.placeholder = Language.said(placeholder); });
+    // with no label shown, named for a screen reader by its placeholder, or else its action's words
+    if (!named) ui.draws(made, () => { made.setAttribute("aria-label", Language.said(placeholder || ui.words(action))); });
     if (desc.props.takes_focus) Frames.next(() => made.focus());
     const said = el(holder, "p", "chime-text chime-wraps chime-hides-empty Reason");
     const region = place.name;
@@ -677,6 +679,8 @@ const BUILDERS = {
     if (!place.performs.has(action)) place.performs.set(action, "");
     const made = el(parent, "textarea", `chime-field ${styleOf(style)}`);
     made.dataset.action = action;
+    // named for a screen reader by its action's words, as no label is shown with it
+    ui.draws(made, () => { made.setAttribute("aria-label", Language.said(ui.words(action))); });
     ui.draws(made, () => { const value = shows.read() ?? ""; if (made.value !== String(value)) made.value = String(value); });
     made.addEventListener("input", () => ui.commands.dispatch(place.name, action, carries ? carries(made.value) : { line: made.value }));
     return made;

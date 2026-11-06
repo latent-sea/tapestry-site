@@ -10,16 +10,16 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=20b89f4c3519";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=20b89f4c3519";
-import { shrinkPicture } from "./backend/pictures.js?v=20b89f4c3519";
+import { Backend } from "./backend/backend.js?v=779517fc44e5";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=779517fc44e5";
+import { shrinkPicture } from "./backend/pictures.js?v=779517fc44e5";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
 
-// public: the platform's address and its publishable key belong in the page
-const PLATFORM = "https://api.latent-sea.com";
-const KEY = "sb_publishable_BqVtSYE4ysOb2sHMuFSwMk_HrTAUgLx";
+// public: the platform's address and its publishable key belong in the page (and the shared map's, sharedmap.js)
+export const PLATFORM = "https://api.latent-sea.com";
+export const KEY = "sb_publishable_BqVtSYE4ysOb2sHMuFSwMk_HrTAUgLx";
 // public: the Google client the platform accepts (platform/supabase/platform.yml)
 const GOOGLE_CLIENT = "400837578052-jqnhh565es3a92k58u5r2oggdcf7mrkr.apps.googleusercontent.com";
 // on a phone, Google sends people back only to an address its client lists, and Tapestry's isn't listed
@@ -256,13 +256,10 @@ export class Loom {
   async adminRemove(member) { return answer(await this.backend.callRpc("tapestry_admin_remove", { member })); }
 
   /** An invitation cancelled. */
-  async adminCancelInvite(token) { return answer(await this.backend.callRpc("tapestry_admin_cancel_invite", { token })); }
+  async adminCancelInvite(id) { return answer(await this.backend.callRpc("tapestry_admin_cancel_invite", { token: id })); }
 
   /** Someone made an admin, or not one. */
   async adminSetPlan(member, plan) { return answer(await this.backend.callRpc("tapestry_admin_set_plan", { member, plan })); }
-
-  /** A report dealt with by an admin: what was reported taken off (removed), or let be. */
-  async adminSettleReport(report, removed) { return answer(await this.backend.callRpc("tapestry_admin_settle_report", { report, removed })); }
 
   // --- moderating, and support ---
 
@@ -341,9 +338,6 @@ export class Loom {
 
   // --- keeping Tapestry kind, and leaving it ---
 
-  /** Tapestry's terms agreed to: on joining, or once by everyone here before there were terms. */
-  async agree() { return answer(await this.backend.callRpc("tapestry_agree")); }
-
   /** Said on joining, or once by everyone here before it was asked: 14 or over, and Tapestry may keep what they write about themselves; the terms agreed to with it. */
   async confirm(over14, letsKeep) { return answer(await this.backend.callRpc("tapestry_confirm", { over_14: !!over14, lets_keep: !!letsKeep })); }
 
@@ -363,9 +357,6 @@ export class Loom {
 
   /** One of the member's memories put in an event they may add to - or, with no event, taken out of the one it is in. */
   async putInEvent(memory, event) { return answer(await this.backend.callRpc("tapestry_put_in_event", { memory, event: event || null })); }
-
-  /** A memory of the member's put in a period (put) or taken out of it. */
-  async putInPeriod(memory, period, put) { return answer(await this.backend.callRpc("tapestry_put_in_period", { memory, period, put })); }
 
   /** A memory of the member's turned into an event, named as they say: { ok, data: the event's id }. The memory is gone. */
   async eventFromMemory(memoryId, named = "") { return answer(await this.backend.callRpc("tapestry_event_from_memory", { the_memory: memoryId, named })); }
@@ -500,6 +491,12 @@ export class Loom {
 
   /** A request answered yes or no, or taken back (no) by whoever asked. */
   async answer(request, yes) { return answer(await this.backend.callRpc("tapestry_answer", { request, yes })); }
+
+  /** The member's map shared by a link anyone may open: its token (the same while it stays shared). */
+  async shareMap() { return answer(await this.backend.callRpc("tapestry_share_map", {})); }
+
+  /** The member's map no longer shared: its link opens nothing from now on. */
+  async stopSharingMap() { return answer(await this.backend.callRpc("tapestry_stop_sharing_map", {})); }
 
   /** Who an invitation is from: { from, expired }, or null. */
   async invitation(token) { return answer(await this.backend.callRpc("tapestry_invitation", { token })); }

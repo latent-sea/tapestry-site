@@ -12,8 +12,8 @@
 // page's kind chips above it are its key, and its filter. Every mark is a
 // link: each says what it is to a reader who can't see it, and its time as
 // the pointer rests on it.
-import { lastDayOf } from "./when.js?v=20b89f4c3519";
-import { yearMarks, yearsOf } from "./woven.js?v=20b89f4c3519";
+import { lastDayOf } from "./when.js?v=779517fc44e5";
+import { yearMarks, yearsOf } from "./woven.js?v=779517fc44e5";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room
@@ -95,7 +95,10 @@ function axisMarks(from, to) {
  * { svg, width, height, rows, from, to } - rows being the marks' keys, top
  * to bottom - or null with nothing in it.
  */
-export function drawTimeline(weave, width = 700, now = new Date(), colours = {}, hidden = {}, range = null, found = null) {
+/** Rows past which a long timeline is drawn as a window: only the rows near what is in view, the rest left as room. */
+export const WINDOWED_FROM = 300;
+
+export function drawTimeline(weave, width = 700, now = new Date(), colours = {}, hidden = {}, range = null, found = null, view = null) {
   const ink = colours.ink ?? "#eef2fa";
   const soft = colours.soft ?? "#8e9ab8";
   const grid = colours.grid ?? "#34426a";
@@ -121,8 +124,11 @@ export function drawTimeline(weave, width = 700, now = new Date(), colours = {},
   if (today >= from && today <= to) {
     out.push(`<line x1="${x(today)}" y1="${TOP - 4}" x2="${x(today)}" y2="${height - BOTTOM}" stroke="${ink}" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>`);
   }
+  // a long one, a window onto it: the rows within a screen or so of what is in view (view: { top, bottom } in its own pixels)
+  const near = view && marks.length > WINDOWED_FROM ? (top) => top + ROW >= view.top - 900 && top <= view.bottom + 900 : () => true;
   marks.forEach((m, i) => {
     const top = TOP + i * ROW;
+    if (!near(top)) return;
     const { entry } = m;
     // the one opened from ("Show in timeline"), picked out
     if (range?.focus === entry.key) {

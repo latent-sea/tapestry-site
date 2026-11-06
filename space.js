@@ -7,7 +7,7 @@
 // a knot opens what it is; in select mode a box drawn over it catches the
 // lives through it. The browser's alone: lives.js works out what it draws.
 
-import { caught, placeAt } from "./lives.js?v=20b89f4c3519";
+import { caught, placeAt } from "./lives.js?v=779517fc44e5";
 
 const YEAR = 0.6; // a year along the time's way, in the space's units
 const PLACE = 1.6; // a place apart (layOut), in them
@@ -276,7 +276,15 @@ export class Space {
       ArrowLeft: ["yaw", -1], ArrowRight: ["yaw", 1], ArrowUp: ["pitch", 1], ArrowDown: ["pitch", -1] };
     c.addEventListener("keydown", (e) => { const k = keys[e.code]; if (!k) return; e.preventDefault(); this.moving[k[0]] = k[1]; this.go(); });
     c.addEventListener("keyup", (e) => { const k = keys[e.code]; if (k) this.moving[k[0]] = 0; });
-    addEventListener("resize", () => this.resize());
+    this.resized = () => this.resize();
+    addEventListener("resize", this.resized);
+  }
+
+  /** Done with: its place gone, nothing of it left listening or moving. */
+  dispose() {
+    removeEventListener("resize", this.resized);
+    if (this.frame) cancelAnimationFrame(this.frame);
+    this.frame = 0;
   }
 
   spread() {

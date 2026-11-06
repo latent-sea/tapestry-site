@@ -7,8 +7,8 @@
 // place owner's alone to see (backend.sql, places). The map's pictures come
 // from OpenStreetMap, as a place's own map's do (placemap.js).
 
-import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=20b89f4c3519";
-import { yearsOf } from "./woven.js?v=20b89f4c3519";
+import { leaflet, TILES, ATTRIBUTION } from "./placemap.js?v=779517fc44e5";
+import { yearsOf } from "./woven.js?v=779517fc44e5";
 
 /** The colours from oldest to newest, evenly along the way. */
 export const RAMP = ["#4b2a8c", "#3b5bdb", "#1c9fc9", "#19c3b3", "#7bd389", "#f2c14e"];
@@ -49,6 +49,21 @@ export function memoryDots(weave) {
     if (!place || !entry.when?.date) { if (memory.owner === weave.meId) missing++; continue; }
     dots.push({ key: entry.key, id: memory.id, title: entry.title, said: entry.said, lat: place.lat, lng: place.lng, years: yearsOf(entry.when) });
   }
+  return { ...plotOf(dots), missing };
+}
+
+/**
+ * A map shared by its link (tapestry_shared_map), as memoryDots has the member's own: { dots, points, from, to } - each dot
+ * its year alone, its title only if it is shared with everyone, else "A memory"; none of them opening anything.
+ */
+export function sharedDots(shared) {
+  const dots = (shared?.dots ?? []).filter((d) => d.lat != null && d.lng != null && d.year != null && Number.isFinite(Number(d.lat)) && Number.isFinite(Number(d.lng)) && Number.isFinite(Number(d.year)))
+    .map((d, i) => ({ key: `shared:${i}`, id: null, title: d.title || "A memory", said: String(d.year), lat: Number(d.lat), lng: Number(d.lng), years: Number(d.year) + 0.5 }));
+  return plotOf(dots);
+}
+
+/** Dots in order of when, each coloured by where it falls between the first and the last, and gathered by where they are. */
+function plotOf(dots) {
   dots.sort((a, b) => a.years - b.years);
   const from = dots.length ? Math.floor(dots[0].years) : null;
   const to = dots.length ? Math.floor(dots[dots.length - 1].years) : null;
@@ -61,7 +76,7 @@ export function memoryDots(weave) {
     atPoint.get(at).push(dot);
   }
   const points = [...atPoint.values()].map((together) => ({ lat: together[0].lat, lng: together[0].lng, dots: together }));
-  return { dots, points, missing, from, to };
+  return { dots, points, from, to };
 }
 
 /**
@@ -94,9 +109,13 @@ export function pieOf(dots) {
   return `conic-gradient(${dots.map((d, i) => `${d.colour} ${Math.round(i * step * 100) / 100}deg ${Math.round((i + 1) * step * 100) / 100}deg`).join(", ")})`;
 }
 
-/** The map drawn into its place on the page (#memory-map) whenever the Places screen is shown, again as the memories change. */
+/**
+ * The map drawn into its place on the page (#memory-map) whenever the Places screen is shown, again as the memories change -
+ * or on a map shared by its link (sharedmap.js), where opens is false: what a dot lists is said, opening nothing.
+ */
 export class MemoryMap {
-  constructor() {
+  constructor({ opens = true } = {}) {
+    this.opens = opens;
     this.map = null;
     this.element = null;
     this.layer = null;
@@ -140,8 +159,10 @@ export class MemoryMap {
       const size = many ? Math.min(40, Math.round(20 + 4 * Math.sqrt(point.dots.length))) : 16;
       const icon = L.divIcon({ className: "MemoryDot", iconSize: [size, size], iconAnchor: [size / 2, size / 2],
         html: `<span style="background:${pieOf(point.dots)}"></span>` });
-      const said = point.dots.map((d) => `<a class="MemoryDotLink" href="#memory/${encodeURIComponent(d.id)}"><i style="background:${d.colour}"></i>`
-        + `<span><strong>${escape(d.title)}</strong><br>${escape(d.said)}</span></a>`).join("");
+      const said = point.dots.map((d) => {
+        const inside = `<i style="background:${d.colour}"></i><span><strong>${escape(d.title)}</strong><br>${escape(d.said)}</span>`;
+        return this.opens && d.id ? `<a class="MemoryDotLink" href="#memory/${encodeURIComponent(d.id)}">${inside}</a>` : `<div class="MemoryDotLink">${inside}</div>`;
+      }).join("");
       const title = many ? `${point.dots.length} memories here` : `${point.dots[0].title}, ${point.dots[0].said}`;
       L.marker([point.lat, point.lng], { icon, title, keyboard: true }).bindPopup(`<div class="MemoryPopup">${said}</div>`, { maxHeight: 260 }).addTo(this.layer);
     }

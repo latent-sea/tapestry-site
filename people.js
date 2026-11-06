@@ -9,12 +9,12 @@
 // is on both threads. Circles are the member's own groups of people, to let
 // in or keep out at once.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { few, heading, mark, notice, problem } from "./parts.js?v=20b89f4c3519";
-import { CARD, DANGER, LINK } from "./look/look.js?v=20b89f4c3519";
-import { describeIsThisYou } from "./asking.js?v=20b89f4c3519";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=20b89f4c3519";
-import { parseWhen, sayWhen } from "./when.js?v=20b89f4c3519";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { few, handOn, heading, mark, notice, problem } from "./parts.js?v=779517fc44e5";
+import { CARD, DANGER, LINK } from "./look/look.js?v=779517fc44e5";
+import { describeIsThisYou } from "./asking.js?v=779517fc44e5";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=779517fc44e5";
+import { parseWhen, sayWhen } from "./when.js?v=779517fc44e5";
 
 export const PEOPLE = "people";
 export const PERSON = "person";
@@ -26,6 +26,7 @@ export const OPENS_PERSON = "opens_a_person";
 export const INVITES = "invites_them";
 export const COPIES_LINK = "copies_the_invitation";
 export const UNLINKS = "unlinks_them";
+export const ASKS_TO_UNLINK = "asks_before_unlinking_them";
 export const SETS_RENAME = "sets_their_name";
 export const RENAMES = "renames_them";
 export const SETS_BORN = "sets_when_they_were_born";
@@ -58,7 +59,8 @@ export const WORDS = {
   [OPENS_PERSON]: ["Open"],
   [INVITES]: ["Invite them to link their life"],
   [COPIES_LINK]: ["Send the link"],
-  [UNLINKS]: ["Unlink their account"],
+  [ASKS_TO_UNLINK]: ["Unlink their account"],
+  [UNLINKS]: ["Yes, unlink them"],
   [SETS_RENAME]: ["Their name"],
   [RENAMES]: ["Save the name"],
   [SETS_BORN]: ["Born"],
@@ -124,7 +126,7 @@ export class People extends Controller {
       for (const typed of [this.born.read(), this.died.read()]) if (typed.trim() && !parseWhen(typed).when) return Phrase.of("Say when, as a time is: 12 June 1932, June 1932, 1932");
     }
     if (action === INVITES && this.weave().people.get(payload?.id)?.account) return Phrase.of("Already linked");
-    if (action === UNLINKS && !this.weave().people.get(payload?.id)?.account) return Phrase.of("Not linked");
+    if ((action === UNLINKS || action === ASKS_TO_UNLINK) && !this.weave().people.get(payload?.id)?.account) return Phrase.of("Not linked");
     if (action === ACCEPTS) {
       const invitation = this.invitation.read();
       if (!invitation?.from) return Phrase.of("No such invitation");
@@ -161,6 +163,8 @@ export class People extends Controller {
     }
     if (action === RENAMES) this.change(() => this.loom.renamePerson(payload.id, this.rename.read()), () => "Name saved");
     if (action === ASKS_TO_REMOVE) this.asking.setValue(payload.key);
+    if (action === ASKS_TO_UNLINK) this.asking.setValue(`unlink:${payload.id}`);
+    if (action === UNLINKS) this.asking.setValue("");
     if (action === KEEPS) this.asking.setValue("");
     if (action === REMOVES_PERSON || action === REMOVES_CIRCLE) this.asking.setValue("");
     if (action === REMOVES_PERSON) this.change(() => this.loom.deletePerson(payload.id), () => "Removed from your people");
@@ -195,15 +199,8 @@ export class People extends Controller {
   /** An invitation link handed on: through the phone's own share sheet where there is one, else copied to paste anywhere. */
   async send(address) {
     const said = { title: "Tapestry", text: `${this.weave().me?.name ?? "Someone"} invites you to link your threads on Tapestry`, url: address };
-    if (navigator.share) {
-      try { await navigator.share(said); return; } catch (error) { if (error?.name === "AbortError") return; }
-    }
-    try {
-      await navigator.clipboard.writeText(address);
-      this.notice.setValue("Copied. Paste it into a message to them.");
-    } catch {
-      this.notice.setValue("Copy the link above and send it to them.");
-    }
+    const after = await handOn(said, "Copied. Paste it into a message to them.", "Copy the link above and send it to them.");
+    if (after) this.notice.setValue(after);
   }
 
   async invite(personId) {
@@ -330,6 +327,8 @@ export function describePerson(ui, people, account, timeline, asking) {
     return weave.data.people.filter((p) => p.id !== self?.id && p.account !== weave.me?.id && !(p.account && self?.account && p.account !== self.account));
   });
   return ui.screen(PERSON, [
+    // Back, as on a memory's page (the app's own action)
+    ui.row([ui.pressable("goes_back", {}, [ui.text("‹", "BackMark"), ui.text(ui.words("goes_back"), Themes.FACE)], "BackButton").goesTo(Driver.BACK)], "ItemTop"),
     ui.when(person, ui.column([
       ui.row([mark(ui, person.map((p) => (p?.account ? account.weave.read().colourOf(p.account) : "#c9c2b6")), "BigDot"), ui.text(person.map((p) => p?.name ?? ""), "Title")]),
       // a memory of them: written with them on it already - first, under their name, apart from their circles
@@ -384,10 +383,16 @@ export function describePerson(ui, people, account, timeline, asking) {
         ui.button(RENAMES, { payload: personId.map((id) => ({ id })), style: LINK }),
       ], "AddRow"),
       ui.row([
-        ui.button(UNLINKS, { payload: personId.map((id) => ({ id })), style: LINK }).absentWhenRefused(),
+        ui.when(ui.bound(() => people.asking.read() !== `unlink:${personId.read()}`),
+          ui.button(ASKS_TO_UNLINK, { payload: personId.map((id) => ({ id })), style: LINK }).absentWhenRefused()),
         ui.when(ui.bound(() => people.asking.read() !== `person:${personId.read()}`),
           ui.button(ASKS_TO_REMOVE, { payload: personId.map((id) => ({ key: `person:${id}` })), style: DANGER })),
       ], "Actions"),
+      // unlinking asks first: they become a name again and see nothing more of the member's
+      ui.when(ui.bound(() => people.asking.read() === `unlink:${personId.read()}`), ui.column([
+        ui.text(Phrase.of("Unlink their account? They become a name again, and see nothing more of yours. To link again, one of you has to ask."), "Warn").wraps(),
+        ui.row([ui.button(UNLINKS, { payload: personId.map((id) => ({ id })), style: DANGER }), ui.button(KEEPS, { style: LINK })], "Actions"),
+      ])),
       ui.when(ui.bound(() => people.asking.read() === `person:${personId.read()}`), ui.column([
         ui.text(person.map((p) => Phrase.with("Remove %s from your people? They come off everything you tagged them on.", [p?.name ?? ""])), "Warn").wraps(),
         ui.row([

@@ -5,8 +5,8 @@
 // saved. No browser and no platform: plain data in, plain data out, tested
 // by tests/test_weave.mjs.
 
-import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=20b89f4c3519";
-import { linksOf } from "./links.js?v=20b89f4c3519";
+import { headingOf, sayAges, sayLength, saySpan, sortKey, within } from "./when.js?v=779517fc44e5";
+import { linksOf } from "./links.js?v=779517fc44e5";
 
 export const EMPTY = Object.freeze({ me: null, members: {}, lives: {}, people: [], circles: [], places: [], periods: [], events: [], memories: [], requests: [], notices: [] });
 
@@ -58,8 +58,9 @@ export function timeOf(item, which) {
 }
 const lower = (text) => String(text ?? "").toLowerCase();
 
-/** A list of names as a sentence: "Mum", "Mum and Sam", "Mum, Sam and Jo". */
-export function listed(names) {
+/** A list of names as a sentence: "Mum", "Mum and Sam", "Mum, Sam and Jo" - at most 20, then "and 180 more". */
+export function listed(names, most = 20) {
+  if (names.length > most) return `${names.slice(0, most).join(", ")} and ${names.length - most} more`;
   if (names.length <= 1) return names.join("");
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
@@ -369,19 +370,6 @@ export class Weave {
     return this.kept(`thread:${account}`, () => this.everything().filter((entry) => entry.owner === account || (entry.kind !== "memory" && entry.threads.includes(account))));
   }
 
-  /** The threads of these accounts woven together: each thing once, events where any of them is. */
-  woven(accounts) {
-    const wanted = new Set(accounts);
-    return this.kept(`woven:${[...wanted].sort().join(",")}`,
-      () => this.everything().filter((entry) => wanted.has(entry.owner) || (entry.kind !== "memory" && entry.threads.some((a) => wanted.has(a)))));
-  }
-
-  /** Who of these accounts crossed at an entry: for an event, every one of them at it. */
-  crossing(entry, accounts) {
-    if (entry.kind !== "event") return [];
-    return entry.threads.filter((a) => accounts.includes(a));
-  }
-
   /**
    * The entries whose words, people, place or event hold what is looked for;
    * also, any memory among these ids (cut short memories the platform found
@@ -464,19 +452,6 @@ export class Weave {
   }
 
   // --- coming back ---
-
-  /** What the member's people shared since a moment (an ISO time), newest first: nothing at all before a first visit is over. */
-  newSince(since) {
-    if (!since) return [];
-    const made = (kind, item) => item.owner !== this.meId && item.created_at && item.created_at > since;
-    const fresh = [
-      ...this.data.memories.filter((m) => made("memory", m)).map((m) => this.entry("memory", m)),
-      ...this.data.events.filter((e) => made("event", e)).map((e) => this.entry("event", e)),
-      ...this.data.periods.filter((p) => made("period", p)).map((p) => this.entry("period", p)),
-    ];
-    const createdOf = (entry) => ({ memory: this.memories, event: this.events, period: this.periods })[entry.kind].get(entry.id).created_at;
-    return fresh.sort((a, b) => createdOf(b).localeCompare(createdOf(a)));
-  }
 
   /** What happened on this day of the year, in earlier years, on threads the member sees: memories and events known to the day. */
   onThisDay(today = new Date()) {

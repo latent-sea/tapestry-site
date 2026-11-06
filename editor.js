@@ -12,14 +12,14 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { EXAMPLES, clockOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=20b89f4c3519";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=20b89f4c3519";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=20b89f4c3519";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=20b89f4c3519";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=20b89f4c3519";
-import { DANGER, LINK } from "./look/look.js?v=20b89f4c3519";
-import { questionOf } from "./prompts.js?v=20b89f4c3519";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { EXAMPLES, clockOf, columnsOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=779517fc44e5";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=779517fc44e5";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=779517fc44e5";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=779517fc44e5";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=779517fc44e5";
+import { DANGER, LINK } from "./look/look.js?v=779517fc44e5";
+import { questionOf } from "./prompts.js?v=779517fc44e5";
 
 export const EDIT = "edit";
 
@@ -34,8 +34,6 @@ export const SETS_TITLE = "sets_the_title";
 export const SETS_TEXT = "sets_the_words";
 export const SETS_WHEN = "sets_when";
 export const SETS_EVENT_TITLE = "sets_the_name_of_the_event_it_becomes";
-export const LOOKS_FOR_EVENT = "looks_for_an_event";
-export const PICKS_EVENT = "picks_an_event";
 export const DROPS_EVENT = "drops_the_event";
 export const LOOKS_FOR_PERIOD = "looks_for_a_period";
 export const PICKS_PERIOD = "picks_a_period";
@@ -44,7 +42,6 @@ export const LOOKS_FOR_PLACE = "looks_for_a_place";
 export const PICKS_PLACE = "picks_a_place";
 export const DROPS_PLACE = "drops_the_place";
 export const ADDS_NEW_PLACE = "adds_a_new_place";
-export const ADDS_NEW_EVENT = "adds_a_new_event";
 export const ADDS_NEW_PERIOD = "adds_a_new_period";
 export const CLEARS_NEW_EVENT = "keeps_it_out_of_a_new_event";
 export const LOOKS_FOR_LABEL = "looks_for_a_label";
@@ -77,6 +74,8 @@ export const ASKS_TO_DELETE = "asks_to_delete_it";
 export const DELETES = "deletes_it";
 export const KEEPS_IT = "keeps_it";
 export const CANCELS = "cancels_writing";
+export const DISCARDS = "throws_away_what_is_written";
+export const KEEPS_WRITING = "keeps_writing";
 
 export const WORDS = {
   [ADDS_MEMORY]: ["Add a memory"],
@@ -90,8 +89,6 @@ export const WORDS = {
   [SETS_TEXT]: ["Words"],
   [SETS_WHEN]: ["When"],
   [SETS_EVENT_TITLE]: ["The event's name"],
-  [LOOKS_FOR_EVENT]: ["Find an event"],
-  [PICKS_EVENT]: ["Choose this event"],
   [DROPS_EVENT]: ["Not of an event"],
   [LOOKS_FOR_PERIOD]: ["Find a period"],
   [PICKS_PERIOD]: ["Choose this period"],
@@ -100,7 +97,6 @@ export const WORDS = {
   [PICKS_PLACE]: ["Choose this place"],
   [DROPS_PLACE]: ["Not at a place"],
   [ADDS_NEW_PLACE]: ["Add it as a new place"],
-  [ADDS_NEW_EVENT]: ["Make it a new event"],
   [ADDS_NEW_PERIOD]: ["Make it a new period"],
   [CLEARS_NEW_EVENT]: ["Take it out"],
   [LOOKS_FOR_LABEL]: ["Find a label"],
@@ -133,6 +129,8 @@ export const WORDS = {
   [DELETES]: ["Yes, delete it"],
   [KEEPS_IT]: ["No, keep it"],
   [CANCELS]: ["Cancel"],
+  [DISCARDS]: ["Yes, throw it away"],
+  [KEEPS_WRITING]: ["Keep writing"],
 };
 
 const OPENS = [ADDS_MEMORY, ADDS_EVENT, ADDS_PERIOD, ADDS_MEMORY_TO, EDITS];
@@ -177,7 +175,7 @@ export class Editor extends Controller {
     this.links = this.value([]); // { url }
     this.linkText = this.value("");
     this.newKind = this.value("");
-    this.searches = { event: this.value(""), period: this.value(""), place: this.value(""), person: this.value(""), share: this.value(""), label: this.value("") };
+    this.searches = { period: this.value(""), place: this.value(""), person: this.value(""), share: this.value(""), label: this.value("") };
     this.periodType = this.value(""); // a period's or an event's kind, as the member names their kinds of each, or "" for none
     this.adds = this.value("there"); // an event's: who adds memories to it - everyone at it, or its maker alone ("me")
     this.asks = this.value("anyone"); // an event's: whether someone who sees it but isn't at it may ask to be ("anyone") or not ("none")
@@ -190,7 +188,8 @@ export class Editor extends Controller {
     this.turned = false; // saved as what a memory was turned into: what it became is opened
     this.asked = this.value(""); // the question it answers, when written from the home screen's prompt
     this.askedNumber = null;
-    this.detailsOpen = this.value(false); // whether More details - its event, periods, kind, labels, links - is open
+    this.leaving = this.value(false); // Cancel pressed with something unsaved: asked first
+    this.detailsOpen = this.value(false); // whether More details - an event's periods, its kind, labels, links - is open
     this.audienceOpen = this.value(false); // whether who sees it is open to change
     this.problem = this.value("");
     this.notice = this.value("");
@@ -269,18 +268,14 @@ export class Editor extends Controller {
       if (this.links.read().some((l) => l.url === link)) return Phrase.of("That link is on it already");
       if (this.links.read().length >= MOST_LINKS) return Phrase.with("A memory has at most %d links", [MOST_LINKS]);
     }
-    if (action === ADDS_NEW_EVENT) {
-      if (!this.searches.event.read().trim()) return Phrase.of("Type a name first");
-      if (this.span().error || !this.span().starts) return Phrase.of("First say when it was: an event has a time");
-    }
     if (action === ADDS_LABEL && !this.searches.label.read().trim()) return Phrase.of("Type a label first");
     if (action === ADDS_NEW_PERIOD) {
       if (!this.searches.period.read().trim()) return Phrase.of("Type a name first");
-      // one already of that name is chosen, whatever the memory's time
+      // one already of that name is chosen, whatever the event's time
       const named = this.searches.period.read().trim().toLowerCase();
       const weave = this.weave();
       const known = weave.data.periods.some((p) => p.owner === weave.meId && p.title.toLowerCase() === named);
-      if (!known && (this.span().error || !this.span().starts)) return Phrase.of("First say when it was: a new period starts from this memory's time");
+      if (!known && (this.span().error || !this.span().starts)) return Phrase.of("First say when it was: a new period starts from this event's time");
     }
     if ((action === ADDS_NEW_PERSON || action === ADDS_NEW_PLACE) && !this.searches[action === ADDS_NEW_PERSON ? "person" : "place"].read().trim()) {
       return Phrase.of("Type a name first");
@@ -290,6 +285,9 @@ export class Editor extends Controller {
 
   told(action, payload) {
     this.notice.setValue("");
+    if (action === CANCELS) { if (this.unsaved()) this.leaving.setValue(true); else this.goBack?.(); }
+    if (action === KEEPS_WRITING) this.leaving.setValue(false);
+    if (action === DISCARDS) { this.leaving.setValue(false); this.openedAs = this.snapshot(); this.goBack?.(); }
     if (OPENS.includes(action)) this.open(String(payload.parameter));
     if (action === OPENS_DETAILS) this.detailsOpen.update((open) => !open);
     if (action === OPENS_AUDIENCE) this.audienceOpen.update((open) => !open);
@@ -297,17 +295,10 @@ export class Editor extends Controller {
     if (action === SETS_TEXT) this.text.setValue(payload.line);
     if (action === SETS_WHEN) this.whenText.setValue(payload.line);
     if (action === SETS_EVENT_TITLE) this.eventTitle.setValue(payload.line);
-    if (action === LOOKS_FOR_EVENT) this.searches.event.setValue(payload.line);
     if (action === LOOKS_FOR_PERIOD) this.searches.period.setValue(payload.line);
     if (action === LOOKS_FOR_PLACE) this.searches.place.setValue(payload.line);
     if (action === LOOKS_FOR_PERSON) this.searches.person.setValue(payload.line);
     if (action === LOOKS_FOR_SHARE) this.searches.share.setValue(payload.line);
-    if (action === PICKS_EVENT) {
-      this.eventId.setValue(payload.id);
-      this.searches.event.setValue("");
-      // the event's place, unless the memory has one of its own
-      if (!this.placeId.read()) this.placeId.setValue(this.weave().events.get(payload.id)?.place_id ?? null);
-    }
     if (action === DROPS_EVENT) this.eventId.setValue(null);
     if (action === CLEARS_NEW_EVENT) this.newEvent.setValue("");
     if (action === PICKS_PERIOD) { this.periodIds.update((ids) => (ids.includes(payload.id) ? ids : [...ids, payload.id])); this.searches.period.setValue(""); }
@@ -315,7 +306,6 @@ export class Editor extends Controller {
     if (action === PICKS_PLACE) { this.placeId.setValue(payload.id); this.searches.place.setValue(""); }
     if (action === DROPS_PLACE) this.placeId.setValue(null);
     if (action === ADDS_NEW_PLACE) this.addPlace(this.searches.place.read().trim());
-    if (action === ADDS_NEW_EVENT) this.addEvent(this.searches.event.read().trim());
     if (action === ADDS_NEW_PERIOD) this.addPeriod(this.searches.period.read().trim());
     if (action === LOOKS_FOR_LABEL) this.searches.label.setValue(payload.line);
     // a label as typed - in small letters, once - or one of theirs already
@@ -441,15 +431,28 @@ export class Editor extends Controller {
     // written as the answer to a question asked on the home screen: the question shown above it
     this.asked.setValue(!item && tied === "ask" ? questionOf(tiedId) : "");
     this.askedNumber = !item && tied === "ask" && questionOf(tiedId) ? Number(tiedId) : null;
-    // More details starts open when there is something in it already: an event, periods, a kind, labels, links
-    this.detailsOpen.setValue(!!this.eventId.read() || this.periodIds.read().length > 0 || !!this.periodType.read() || this.labels.read().length > 0
+    // More details starts open when there is something in it already: an event's periods, a kind, labels, links
+    // (what a memory is part of is shown outside it)
+    this.detailsOpen.setValue((this.kind.read() === "event" && this.periodIds.read().length > 0) || !!this.periodType.read() || this.labels.read().length > 0
       || this.links.read().length > 0);
     this.audienceOpen.setValue(false);
     this.newEvent.setValue("");
     this.turnedFrom = null;
     this.turned = false;
     this.problem.setValue("");
+    this.leaving.setValue(false);
+    this.openedAs = this.snapshot();
   }
+
+  /** What is written, as it stands: compared with how it opened, to know whether leaving would lose anything. */
+  snapshot() {
+    return JSON.stringify([this.kind.read(), this.title.read(), this.text.read(), this.whenText.read(), this.placeId.read(), this.tags.read(),
+      this.audience.read(), this.shares.read(), this.added.read().length, this.removed.read().length, this.captions.read(), this.links.read(),
+      this.labels.read(), this.periodIds.read(), this.eventId.read(), this.newEvent.read(), this.eventTitle.read()]);
+  }
+
+  /** Whether anything is written or changed that leaving now would lose. */
+  unsaved() { return this.openedAs !== undefined && this.snapshot() !== this.openedAs; }
 
   /**
    * The draft, a memory, turned into an event or a period there and then (bigger.js): what it keeps - its title (as
@@ -495,27 +498,9 @@ export class Editor extends Controller {
   }
 
   /**
-   * A new event, named as typed, made from the memory being written - its time, its place, its people -
-   * and chosen for it: no event need be made first. One of the member's own by that name is chosen instead.
-   */
-  async addEvent(title) {
-    const weave = this.weave();
-    const known = weave.data.events.find((e) => e.owner === weave.meId && e.title.toLowerCase() === title.toLowerCase());
-    this.searches.event.setValue("");
-    if (known) { this.eventId.setValue(known.id); return; }
-    const { starts, ends } = this.span();
-    const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: at?.time ?? "" });
-    const made = await this.loom.saveEvent({ title, notes: "", ...time("starts", starts), ...time("ends", ends), place_id: this.placeId.read() ?? "",
-      audience: weave.defaultAudience("event"), tags: this.tags.read(), shares: [] });
-    if (!made.ok) { this.problem.setValue(made.error); return; }
-    await this.account.load();
-    this.eventId.setValue(made.data);
-  }
-
-  /**
-   * A period named as typed, chosen for the memory: one of that name already
-   * if there is one; else made, over this memory's time for now - its own
-   * beginning and end are said on it, in Periods.
+   * A period named as typed, chosen for what is being written: one of that name
+   * already if there is one; else made, over this one's time for now - its own
+   * beginning and end are said on it.
    */
   async addPeriod(title) {
     const weave = this.weave();
@@ -524,13 +509,12 @@ export class Editor extends Controller {
     const choose = (id) => this.periodIds.update((ids) => (ids.includes(id) ? ids : [...ids, id]));
     if (known) { choose(known.id); return; }
     const { starts, ends } = this.span();
-    const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: "" });
-    const made = await this.loom.savePeriod({ title, notes: "", ...time("starts", starts), ...time("ends", ends ?? starts), place_id: "",
+    const made = await this.loom.savePeriod({ title, notes: "", ...columnsOf("starts", starts, false), ...columnsOf("ends", ends ?? starts, false), place_id: "",
       audience: weave.defaultAudience("period"), tags: [], shares: [] });
     if (!made.ok) { this.problem.setValue(made.error); return; }
     await this.account.load();
     choose(made.data);
-    this.notice.setValue(Phrase.with("Made the period “%s”, over this memory's time for now: open it in Periods to say when it began and ended.", [title]));
+    this.notice.setValue(Phrase.with("Made the period “%s”, over this one's time for now: open it to say when it began and ended.", [title]));
   }
 
   /** A kind of period (or of event) of the member's own made, kept on them, and chosen for this one. */
@@ -549,16 +533,15 @@ export class Editor extends Controller {
     this.periodType.setValue(made.find((k) => k.name.toLowerCase() === named.toLowerCase())?.name ?? named);
   }
 
-  /** The draft as the platform's save takes it. */
   /** Whether the time is its event's still, as it was offered: kept as none of its own, so it follows the event's. */
   followsEvent() { return this.kind.read() === "memory" && this.eventId.read() === this.eventSaidOf && !!this.eventSaid && this.whenText.read().trim() === this.eventSaid; }
 
+  /** The draft as the platform's save takes it. */
   given() {
     const kind = this.kind.read();
     const { starts, ends } = this.followsEvent() ? { starts: null, ends: null } : this.span();
-    const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: at?.time ?? "" });
     const common = {
-      id: this.id.read() ?? "", title: this.title.read().trim(), ...time("starts", starts), ...time("ends", ends),
+      id: this.id.read() ?? "", title: this.title.read().trim(), ...columnsOf("starts", starts), ...columnsOf("ends", ends),
       place_id: this.placeId.read() ?? "", audience: this.audience.read(), tags: this.tags.read(), shares: this.shares.read(),
     };
     if (kind === "memory") return { ...common, body: this.text.read(), links: this.links.read(), event_id: this.eventId.read() ?? "", period_ids: this.periodIds.read(),
@@ -567,7 +550,8 @@ export class Editor extends Controller {
       // the first as period_id too, which a platform from before there could be more keeps
       period_id: this.periodIds.read()[0] ?? "" };
     if (kind === "period") return { ...common, notes: this.text.read(), kind: this.periodType.read() };
-    return { ...common, notes: this.text.read(), kind: this.periodType.read(), adds: this.adds.read(), asks: this.asks.read(), period_ids: this.periodIds.read() };
+    // an event holds no words of its own: its memories do (one turned from a memory leaves its words behind, as it said)
+    return { ...common, notes: "", kind: this.periodType.read(), adds: this.adds.read(), asks: this.asks.read(), period_ids: this.periodIds.read() };
   }
 
   async save() {
@@ -640,21 +624,6 @@ export class Editor extends Controller {
   /** Who it would be seen by, before it is saved. */
   audienceNow() {
     return this.weave().audienceOf({ kind: this.kind.read(), audience: this.audience.read(), tags: this.tags.read(), eventId: this.eventId.read(), shares: this.shares.read() });
-  }
-
-  chosenEvent() {
-    const weave = this.weave();
-    const event = weave.events.get(this.eventId.read());
-    if (event) return [{ id: event.id, label: `${event.title} · ${weave.entry("event", event).said}` }];
-    // one the member was at, and has left or may no longer see: still theirs to take off
-    return this.eventId.read() ? [{ id: this.eventId.read(), label: "An event you are no longer shown" }] : [];
-  }
-
-  eventMatches() {
-    const weave = this.weave();
-    const looked = this.searches.event.read();
-    return weave.data.events.filter((e) => weave.isAt(e, weave.meId) && matching(looked, e.title)).slice(0, MOST)
-      .map((e) => ({ id: e.id, label: `${e.title} · ${weave.entry("event", e).said}` }));
   }
 
   chosenPeriods() {
@@ -831,7 +800,7 @@ export function describeEditor(ui, editor, account, partOf = null) {
         ui.pressable(KEEPS_OUT, held.map((m) => ({ id: m?.id ?? "" })), [ui.text(Phrase.of("Keep out"), "Small")], LINK),
       ], "ShareRow"), (m) => m.id, "Matches")),
     ], "Part")])),
-    // the rest, seldom needed: what it is part of, its kind, labels, links
+    // the rest, seldom needed: an event's periods, its kind, labels, links
     ui.pressable(OPENS_DETAILS, {}, [ui.text(ui.words(OPENS_DETAILS), "LinkWords"), ui.text(editor.detailsOpen.map((o) => (o ? "✕" : "›")), "RowMark")], "BiggerButton"),
     ui.when(editor.detailsOpen, ui.column([
     // a period's or an event's kind: its colour on the timeline, and what it is filtered by
@@ -899,7 +868,12 @@ export function describeEditor(ui, editor, account, partOf = null) {
     notice(ui, editor.notice),
     // a button that can't be used says nothing (the factory's look): what is missing is said here instead
     ui.text(ui.bound(() => editor.would(SAVES) ?? ""), "Hint").wraps().hidesEmpty(),
-    ui.row([ui.button(SAVES), ui.button(CANCELS, { style: LINK, goes_to: Driver.BACK })], "Actions"),
+    ui.row([ui.button(SAVES), ui.button(CANCELS, { style: LINK })], "Actions"),
+    // Cancel with something written: asked first, never thrown away without a word
+    ui.when(editor.leaving, ui.column([
+      ui.text(Phrase.of("Throw away what you've written? It isn't saved."), "Warn").wraps(),
+      ui.row([ui.button(DISCARDS, { style: DANGER }), ui.button(KEEPS_WRITING, { style: LINK })], "Actions"),
+    ])),
     ui.when(editor.id, ui.when(editor.confirming,
       ui.column([
         ui.text(ui.bound(() => {

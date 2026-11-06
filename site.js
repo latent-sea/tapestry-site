@@ -13,48 +13,48 @@
 // Opened with ?probe the page walks itself against a stand-in for the
 // platform (tests/standin.js), never the real one.
 
-import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { Loom, guarded } from "./loom.js?v=20b89f4c3519";
-import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=20b89f4c3519";
-import * as Edit from "./editor.js?v=20b89f4c3519";
-import * as Folk from "./people.js?v=20b89f4c3519";
-import * as Where from "./places.js?v=20b89f4c3519";
-import * as Me from "./you.js?v=20b89f4c3519";
-import * as Ask from "./asking.js?v=20b89f4c3519";
-import * as Link from "./linking.js?v=20b89f4c3519";
-import * as Big from "./bigger.js?v=20b89f4c3519";
-import * as Run from "./admin.js?v=20b89f4c3519";
-import * as List from "./importing.js?v=20b89f4c3519";
-import * as Told from "./notices.js?v=20b89f4c3519";
-import * as Talk from "./comments.js?v=20b89f4c3519";
-import * as Kind from "./safety.js?v=20b89f4c3519";
-import * as Pay from "./paying.js?v=20b89f4c3519";
-import * as Say from "./feedback.js?v=20b89f4c3519";
-import * as Hello from "./welcome.js?v=20b89f4c3519";
-import * as Ring from "./phone.js?v=20b89f4c3519";
-import * as Look from "./find.js?v=20b89f4c3519";
-import * as Take from "./taking.js?v=20b89f4c3519";
-import * as Parts from "./parts.js?v=20b89f4c3519";
-import { PlaceMap } from "./placemap.js?v=20b89f4c3519";
-import { keepButtonGrids } from "./buttongrid.js?v=20b89f4c3519";
-import { MemoryMap, memoryDots } from "./memorymap.js?v=20b89f4c3519";
-import * as Many from "./crowd.js?v=20b89f4c3519";
-import * as Prompt from "./prompts.js?v=20b89f4c3519";
-import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=20b89f4c3519";
-import { headingOf, lastDayOf, parseSpan } from "./when.js?v=20b89f4c3519";
-import { yearsOf } from "./woven.js?v=20b89f4c3519";
-import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=20b89f4c3519";
-import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=20b89f4c3519";
-import { Space } from "./space.js?v=20b89f4c3519";
-import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=20b89f4c3519";
-import { linksOf } from "./links.js?v=20b89f4c3519";
-import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=20b89f4c3519";
+import { ChimeApp, Chimes, Controller, Driver, Frames, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { Loom, guarded } from "./loom.js?v=779517fc44e5";
+import { Account, AGREES, JOINS, LETS_KEEP, RELOADS, SAYS_AGE, SETS_JOIN_NAME, SIGNS_OUT, STOPS_SEEING, WORDS as ACCOUNT_WORDS } from "./account.js?v=779517fc44e5";
+import * as Edit from "./editor.js?v=779517fc44e5";
+import * as Folk from "./people.js?v=779517fc44e5";
+import * as Where from "./places.js?v=779517fc44e5";
+import * as Me from "./you.js?v=779517fc44e5";
+import * as Ask from "./asking.js?v=779517fc44e5";
+import * as Link from "./linking.js?v=779517fc44e5";
+import * as Big from "./bigger.js?v=779517fc44e5";
+import * as Run from "./admin.js?v=779517fc44e5";
+import * as List from "./importing.js?v=779517fc44e5";
+import * as Told from "./notices.js?v=779517fc44e5";
+import * as Talk from "./comments.js?v=779517fc44e5";
+import * as Kind from "./safety.js?v=779517fc44e5";
+import * as Pay from "./paying.js?v=779517fc44e5";
+import * as Say from "./feedback.js?v=779517fc44e5";
+import * as Hello from "./welcome.js?v=779517fc44e5";
+import * as Ring from "./phone.js?v=779517fc44e5";
+import * as Look from "./find.js?v=779517fc44e5";
+import * as Take from "./taking.js?v=779517fc44e5";
+import * as Parts from "./parts.js?v=779517fc44e5";
+import { PlaceMap } from "./placemap.js?v=779517fc44e5";
+import { keepButtonGrids } from "./buttongrid.js?v=779517fc44e5";
+import { MemoryMap, memoryDots } from "./memorymap.js?v=779517fc44e5";
+import * as Many from "./crowd.js?v=779517fc44e5";
+import * as Prompt from "./prompts.js?v=779517fc44e5";
+import { listed, pickAnother, timeline, yearsOfMemories } from "./weave.js?v=779517fc44e5";
+import { headingOf, lastDayOf, parseSpan } from "./when.js?v=779517fc44e5";
+import { yearsOf } from "./woven.js?v=779517fc44e5";
+import { dotOf, few, heading, mark, notice, problem } from "./parts.js?v=779517fc44e5";
+import { TUNING, caught, drawLives, inSelection, layOut, livesOf } from "./lives.js?v=779517fc44e5";
+import { Space } from "./space.js?v=779517fc44e5";
+import { drawTimeline, extentOf, rangeAfter, rangeAround, rangeZoomed } from "./gantt.js?v=779517fc44e5";
+import { linksOf } from "./links.js?v=779517fc44e5";
+import { CARD, DANGER, FactoryLook, LINK, PALETTE } from "./look/look.js?v=779517fc44e5";
 
 const probing = new URLSearchParams(location.search).has("probe");
 // read-only while seeing Tapestry as someone else (Account.seeAs)
-const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=20b89f4c3519")).StandIn() : new Loom());
+const LOOM = guarded(probing ? new (await import("./tests/standin.js?v=779517fc44e5")).StandIn() : new Loom());
 // the browser's notifications, stood in for when probing: headless, it has none to give
-const PUSH = probing ? new (await import("./tests/standin.js?v=20b89f4c3519")).StandInPush() : null;
+const PUSH = probing ? new (await import("./tests/standin.js?v=779517fc44e5")).StandInPush() : null;
 
 // the screens
 const DOOR = "door";
@@ -169,7 +169,6 @@ const ORDER_KEPT = "tapestry_order";
 const PARTS_KEPT = "tapestry_timeline_hides"; // the parts of the timeline left out, on this device
 const LIVES_KEPT = "tapestry_lives_in"; // the tapestry flat (2d) or in space (3d), on this device
 const TUNING_KEPT = "tapestry_lives_tuning"; // how the lives settle, on this device
-const SEEN_KEPT = "tapestry_seen_at";
 // the four tabs, in their order along the bar: [action, screen, its icon, and the screens beneath it that keep it lit]
 const TABS = [[GOES_THREAD, THREAD, "life", [THREAD, TIMELINE]], [GOES_PEOPLE, PEOPLE, "people", [PEOPLE, PERSON, WOVEN, Look.FIND]],
   [GOES_NOTICES, Told.NOTICES, "inbox", [Told.NOTICES]], [GOES_YOU, ME, "me", [ME, YOU, PLACES, PLACE, Pay.PAID, Say.FEEDBACK, Say.FEEDBACK_ITEM, ADMIN, IMPORT]]];
@@ -189,7 +188,8 @@ function keptParts() {
   try { return (localStorage.getItem(PARTS_KEPT) ?? "").split(",").filter((part) => ["periods", "events", "memories"].includes(part)); } catch { return []; }
 }
 
-/** The order timelines were last read in on this device: newest first unless turned around. */function keptOrder() {
+/** The order timelines were last read in on this device: newest first unless turned around. */
+function keptOrder() {
   try { return localStorage.getItem(ORDER_KEPT) !== "oldest"; } catch { return true; }
 }
 
@@ -223,7 +223,6 @@ class Looking extends Controller {
     this.timelineSpan = this.value(""); // the stretch typed, as a time is: "2004 – 2010", "June 2012 – March 2013"
     this.timelineOptions = this.value(false); // whether the timeline's filters, zoom and search are open
     this.itemMore = this.value(false); // whether a memory's, event's or period's further actions (its ⋯) are open
-    this.since = this.value(null); // when the member was last here, on this device: what is new is what came after
     this.problem = this.value("");
     this.pages = new Map(); // each timeline's own: how many of it are shown
     this.starts = new Map(); // each timeline's own: the year (heading) it is shown from, or "" for its beginning
@@ -278,9 +277,19 @@ class Looking extends Controller {
     const tuning = this.tuning.read();
     this.laidAt.read();
     const key = `${dims}:${JSON.stringify(tuning)}`;
-    if (this.laidFor?.weave !== weave) this.laidFor = { weave, results: new Map() };
+    if (this.laidFor?.weave !== weave) {
+      // a new load: what was being worked out for the last one is of no use - stopped, not left to pile up
+      if (this.worker && this.waiting?.size) {
+        this.worker.terminate();
+        this.worker = null;
+        for (const [, done] of this.waiting) done(null);
+        this.waiting.clear();
+      }
+      this.laidFor = { weave, results: new Map() };
+    }
     const results = this.laidFor.results;
     if (results.has(key)) return results.get(key);
+    if (this.wovenOpen && !this.wovenOpen()) return null;
     // worked out away from the page; null - "working it out" - until then, and drawn again when it is
     results.set(key, null);
     this.layOutAside(this.drawnLives(), dims, tuning).then((laid) => {
@@ -488,18 +497,6 @@ class Looking extends Controller {
     return null;
   }
 
-  /** Signed in: when they were last here is read, and now becomes it, on this device. */
-  arrived() {
-    // each member's own last visit, so one device shared by a family tells each what is new to them
-    const kept = `${SEEN_KEPT}:${this.account.weave.read().meId}`;
-    let last = null;
-    try {
-      last = localStorage.getItem(kept);
-      localStorage.setItem(kept, new Date().toISOString());
-    } catch { /* nothing is new without a last visit */ }
-    this.since.setValue(last);
-  }
-
   /** Signed out: nothing of the last member's looking stays for the next. */
   reset() {
     this.threadSearch.setValue("");
@@ -615,6 +612,8 @@ export class Tapestry extends ChimeApp {
     this.account = this.model(new Account(this.chimes, LOOM));
     this.account.invitation = () => this.pendingInvite._held;
     this.looking = this.model(new Looking(this.chimes, LOOM, this.account));
+    // the lives are laid out only while the tapestry is open: never for a load nobody looks at
+    this.looking.wovenOpen = () => this.driver.getTop().includes(WOVEN);
     this.editor = this.model(new Edit.Editor(this.chimes, LOOM, this.account, (deleted, saved, turned) => Frames.defer(() => {
       // a question from the home screen answered: not asked again
       if (!deleted && this.editor.askedNumber !== null) { this.prompts.answered(this.editor.askedNumber); this.editor.askedNumber = null; }
@@ -622,6 +621,12 @@ export class Tapestry extends ChimeApp {
       // a memory turned into an event or a period: what it became opened, the memory being gone
       if (turned) setTimeout(() => { location.hash = `#${turned.replace(":", "/")}`; }, 60);
     })));
+    // Cancel (with nothing unsaved, or once they say throw it away) goes back as the phone's Back would
+    this.editor.goBack = () => Frames.defer(() => this.commands.dispatch(Chimes.GLOBAL, Driver.GOES_BACK, {}));
+    // a reload, or the tab closed, with something unsaved in the editor: the browser asks first
+    addEventListener("beforeunload", (event) => {
+      if (this.driver.getTop().includes(EDIT) && this.editor.unsaved()) { event.preventDefault(); event.returnValue = ""; }
+    });
     this.people = this.model(new Folk.People(this.chimes, LOOM, this.account));
     this.places = this.model(new Where.Places(this.chimes, LOOM, this.account));
     this.places.close = () => Frames.defer(() => this.commands.dispatch(Chimes.GLOBAL, Driver.GOES_BACK, {}));
@@ -674,7 +679,7 @@ export class Tapestry extends ChimeApp {
   }
 
   // loaded only when the page is walked (?probe), so an export leaves it out
-  probe() { return import("./probe.js?v=20b89f4c3519").then((made) => new made.Probe(this)); }
+  probe() { return import("./probe.js?v=779517fc44e5").then((made) => new made.Probe(this)); }
 
   mount(element) {
     super.mount(element);
@@ -719,7 +724,6 @@ export class Tapestry extends ChimeApp {
     ], "SeeingBar"));
   }
 
-  /** Today: the quickest way onto the thread - words for right now. */
   /** Writing about today: the memory form, at this minute - to change if it was earlier, and to say whatever else. */
   writesToday(content, style) {
     return this.ui.pressable(Edit.ADDS_MEMORY, { parameter: "memory:new:today" }, content, style).goesTo(EDIT).absentWhenRefused();
@@ -775,24 +779,27 @@ export class Tapestry extends ChimeApp {
         ui.pressable(ZOOMS_TIMELINE, { step: "in" }, [ui.text("+", "ZoomMark")], "Segment ZoomButton"),
         ui.pressable(ZOOMS_TIMELINE, { step: "earlier" }, [ui.text("◀", "ZoomMark")], "Segment ZoomButton").absentWhenRefused(),
         ui.pressable(ZOOMS_TIMELINE, { step: "later" }, [ui.text("▶", "ZoomMark")], "Segment ZoomButton").absentWhenRefused(),
-        ui.pressable(SHOWS_ALL_TIME, {}, [ui.text(ui.words(SHOWS_ALL_TIME), "Small")], LINK).absentWhenRefused(),
       ], "Actions ZoomRow"),
       ui.row([
         ui.field(SETS_TIMELINE_SPAN, "", { changes: TYPES_TIMELINE_SPAN, shows: looking.timelineSpan, placeholder: Phrase.of("e.g. 2004 – 2010") }).grow(),
         ui.button(SETS_TIMELINE_SPAN, { style: LINK }),
       ], "AddRow"),
-      ui.text(ui.bound(() => {
-        const range = looking.timelineRange.read();
-        if (!range) return "";
-        const said = (years) => { const y = Math.floor(years); const m = Math.min(11, Math.floor((years - y) * 12)); return range.to - range.from > 3 ? String(y) : `${MONTH_NAMES[m]} ${y}`; };
-        return Phrase.with("Showing %s to %s", [said(range.from), said(range.to - 1 / 365)]);
-      }), "Hint").hidesEmpty(),
       ui.field(SEARCHES_TIMELINE, "", { changes: SEARCHES_TIMELINE, shows: looking.timelineSearch, placeholder: Phrase.of("Find: words, people, places") }),
       ], "TimelineOptions")),
       ui.text(ui.bound(() => {
         const found = looking.timelineFound();
         return !found ? "" : found.size ? Phrase.counted("%d found", "%d found", found.size) : Phrase.of("Nothing found.");
       }), "Hint").hidesEmpty(),
+      // narrowed to a stretch: said above the chart, with All of it one press away (not behind the options)
+      ui.when(looking.timelineRange.map((r) => !!r), ui.row([
+        ui.text(ui.bound(() => {
+        const range = looking.timelineRange.read();
+        if (!range) return "";
+        const said = (years) => { const y = Math.floor(years); const m = Math.min(11, Math.floor((years - y) * 12)); return range.to - range.from > 3 ? String(y) : `${MONTH_NAMES[m]} ${y}`; };
+        return Phrase.with("Showing %s to %s", [said(range.from), said(range.to - 1 / 365)]);
+      }), "Hint").hidesEmpty().grow(),
+        ui.pressable(SHOWS_ALL_TIME, {}, [ui.text(ui.words(SHOWS_ALL_TIME), "Small")], LINK),
+      ], "TimelineShowing")),
       ui.surface("PeriodsChart", []).named("timeline-chart"),
       ui.when(ui.bound(() => !thread.read().length), ui.text(Phrase.of("Nothing with a time yet: add a memory, an event or a period, and say when."), "Quiet").wraps()),
       ui.text(Phrase.of("Pinch to zoom in on a few years. Tap anything to open it. Periods are long bars, events short ones, memories dots."), "Hint").wraps(),
@@ -1104,15 +1111,6 @@ export class Tapestry extends ChimeApp {
     ]);
   }
 
-  /** A line to find things by, and the order to see them in. */
-  finder(action, shows) {
-    const ui = this.ui;
-    return ui.row([
-      ui.field(action, "", { changes: action, shows, placeholder: Phrase.of("Find: words, people, places") }).grow(),
-      ...this.orders(),
-    ], "Finder");
-  }
-
   /** The order to see a list in, and how full its cards are, on their own: a list found by a line above it. */
   ordering() { return this.ui.row(this.orders(), "Finder"); }
 
@@ -1339,10 +1337,12 @@ export class Tapestry extends ChimeApp {
         ui.when(people.map((p) => p.length > 0), ui.column([
           ui.text(ui.bound(() => Phrase.of(kindOf() === "event" ? "Who was there" : "With")), "FieldName"),
           // each name the member knows opens their page; the rest are names
-          ui.eachAcross(entry.map((e) => e?.folk ?? []), (held) => ui.when(held.map((f) => !!f?.person),
+          // at most 20 names, then how many more
+          ui.eachAcross(entry.map((e) => (e?.folk ?? []).slice(0, 20)), (held) => ui.when(held.map((f) => !!f?.person),
             ui.pressable(Folk.OPENS_PERSON, held.map((f) => ({ parameter: f?.person ?? "" })), [ui.text(held.map((f) => f?.name ?? ""), "LinkWords")], "Link PersonLink")
               .goesTo(PERSON),
             ui.text(held.map((f) => f?.name ?? ""), "Words")), (f, i) => `${f.person ?? f.name}:${i}`, "PeopleLinks"),
+          ui.text(entry.map((e) => ((e?.folk ?? []).length > 20 ? Phrase.with("and %s more", [String(e.folk.length - 20)]) : "")), "Quiet").hidesEmpty(),
         ])),
         // adding to it: an event's memories, a period's
         ui.row([
@@ -1440,7 +1440,7 @@ export class Tapestry extends ChimeApp {
       if (now !== state) {
         state = now;
         if (now === "out") Frames.defer(() => { this.looking.reset(); this.people.reset(); this.places.reset(); this.asking.reset(); this.finding.reset(); this.narrowing.reset(); this.crowd.reset(); });
-        if (now === "in") Frames.defer(() => { this.looking.arrived(); this.phone.check(); });
+        if (now === "in") Frames.defer(() => this.phone.check());
         Frames.defer(open);
       }
     });
@@ -1500,6 +1500,8 @@ export class Tapestry extends ChimeApp {
       looking.tuning.read();
       looking.selection.read();
       const colours = { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, ground: PALETTE.ground };
+      // a resize redraws only flat lives that are shown
+      draw = () => {};
       if (!open) return;
       if (mode === "2d") {
         draw = () => this.drawInto("lives-picture", true, (place) => {
@@ -1518,6 +1520,8 @@ export class Tapestry extends ChimeApp {
         const place = document.getElementById("lives-space");
         if (!place) { if (tries > 0) setTimeout(() => inSpace(tries - 1), 50); return; }
         if (this.space?.element !== place) {
+          // the old one's place is gone (the screen builds the 3D side afresh): nothing of it stays listening
+          this.space?.dispose();
           this.space = new Space(place, {
             open: (key) => { location.hash = `#${key.replace(":", "/")}`; },
             select: (found) => { this.looking.selection.setValue(found.size ? found : null); },
@@ -1531,7 +1535,8 @@ export class Tapestry extends ChimeApp {
       });
       inSpace(40);
     });
-    addEventListener("resize", () => draw());
+    let waiting = null;
+    addEventListener("resize", () => { clearTimeout(waiting); waiting = setTimeout(() => draw(), 150); });
     // a line pressed on the flat lives (not selecting): it is picked out - pressed again, or off the lines, none is
     document.addEventListener("click", (event) => {
       const place = event.target?.closest?.("#lives-picture");
@@ -1646,12 +1651,31 @@ export class Tapestry extends ChimeApp {
       const hidden = this.looking.timelineHides();
       const range = this.looking.timelineRange.read();
       const found = this.looking.timelineFound();
-      draw = () => this.drawInto("timeline-chart", open, (place) => drawTimeline(weave, Math.max(Math.round(place.clientWidth) || 700, 280), new Date(),
-        { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, memory: PALETTE.accent }, hidden, range, found));
+      // a long life is drawn as a window onto it (gantt.js): the rows near what is in view, drawn again as it is scrolled
+      draw = () => this.drawInto("timeline-chart", open, (place) => {
+        const box = place.getBoundingClientRect();
+        const view = { top: Math.max(0, -box.top), bottom: Math.max(0, -box.top) + innerHeight };
+        drawnAt = view.top;
+        return drawTimeline(weave, Math.max(Math.round(place.clientWidth) || 700, 280), new Date(),
+          { ink: PALETTE.ink, soft: PALETTE.ink_soft, grid: PALETTE.lit, memory: PALETTE.accent }, hidden, range, found, view);
+      });
       draw();
     });
     let waiting = null;
+    let drawnAt = 0;
     addEventListener("resize", () => { clearTimeout(waiting); waiting = setTimeout(() => draw(), 150); });
+    // scrolled far enough that the window's edge nears what is in view: drawn again around it
+    let framed = false;
+    addEventListener("scroll", () => {
+      if (framed) return;
+      framed = true;
+      requestAnimationFrame(() => {
+        framed = false;
+        const place = document.getElementById("timeline-chart");
+        if (!place || place.hidden || !this.driver.getTop().includes(TIMELINE)) return;
+        if (Math.abs(Math.max(0, -place.getBoundingClientRect().top) - drawnAt) > 500) draw();
+      });
+    }, { passive: true });
     this.keepPinch();
   }
 
@@ -1735,12 +1759,15 @@ export class Tapestry extends ChimeApp {
 
   /** What others changed, found again: when the page comes back into sight, and every half hour while it is (pictures' addresses last an hour). */
   keepFresh() {
-    const again = () => {
-      if (document.hidden || this.account.state.read() !== "in" || this.editor.busy.read()) return;
+    // looked at again after a while away: loaded again - not on every glance back at the tab (each load is everything of theirs)
+    let last = Date.now();
+    const again = (soonest) => {
+      if (document.hidden || this.account.state.read() !== "in" || this.editor.busy.read() || Date.now() - last < soonest) return;
+      last = Date.now();
       this.account.load();
     };
-    document.addEventListener("visibilitychange", again);
-    setInterval(again, 30 * 60 * 1000);
+    document.addEventListener("visibilitychange", () => again(2 * 60 * 1000));
+    setInterval(() => again(0), 30 * 60 * 1000);
   }
 
   // an invitation waiting through signing in: a value of the app's, read by the door

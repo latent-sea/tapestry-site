@@ -4,11 +4,11 @@
 // yet - no birthday, no memory - until they finish or skip it; then never
 // again on that device. Its address (#welcome) opens it again any time.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { LINK } from "./look/look.js?v=20b89f4c3519";
-import { notice, problem } from "./parts.js?v=20b89f4c3519";
-import { birthdayOf } from "./you.js?v=20b89f4c3519";
-import { parseSpan } from "./when.js?v=20b89f4c3519";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { LINK } from "./look/look.js?v=779517fc44e5";
+import { notice, problem } from "./parts.js?v=779517fc44e5";
+import { birthdayOf } from "./you.js?v=779517fc44e5";
+import { columnsOf, parseSpan } from "./when.js?v=779517fc44e5";
 
 export const WELCOME = "welcome";
 export const SETS_BIRTHDAY = "sets_my_birthday_on_the_welcome";
@@ -126,13 +126,12 @@ export class Welcome extends Controller {
 
   async keepMemory() {
     const { starts, ends } = parseSpan(this.when.read(), new Date(), this.account.weave.read().born);
-    const time = (which, at) => ({ [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: at?.time ?? "" });
     const [first, ...rest] = this.memory.read().trim().split("\n");
     this.busy.setValue(true);
     const saved = await this.loom.saveMemory({
-      // a line of its own above more is its title, as on Today
+      // a line of its own above more is its title, as when writing one
       title: rest.length && first.length <= 80 ? first.trim() : "", body: rest.length && first.length <= 80 ? rest.join("\n").trim() : this.memory.read().trim(),
-      ...time("starts", starts), ...time("ends", ends), tags: [], shares: [],
+      ...columnsOf("starts", starts), ...columnsOf("ends", ends), tags: [], shares: [],
     });
     await this.account.load();
     if (this.disposed) return;
@@ -159,7 +158,7 @@ export function describeWelcome(ui, welcome, thread, woven) {
     ui.when(at("birthday"), step([
       counted(1),
       ui.text(Phrase.of("Your birthday"), "PartHeading"),
-      said("Your life on the tapestry starts there, and you can say when things were as ages - when I was 7, in my twenties. Only you see it, unless you choose to share it (in You)."),
+      said("Your life on the tapestry starts there, and you can say when things were as ages - when I was 7, in my twenties. Only you see it, unless you choose to share it (in Settings, under Me)."),
       ui.field(SAVES_BIRTHDAY, "", { label: Phrase.of("Your birthday"), changes: SETS_BIRTHDAY, shows: welcome.birthday, placeholder: Phrase.of("12 June 1975"), autocomplete: "bday" }),
       ui.row([ui.button(SAVES_BIRTHDAY), ui.button(SKIPS_STEP, { style: LINK })], "Actions"),
     ])),
@@ -178,7 +177,7 @@ export function describeWelcome(ui, welcome, thread, woven) {
       said("A time and a place where lives meet - a wedding, a holiday, a night out. Everyone who was there adds their own memories of it, and it is on each of their lives."),
       ui.text(Phrase.of("Periods"), "FieldName"),
       said("A span of your life - where you lived, a job, school. They overlap, as lives do, and hold the memories during them. Your Timeline draws them across the years."),
-      said("Add them from the Events and Periods tabs; a memory can be made into either."),
+      said("Add them with the + Add button; and a memory can be put in either, or made into one, from its Edit."),
       ui.row([ui.button(GOES_ON)], "Actions"),
     ])),
     ui.when(at("tapestry"), step([

@@ -30,7 +30,6 @@
 #app .SearchIcon { width: 20px; height: 20px; background: currentColor; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
 #app .MenuItem { justify-content: space-between; align-items: center; min-height: 56px; }
 #app .RowMark { font-size: calc(var(--chime-size-face) * 1.25); color: var(--chime-ink-soft); }
-#app .TitleRow { align-items: center; gap: 12px; flex-wrap: wrap; }
 #app .HowTo { padding: 14px 16px; }
 #app .InEvent { gap: 2px; padding-left: 10px; border-left: 2px solid var(--chime-lit); }
 #app .InEventLine { font-size: calc(var(--chime-size-face) * 0.875); color: var(--chime-ink); }
@@ -87,7 +86,7 @@
 #app .MoreMark { font-size: calc(var(--chime-size-face) * 1.1); line-height: 1; }
 #app .MorePanel { gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); }
 #app .chime-pressable.BiggerButton { justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 16px; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); box-shadow: none; color: var(--chime-ink); }
-#app .BiggerPanel, #app .Details { gap: 12px; }
+#app .Details { gap: 12px; }
 #app .BiggerSheet, #app .BiggerStep { gap: 12px; min-width: min(26rem, 84vw); }
 #app .PartOfAll { gap: 8px; }
 /* what a memory is part of: the button that opens it, with an X on its right to take it out, one piece */
@@ -141,12 +140,6 @@
 #app .chime-pressable.Segment { min-height: 36px; padding: 4px 14px; font-size: calc(var(--chime-size-face) * 0.875); gap: 6px; }
 
 /* the woven picture: as wide as its years need, scrolled sideways within itself on a phone */
-#app .WovenPicture { padding: 8px 0; overflow-x: auto; border-radius: 14px; background: var(--chime-raised); border: 1px solid var(--chime-lit); }
-#app .WovenPicture svg { display: block; width: 100%; min-width: 600px; height: auto; }
-#app .WovenPicture .mark { cursor: pointer; outline: none; }
-#app .WovenPicture .mark:hover circle, #app .WovenPicture .mark:focus-visible circle { r: 8; }
-#app .WovenPicture .mark:hover rect, #app .WovenPicture .mark:focus-visible rect { fill-opacity: 0.7; }
-#app .WovenPicture .mark:focus-visible { outline: 2px solid var(--chime-accent); outline-offset: 2px; }
 
 /* finding and adding */
 #app .Finder, #app .AddRow { gap: 8px; align-items: center; }
@@ -211,8 +204,6 @@
 #app .Picture { width: 100%; max-height: 80vh; object-fit: contain; border-radius: 14px; background: var(--chime-raised); }
 
 /* today */
-#app .chime-surface.Today { padding: 16px 18px; }
-#app textarea.TodayWords { min-height: 5.5rem; }
 #app textarea.ListText { min-height: 14rem; font-size: calc(var(--chime-size-face) * 0.875); }
 #app .ListRead { gap: 4px; }
 
@@ -352,7 +343,6 @@
 #app .TickBox { font-size: 1.3em; line-height: 1.1; }
 
 /* the life page's actions under its one find line: buttons, in the links' own colour - apart from the add buttons above */
-#app .LifeLinks { flex-wrap: wrap !important; gap: 8px !important; }
 
 /* the admin portal: on a laptop, wide - its parts down the side, the one chosen beside them, tables of rows */
 #app .chime-app:has(.PortalOpen) { max-width: 78rem; }
@@ -421,3 +411,18 @@
 #app .PartOfRow > .PartWords { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px 8px 16px; border-radius: 999px 0 0 999px; border: 1px solid; border-right: none;
   font-weight: 700; font-size: calc(var(--chime-size-face) * 0.938); }
 #app .PartOfRow.PartEvent > .PartWords { background: color-mix(in srgb, var(--chime-accent) 10%, var(--chime-raised)); border-color: color-mix(in srgb, var(--chime-accent) 55%, transparent); color: var(--chime-accent); }
+
+/* backing out - Cancel, No, Keep writing, Skip, Close - is dark, as a sheet's Cancel is: never brighter than what it backs out of */
+#app .chime-pressable.FactoryLink:is([data-action="cancels_writing"], [data-action="keeps_writing"], [data-action="keeps_it"], [data-action="keeps_them"],
+  [data-action="keeps_the_place"], [data-action="keeps_it_as_it_is"], [data-action="keeps_me_on_this_event"], [data-action="keeps_my_account"],
+  [data-action="skips_this_step"], [data-action="skips_the_welcome"], [data-action="closes_the_overlay"], [data-action="keeps_them_apart"]) {
+  background: var(--chime-raised); border: 1px solid var(--chime-lit); color: var(--chime-ink); box-shadow: none;
+}
+
+/* words readable on every button and field (WCAG AA): dark words on the bright teal, deeper purple and red behind white words,
+   placeholders and field edges that can be seen */
+#app .chime-pressable:is(.BellButton, .FactoryAction, .FactoryToggleOn, .ToggleOn, .ChoiceChosen, .SegmentChosen, .Segment.chime-current) { color: var(--chime-ground); }
+#app .chime-pressable.FactoryLink { background: linear-gradient(90deg, color-mix(in srgb, var(--chime-accent-2) 72%, #000), color-mix(in srgb, var(--chime-accent-2-end) 72%, #000)); }
+#app .chime-pressable.FactoryDanger { background: linear-gradient(90deg, color-mix(in srgb, var(--chime-danger) 70%, #000), color-mix(in srgb, var(--chime-danger-end) 70%, #000)); }
+#app .chime-field::placeholder, #app textarea::placeholder { color: var(--chime-ink-soft); }
+#app .chime-field, #app textarea { border-color: color-mix(in srgb, var(--chime-ink-soft) 60%, var(--chime-raised)); }

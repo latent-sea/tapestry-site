@@ -10,11 +10,11 @@
 // the platform, which asks for the open portal itself: nothing here decides
 // who may see what.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { heading, notice, problem } from "./parts.js?v=20b89f4c3519";
-import { CARD, DANGER, LINK } from "./look/look.js?v=20b89f4c3519";
-import { HOW_TO_INVITE } from "./people.js?v=20b89f4c3519";
-import { sayAgo } from "./notices.js?v=20b89f4c3519";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { heading, notice, problem } from "./parts.js?v=779517fc44e5";
+import { CARD, DANGER, LINK } from "./look/look.js?v=779517fc44e5";
+import { HOW_TO_INVITE } from "./people.js?v=779517fc44e5";
+import { sayAgo } from "./notices.js?v=779517fc44e5";
 
 export const ADMIN = "admin";
 
@@ -179,7 +179,7 @@ export class Admin extends Controller {
       this.member.setValue(null);
       this.change(() => this.loom.adminRemove(payload.id), "Removed from Tapestry. To others they are a name again.");
     }
-    if (action === CANCELS_INVITE) this.change(() => this.loom.adminCancelInvite(payload.token), "Cancelled: that link lets no one in now.");
+    if (action === CANCELS_INVITE) this.change(() => this.loom.adminCancelInvite(payload.id), "Cancelled: that link lets no one in now.");
     if (action === MAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, true), "They are an admin now.");
     if (action === UNMAKES_ADMIN) this.change(() => this.loom.adminSet(payload.id, false), "They are not an admin now.");
     if (action === LOOKS_AGAIN) this.load();
@@ -550,9 +550,9 @@ export function describeAdmin(ui, admin, account) {
     heading(ui, "Invitations waiting"),
     ui.when(invitations.map((l) => l.length === 0), ui.text(Phrase.of("None waiting."), "Quiet")),
     ui.each(invitations, (held) => cells(ui, [[held.map((i) => Phrase.with("%s invited %s", [i?.from ?? "", i?.for ?? ""])), "Wide"],
-      [held.map((i) => (i?.expired ? Phrase.of("Run out") : Phrase.with("Runs out %s", [when(i?.expires_at)])))]]), (i) => i.token, "PortalTable"),
-    ui.each(invitations, (held) => ui.pressable(CANCELS_INVITE, held.map((i) => ({ token: i?.token ?? "" })),
-      [ui.text(held.map((i) => Phrase.with("Cancel %s's invitation of %s", [i?.from ?? "", i?.for ?? ""])), "Small")], LINK), (i) => i.token, "PortalActions"),
+      [held.map((i) => (i?.expired ? Phrase.of("Run out") : Phrase.with("Runs out %s", [when(i?.expires_at)])))]]), (i) => i.id, "PortalTable"),
+    ui.each(invitations, (held) => ui.pressable(CANCELS_INVITE, held.map((i) => ({ id: i?.id ?? "" })),
+      [ui.text(held.map((i) => Phrase.with("Cancel %s's invitation of %s", [i?.from ?? "", i?.for ?? ""])), "Small")], LINK), (i) => i.id, "PortalActions"),
     heading(ui, "Who invited whom"),
     ui.each(admin.members.map((l) => l.filter((m) => m.invited_by)), (m) => cells(ui, [[m.map((x) => Phrase.with("%s invited %s", [x?.invited_by ?? "", x?.name ?? ""])), "Wide"],
       [m.map((x) => Phrase.with("Joined %s", [when(x?.joined)]))]]), (m) => m.id, "PortalTable"),

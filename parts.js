@@ -2,8 +2,8 @@
 // chooser (type to find, press to pick, or add what was typed), and the
 // little rows of names.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { LINK } from "./look/look.js?v=20b89f4c3519";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { LINK } from "./look/look.js?v=779517fc44e5";
 
 /** A thread's mark: a dot in its colour, as a picture, since a colour is the thread's own. */
 export function dotOf(colour) {
@@ -136,3 +136,19 @@ export function problem(ui, value) { return ui.text(value, Themes.REASON).wraps(
 
 /** Words that say something went right, gone while there is nothing to say. */
 export function notice(ui, value) { return ui.text(value, "Notice").wraps().hidesEmpty(); }
+
+/**
+ * A link handed on: through the phone's own share sheet where there is one, else copied to paste anywhere.
+ * Answers what to say after: copied, or (when it could be neither) leftToCopy - "" when the share sheet took it.
+ */
+export async function handOn(said, copied, leftToCopy) {
+  if (navigator.share) {
+    try { await navigator.share(said); return ""; } catch (error) { if (error?.name === "AbortError") return ""; }
+  }
+  try {
+    await navigator.clipboard.writeText(said.url);
+    return copied;
+  } catch {
+    return leftToCopy;
+  }
+}

@@ -12,11 +12,11 @@
 // button with an X to take it out; all of it kept when it is saved. The
 // memory's own page only says what it is part of, each opening it.
 
-import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { DANGER, LINK } from "./look/look.js?v=20b89f4c3519";
-import { few } from "./parts.js?v=20b89f4c3519";
-import { yearsOf } from "./woven.js?v=20b89f4c3519";
-import { CLEARS_NEW_EVENT, DROPS_EVENT, DROPS_PERIOD } from "./editor.js?v=20b89f4c3519";
+import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { DANGER, LINK } from "./look/look.js?v=779517fc44e5";
+import { few } from "./parts.js?v=779517fc44e5";
+import { yearsOf } from "./woven.js?v=779517fc44e5";
+import { CLEARS_NEW_EVENT, DROPS_EVENT, DROPS_PERIOD } from "./editor.js?v=779517fc44e5";
 
 export const OPENS_BIGGER = "opens_part_of_something_bigger";
 export const CHOOSES_WAY = "chooses_how_it_is_part_of_something_bigger";
@@ -91,6 +91,8 @@ export class Bigger extends Controller {
     if ([STARTS_EVENT, TURNS_INTO_EVENT, TURNS_INTO_PERIOD].includes(action) && !this.name.read().trim()) return Phrase.of("Give it a name");
     if (action === CHOOSES_WAY && payload?.way !== "period" && payload?.way !== "event" && !this.memory()?.starts) return Phrase.of("Give it a date first");
     if (action === CHOOSES_WAY && payload?.way === "turn" && this.memory()?.event_id) return Phrase.of("Take it out of its event first");
+    // a new period is made over its time: one of that name already is chosen whatever its time
+    if (action === MAKES_PERIOD && !this.memory()?.starts && !this.namedPeriod()) return Phrase.of("Give it a date first");
     return null;
   }
 
@@ -127,7 +129,14 @@ export class Bigger extends Controller {
     return null;
   }
 
-  /** A memory's time, in years: { from, to }, or null with none. */
+  /** One of the member's own periods by the name typed, if there is one. */
+  namedPeriod() {
+    const weave = this.account.weave.read();
+    const named = this.periodLine.read().trim().toLowerCase();
+    return weave.data.periods.find((p) => p.owner === weave.meId && p.title.toLowerCase() === named) ?? null;
+  }
+
+  /** The draft's time, in years: { from, to }, or null with none. */
   spanOf() {
     const { starts, ends } = this.editor.span();
     return starts?.date ? { from: yearsOf(starts), to: ends?.date ? yearsOf(ends) : yearsOf(starts) } : null;
@@ -138,7 +147,7 @@ export class Bigger extends Controller {
     const weave = this.account.weave.read();
     const memory = this.memory();
     const typed = words(this.eventLine.read());
-    const span = this.spanOf(memory);
+    const span = this.spanOf();
     const all = weave.data.events.filter((e) => e.id !== memory?.event_id && weave.mayAddTo(e.id)).map((e) => weave.entry("event", e))
       .map((e) => ({ id: e.id, label: `${e.title}${e.said ? ` · ${e.said}` : ""}`, title: e.title, at: e.when?.date ? yearsOf(e.when) : null }));
     if (typed.length) return all.filter((e) => typed.every((w) => e.title.toLowerCase().includes(w))).slice(0, SHOWN);
@@ -147,10 +156,11 @@ export class Bigger extends Controller {
   }
 
   /** The periods it may go in: those it falls within at once, or those holding what is typed. */
-  periods(memory = this.memory(), line = this.periodLine.read()) {
+  periods() {
     const weave = this.account.weave.read();
-    const typed = words(line);
-    const span = this.spanOf(memory);
+    const memory = this.memory();
+    const typed = words(this.periodLine.read());
+    const span = this.spanOf();
     const inAlready = new Set(memory?.period_ids ?? []);
     const now = new Date().getFullYear() + 1;
     const all = weave.data.periods.filter((p) => !inAlready.has(p.id) && weave.isAtPeriod(p, weave.meId)).map((p) => weave.entry("period", p))

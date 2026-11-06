@@ -2,15 +2,15 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=20b89f4c3519";
-import { few, heading, notice, problem } from "./parts.js?v=20b89f4c3519";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=20b89f4c3519";
-import { CARD, DANGER, LINK } from "./look/look.js?v=20b89f4c3519";
-import { describeMerge } from "./asking.js?v=20b89f4c3519";
-import { addressOf } from "./weave.js?v=20b89f4c3519";
-import { findOnMap } from "./placemap.js?v=20b89f4c3519";
-import { memoryDots } from "./memorymap.js?v=20b89f4c3519";
-import { REPORTS, describeReporting } from "./safety.js?v=20b89f4c3519";
+import { Controller, Driver, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { few, handOn, heading, notice, problem } from "./parts.js?v=779517fc44e5";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=779517fc44e5";
+import { CARD, DANGER, LINK } from "./look/look.js?v=779517fc44e5";
+import { describeMerge } from "./asking.js?v=779517fc44e5";
+import { addressOf } from "./weave.js?v=779517fc44e5";
+import { findOnMap } from "./placemap.js?v=779517fc44e5";
+import { memoryDots } from "./memorymap.js?v=779517fc44e5";
+import { REPORTS, describeReporting } from "./safety.js?v=779517fc44e5";
 
 // a place's address, part by part, each as a letter has it: every one may be left empty
 const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],
@@ -33,6 +33,10 @@ export const ASKS_TO_REMOVE_PLACE = "asks_before_removing_the_place";
 export const KEEPS_PLACE = "keeps_the_place";
 export const FINDS_ON_MAP = "finds_the_place_on_the_map";
 export const CLEARS_POINT = "takes_off_the_places_point";
+export const OPENS_MAP_SHARE = "opens_sharing_the_map";
+export const SENDS_MAP_LINK = "sends_the_maps_link";
+export const STOPS_SHARING_MAP = "stops_sharing_the_map";
+export const SHARES_MAP_AGAIN = "shares_the_map_again";
 
 export const WORDS = {
   [SETS_NEW_PLACE]: ["Place"],
@@ -48,7 +52,14 @@ export const WORDS = {
   [KEEPS_PLACE]: ["No, keep it"],
   [FINDS_ON_MAP]: ["Find on the map"],
   [CLEARS_POINT]: ["Take off the point"],
+  [OPENS_MAP_SHARE]: ["Share this map"],
+  [SENDS_MAP_LINK]: ["Share the link"],
+  [STOPS_SHARING_MAP]: ["Stop sharing"],
+  [SHARES_MAP_AGAIN]: ["Share it again"],
 };
+
+/** A shared map's address: map.html beside the app, its link's token after the #. */
+export const mapAddress = (token) => new URL(`map.html#${token}`, location.href).href;
 
 export class Places extends Controller {
   constructor(chimes, loom, account) {
@@ -66,6 +77,8 @@ export class Places extends Controller {
     this.busy = this.value(false);
     this.problem = this.value("");
     this.notice = this.value("");
+    this.mapLink = this.value(""); // the member's map's link while it is shared, once the sheet has asked; "" for none
+    this.mapStopped = this.value(false); // sharing just stopped, in the sheet
   }
 
   answers() { return Object.keys(WORDS); }
@@ -81,10 +94,12 @@ export class Places extends Controller {
     this.point.setValue(null);
     this.problem.setValue("");
     this.notice.setValue("");
+    this.mapLink.setValue("");
+    this.mapStopped.setValue(false);
   }
 
   would(action) {
-    if (this.busy.read() && (action === ADDS_PLACE || action === SAVES_PLACE || action === REMOVES_PLACE)) return Phrase.of("Saving");
+    if (this.busy.read() && [ADDS_PLACE, SAVES_PLACE, REMOVES_PLACE, STOPS_SHARING_MAP, SHARES_MAP_AGAIN].includes(action)) return Phrase.of("Saving");
     if (action === ADDS_PLACE && !this.newName.read().trim()) return Phrase.of("Type the place first");
     if (action === SAVES_PLACE && !this.name.read().trim()) return Phrase.of("A place needs a name");
     if (action === CLEARS_POINT && !this.point.read()) return Phrase.of("No point on the map");
@@ -111,6 +126,10 @@ export class Places extends Controller {
     if (action === ASKS_TO_REMOVE_PLACE) this.asking.setValue(true);
     if (action === KEEPS_PLACE || action === REMOVES_PLACE) this.asking.setValue(false);
     if (action === REMOVES_PLACE) this.change(() => this.loom.deletePlace(payload.id), () => "Place removed; what was at it stays");
+    // the map shared by a link: made (or the one there is) as the sheet opens, handed on, or stopped
+    if (action === OPENS_MAP_SHARE || action === SHARES_MAP_AGAIN) this.shareMap();
+    if (action === SENDS_MAP_LINK) this.sendMap();
+    if (action === STOPS_SHARING_MAP) this.stopSharingMap();
     return null;
   }
 
@@ -148,6 +167,37 @@ export class Places extends Controller {
     // its name asked over the screen: that taken down first, then its form opened
     this.close?.();
     setTimeout(() => { location.hash = `#place/${made.data.id}`; }, 60);
+  }
+
+  /** The member's map shared: its link, the one there is while it is shared, else a new one. */
+  async shareMap() {
+    this.busy.setValue(true);
+    const made = await this.loom.shareMap();
+    if (this.disposed) return;
+    this.busy.setValue(false);
+    if (!made.ok) { this.problem.setValue(made.error); return; }
+    this.mapLink.setValue(mapAddress(made.data));
+    this.mapStopped.setValue(false);
+  }
+
+  /** The map's link handed on: through the phone's own share sheet where there is one, else copied to paste anywhere. */
+  async sendMap() {
+    const address = this.mapLink.read();
+    const said = { title: "Tapestry", text: `${this.account.weave.read().me?.name ?? "My"}'s memories on a map`, url: address };
+    const after = await handOn(said, "Copied. Paste it wherever you like.", "Copy the link above and send it on.");
+    if (after) this.notice.setValue(after);
+  }
+
+  /** The map no longer shared: its link opens nothing, from now on. */
+  async stopSharingMap() {
+    this.busy.setValue(true);
+    const done = await this.loom.stopSharingMap();
+    if (this.disposed) return;
+    this.busy.setValue(false);
+    if (!done.ok) { this.problem.setValue(done.error); return; }
+    this.mapLink.setValue("");
+    this.mapStopped.setValue(true);
+    this.notice.setValue("Stopped. The link opens nothing now.");
   }
 
   /** A place's page opened: its name and notes ready to change. */
@@ -194,6 +244,23 @@ export function describePlaces(ui, places, account) {
       : Phrase.of("No memories on the map yet: give a place its point (open it, then press the map), and its memories are on it."))), "Hint").wraps(),
     ui.text(plotted.map((p) => (p.missing ? Phrase.counted("%d more is at a place with no point yet.", "%d more are at places with no point yet.", p.missing) : "")), "Hint")
       .wraps().hidesEmpty(),
+    // the map shared by a link anyone may open, signed in or not (map.html)
+    ui.when(plotted.map((p) => p.dots.length > 0), ui.pressable(OPENS_MAP_SHARE, {}, [ui.text(ui.words(OPENS_MAP_SHARE), Themes.FACE)], LINK)
+      .opens(ui.popUp("share-map", () => ui.column([
+        ui.text(Phrase.of("Share this map"), "Title"),
+        ui.when(places.mapLink.map((l) => !!l), ui.column([
+          ui.text(Phrase.of("Anyone with this link sees your memories on the map, now and as you add more: a dot for each, coloured by when, with its year. A memory says its title only if you've shared it with everyone on Tapestry. No words, pictures or people, and nothing opens."), "Hint").wraps(),
+          ui.text(places.mapLink, "LinkAddress").wraps(),
+          ui.button(SENDS_MAP_LINK),
+          ui.button(STOPS_SHARING_MAP, { style: DANGER }),
+        ]), ui.when(places.mapStopped, ui.column([
+          ui.text(Phrase.of("Your map isn't shared. Sharing it again makes a new link: an old one never opens again."), "Hint").wraps(),
+          ui.button(SHARES_MAP_AGAIN),
+        ]), ui.text(Phrase.of("Making its link…"), "Hint"))),
+        problem(ui, places.problem),
+        notice(ui, places.notice),
+        ui.pressable(Ui.CLOSES, {}, [ui.text(Phrase.of("Done"), Themes.FACE)], "PlainLink"),
+      ], "AddSheet")))),
     ui.text(Phrase.of("Where things happened. Open one to see everything at it."), "Hint").wraps(),
     // a new place: its name asked over the screen, then its own page to say more
     ui.pressable(STARTS_PLACE, {}, [ui.text("+", "AddMark"), ui.text(ui.words(STARTS_PLACE), Themes.FACE)], "BigAction AddPlace").opens(ui.popUp("add-place", () => ui.column([
@@ -233,7 +300,7 @@ export function describePlace(ui, places, account, timeline, asking, safety) {
       shows: places.address.map((typed) => typed[part] ?? ""), carries: (line) => ({ line, part }) })),
     // its point on the map, if they like: as exact as they want, or none at all
     ui.text(Phrase.of("On the map"), "FieldName"),
-    ui.text(Phrase.of("If you like, press on the map where it is, or drag the pin - or leave it off: a country or a town is enough. Only you see the point."), "Hint").wraps(),
+    ui.text(Phrase.of("If you like, press on the map where it is, or drag the pin - or leave it off: a country or a town is enough. Only you see the point - and anyone you share your map with."), "Hint").wraps(),
     ui.surface("PlaceMap", []).named("place-map"),
     ui.text(places.point.map((p) => (p ? Phrase.with("Its point: %s, %s", [p.lat.toFixed(5), p.lng.toFixed(5)]) : Phrase.of("No point on the map"))), "Hint"),
     ui.row([
@@ -257,6 +324,8 @@ export function describePlace(ui, places, account, timeline, asking, safety) {
     ])),
   ]);
   return ui.screen(PLACE, [
+    // Back, as on a memory's page (the app's own action)
+    ui.row([ui.pressable("goes_back", {}, [ui.text("‹", "BackMark"), ui.text(ui.words("goes_back"), Themes.FACE)], "BackButton").goesTo(Driver.BACK)], "ItemTop"),
     ui.when(place, ui.column([
       // just added: its form first, to say where it is
       ui.when(fresh, ui.column([

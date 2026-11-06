@@ -379,6 +379,14 @@ export function sayLength(starts, ends, sofar = false) {
 }
 
 /** The year a time falls in, or null. */
+/**
+ * A time as the platform's columns have it, under its name ("starts" or "ends"): its date, how exactly it is
+ * known, whether it is a guess, and its time of day (left empty without withTime).
+ */
+export function columnsOf(which, at, withTime = true) {
+  return { [which]: at?.date ?? "", [`${which}_precision`]: at?.precision ?? "day", [`${which}_about`]: !!at?.about, [`${which}_time`]: withTime ? at?.time ?? "" : "" };
+}
+
 export function yearOf(when) { return when && when.date ? Number(when.date.slice(0, 4)) : null; }
 
 /**
