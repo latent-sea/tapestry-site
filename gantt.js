@@ -12,8 +12,8 @@
 // page's kind chips above it are its key, and its filter. Every mark is a
 // link: each says what it is to a reader who can't see it, and its time as
 // the pointer rests on it.
-import { lastDayOf } from "./when.js?v=779517fc44e5";
-import { yearMarks, yearsOf } from "./woven.js?v=779517fc44e5";
+import { lastDayOf } from "./when.js?v=ce968d9abfd8";
+import { yearMarks, yearsOf } from "./woven.js?v=ce968d9abfd8";
 
 const SIDE = 12; // the room either side of the years
 const TOP = 26; // the years' room

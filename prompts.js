@@ -11,7 +11,7 @@
 // Which questions were answered is kept on the device (an answered question
 // is not asked there again).
 
-import { Controller } from "./gd_chime/gd_chime.js?v=779517fc44e5";
+import { Controller } from "./gd_chime/gd_chime.js?v=ce968d9abfd8";
 
 const ANSWERED_KEPT = "tapestry_answered";
 

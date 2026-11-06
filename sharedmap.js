@@ -5,9 +5,9 @@
 // screen draws it (memorymap.js), nothing opening; asked again whenever the page is
 // looked at again, so it is as the member's memories are now.
 
-import { Backend } from "./backend/backend.js?v=779517fc44e5";
-import { KEY, PLATFORM } from "./loom.js?v=779517fc44e5";
-import { MemoryMap, sharedDots } from "./memorymap.js?v=779517fc44e5";
+import { Backend } from "./backend/backend.js?v=ce968d9abfd8";
+import { KEY, PLATFORM } from "./loom.js?v=ce968d9abfd8";
+import { MemoryMap, sharedDots } from "./memorymap.js?v=ce968d9abfd8";
 
 // no one's session: the platform's publishable key alone
 const backend = new Backend(PLATFORM, KEY, { keptIn: "tapestry_shared_map" });
