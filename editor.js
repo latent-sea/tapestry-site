@@ -12,14 +12,14 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=ce968d9abfd8";
-import { EXAMPLES, clockOf, columnsOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=ce968d9abfd8";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=ce968d9abfd8";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=ce968d9abfd8";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=ce968d9abfd8";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=ce968d9abfd8";
-import { DANGER, LINK } from "./look/look.js?v=ce968d9abfd8";
-import { questionOf } from "./prompts.js?v=ce968d9abfd8";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=0d7a1a5b1cb2";
+import { EXAMPLES, clockOf, columnsOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=0d7a1a5b1cb2";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=0d7a1a5b1cb2";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=0d7a1a5b1cb2";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=0d7a1a5b1cb2";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=0d7a1a5b1cb2";
+import { DANGER, LINK } from "./look/look.js?v=0d7a1a5b1cb2";
+import { questionOf } from "./prompts.js?v=0d7a1a5b1cb2";
 
 export const EDIT = "edit";
 
@@ -554,7 +554,18 @@ export class Editor extends Controller {
     return { ...common, notes: "", kind: this.periodType.read(), adds: this.adds.read(), asks: this.asks.read(), period_ids: this.periodIds.read() };
   }
 
+  /** Saved, or what went wrong said: never left on "Saving" whatever happens on the way. */
   async save() {
+    try {
+      await this.saving();
+    } catch (error) {
+      if (this.disposed) return;
+      this.busy.setValue(false);
+      this.problem.setValue(`It couldn't be saved: ${error?.message || error}. Press Save to try again.`);
+    }
+  }
+
+  async saving() {
     const kind = this.kind.read();
     this.busy.setValue(true);
     this.problem.setValue("");

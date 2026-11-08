@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=ce968d9abfd8";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=ce968d9abfd8";
-import { shrinkPicture } from "./backend/pictures.js?v=ce968d9abfd8";
+import { Backend } from "./backend/backend.js?v=0d7a1a5b1cb2";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=0d7a1a5b1cb2";
+import { shrinkPicture } from "./backend/pictures.js?v=0d7a1a5b1cb2";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -175,8 +175,21 @@ export class Loom {
 
   /** A picture shrunk, kept privately and added to one of the member's memories. */
   async addPicture(memoryId, file, position = 0, caption = "") {
+    try {
+      return await this.addPictureAs(memoryId, file, position, caption);
+    } catch (error) {
+      // a picture this browser can't read (an iPhone's HEIC photo outside Safari, a broken file): said, never a Save stuck on "Saving"
+      if (error?.unreadable) {
+        return { ok: false, data: null, error: `"${file?.name ?? "That picture"}" can't be read on this device. Choose a JPEG or PNG instead (on an iPhone: Settings, Camera, Formats, Most Compatible).` };
+      }
+      return { ok: false, data: null, error: `"${file?.name ?? "That picture"}" couldn't be uploaded. Check the connection and press Save again.` };
+    }
+  }
+
+  async addPictureAs(memoryId, file, position, caption) {
     const name = crypto.randomUUID();
-    const big = await shrinkPicture(file, 1600);
+    let big;
+    try { big = await shrinkPicture(file, 1600); } catch { throw Object.assign(new Error("unreadable"), { unreadable: true }); }
     const kept = await this.backend.uploadPrivatePicture(APP, `${name}.jpg`, big);
     if (kept.status === 413) return { ok: false, data: null, error: "That picture is too big. Please choose one under 10 MB." };
     if (!kept.ok) return answer(kept);

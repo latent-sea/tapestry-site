@@ -2,15 +2,15 @@
 // a town - each with everything at it. Others see a place of the member's
 // only through something at it that they see.
 
-import { Controller, Driver, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=ce968d9abfd8";
-import { few, handOn, heading, notice, problem } from "./parts.js?v=ce968d9abfd8";
-import { ADDS_MEMORY, EDIT } from "./editor.js?v=ce968d9abfd8";
-import { CARD, DANGER, LINK } from "./look/look.js?v=ce968d9abfd8";
-import { describeMerge } from "./asking.js?v=ce968d9abfd8";
-import { addressOf } from "./weave.js?v=ce968d9abfd8";
-import { findOnMap } from "./placemap.js?v=ce968d9abfd8";
-import { memoryDots } from "./memorymap.js?v=ce968d9abfd8";
-import { REPORTS, describeReporting } from "./safety.js?v=ce968d9abfd8";
+import { Controller, Driver, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=0d7a1a5b1cb2";
+import { few, handOn, heading, notice, problem } from "./parts.js?v=0d7a1a5b1cb2";
+import { ADDS_MEMORY, EDIT } from "./editor.js?v=0d7a1a5b1cb2";
+import { CARD, DANGER, LINK } from "./look/look.js?v=0d7a1a5b1cb2";
+import { describeMerge } from "./asking.js?v=0d7a1a5b1cb2";
+import { addressOf } from "./weave.js?v=0d7a1a5b1cb2";
+import { findOnMap } from "./placemap.js?v=0d7a1a5b1cb2";
+import { memoryDots } from "./memorymap.js?v=0d7a1a5b1cb2";
+import { REPORTS, describeReporting } from "./safety.js?v=0d7a1a5b1cb2";
 
 // a place's address, part by part, each as a letter has it: every one may be left empty
 const ADDRESS = [["street", "Street", "12 Elm Street", "street-address"], ["street_2", "Second line", "Flat 2", "address-line2"],
