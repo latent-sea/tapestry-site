@@ -12,14 +12,14 @@
 // - Pictures, on a memory: chosen from the device, shown at once, kept once
 //   the memory is saved.
 
-import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=41cd427309d7";
-import { EXAMPLES, clockOf, columnsOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=41cd427309d7";
-import { spanOfDays, takenFrom } from "./photo_date.js?v=41cd427309d7";
-import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=41cd427309d7";
-import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=41cd427309d7";
-import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=41cd427309d7";
-import { DANGER, LINK } from "./look/look.js?v=41cd427309d7";
-import { questionOf } from "./prompts.js?v=41cd427309d7";
+import { Controller, Driver, Phrase, Themes } from "./gd_chime/gd_chime.js?v=ddc9eb98e29c";
+import { EXAMPLES, clockOf, columnsOf, parseSpan, sayWhen, saySpan, within } from "./when.js?v=ddc9eb98e29c";
+import { spanOfDays, takenFrom } from "./photo_date.js?v=ddc9eb98e29c";
+import { AUDIENCES, periodsOf, timeOf, withKind } from "./weave.js?v=ddc9eb98e29c";
+import { chooser, dotOf, few, heading, notice, problem } from "./parts.js?v=ddc9eb98e29c";
+import { MOST as MOST_LINKS, linkOf, siteOf, youTubeId } from "./links.js?v=ddc9eb98e29c";
+import { DANGER, LINK } from "./look/look.js?v=ddc9eb98e29c";
+import { questionOf } from "./prompts.js?v=ddc9eb98e29c";
 
 export const EDIT = "edit";
 
@@ -337,8 +337,15 @@ export class Editor extends Controller {
     if (action === DROPS_LINK) this.links.update((list) => list.filter((l) => l.url !== payload.id));
     if (action === ADDS_PICTURE) {
       if (!payload.file.type.startsWith("image/")) return Phrase.of("Please choose a picture (JPEG, PNG, WebP or GIF)");
-      const key = `added-${Date.now()}-${this.added.read().length}`;
+      // a key of its own: several chosen at once each get one (the time and the list's length were the same for many)
+      const key = `added-${(this.pictureKeys = (this.pictureKeys ?? 0) + 1)}-${Date.now()}`;
       this.added.update((list) => [...list, { key, file: payload.file, address: URL.createObjectURL(payload.file), taken: null }]);
+      // kept in the page at once: some phones' galleries let a chosen photo be read only for a while
+      payload.file.arrayBuffer().then((bytes) => {
+        if (this.disposed) return;
+        const kept = new File([bytes], payload.file.name, { type: payload.file.type, lastModified: payload.file.lastModified });
+        this.added.update((list) => list.map((p) => (p.key === key ? { ...p, file: kept } : p)));
+      }, () => { /* read when it is saved, as before */ });
       // the day the camera says it was taken, offered for when
       takenFrom(payload.file).then((day) => {
         if (day && !this.disposed) this.added.update((list) => list.map((p) => (p.key === key ? { ...p, taken: day } : p)));
