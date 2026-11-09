@@ -421,8 +421,10 @@
 
 /* words readable on every button and field (WCAG AA): dark words on the bright teal, deeper purple and red behind white words,
    placeholders and field edges that can be seen */
-#app .chime-pressable:is(.BellButton, .FactoryAction, .FactoryToggleOn, .ToggleOn, .ChoiceChosen, .SegmentChosen, .Segment.chime-current) { color: var(--chime-ground); }
-#app .chime-pressable.FactoryLink { background: linear-gradient(90deg, color-mix(in srgb, var(--chime-accent-2) 72%, #000), color-mix(in srgb, var(--chime-accent-2-end) 72%, #000)); }
-#app .chime-pressable.FactoryDanger { background: linear-gradient(90deg, color-mix(in srgb, var(--chime-danger) 70%, #000), color-mix(in srgb, var(--chime-danger-end) 70%, #000)); }
+#app .chime-pressable:is(.BellButton, .FactoryAction, .FactoryToggleOn, .ToggleOn, .ChoiceChosen, .SegmentChosen, .Segment.chime-current):not([aria-disabled="true"]) { color: var(--chime-ground); }
+#app .chime-pressable.FactoryLink:not([aria-disabled="true"]) { background: linear-gradient(90deg, color-mix(in srgb, var(--chime-accent-2) 72%, #000), color-mix(in srgb, var(--chime-accent-2-end) 72%, #000)); }
+#app .chime-pressable.FactoryDanger:not([aria-disabled="true"]) { background: linear-gradient(90deg, color-mix(in srgb, var(--chime-danger) 70%, #000), color-mix(in srgb, var(--chime-danger-end) 70%, #000)); }
 #app .chime-field::placeholder, #app textarea::placeholder { color: var(--chime-ink-soft); }
 #app .chime-field, #app textarea { border-color: color-mix(in srgb, var(--chime-ink-soft) 60%, var(--chime-raised)); }
+/* a button that can't be pressed yet, whatever its colour: faded grey, its words soft but readable */
+#app .chime-pressable[aria-disabled="true"] { background: var(--factory-faded); border: 1px solid var(--chime-lit); color: var(--chime-ink-soft); box-shadow: none; }

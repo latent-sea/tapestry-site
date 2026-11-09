@@ -4,8 +4,8 @@
 // into someone else's event, it waits for whoever runs it to approve it. (From
 // the memory's Edit, Part of something bigger?: bigger.js.)
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=ddc9eb98e29c";
-import { notice, problem } from "./parts.js?v=ddc9eb98e29c";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=119663ae9628";
+import { notice, problem } from "./parts.js?v=119663ae9628";
 
 export const FINDS_MEMORY_TO_ADD = "finds_a_memory_of_mine_to_add";
 export const ADDS_KEPT_MEMORY = "adds_a_memory_of_mine_to_it";

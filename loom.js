@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=ddc9eb98e29c";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=ddc9eb98e29c";
-import { shrinkPicture } from "./backend/pictures.js?v=ddc9eb98e29c";
+import { Backend } from "./backend/backend.js?v=119663ae9628";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=119663ae9628";
+import { shrinkPicture } from "./backend/pictures.js?v=119663ae9628";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -44,7 +44,7 @@ const by = (id) => `id=eq.${encodeURIComponent(id)}`;
 
 // what may still be asked while seeing Tapestry as someone else: nothing that changes anything, nor anything of
 // the one looking's own (their texts, their finding) that would show through
-const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "signOut", "mayJoin",
+const READS = new Set(["restore", "playerId", "userName", "drawGoogleButton", "googleAnswer", "signInWithGoogle", "requestCode", "verifyCode", "signOut", "mayJoin",
   "visible", "viewAs", "pictureAddresses", "pictureData", "platformStatus", "adminView", "reportsView", "feedbackList", "invitation", "findPublic", "openedNow",
   "pushKey", "addDevice", "removeDevice", // a device's notifications are the one signed in's own, whoever they are seeing as
   "portalState", "portalKeep", "portalOverview", "portalMembers", "portalMember", "portalDecisions", "portalLog", "portalRequests"]); // the portal is theirs, not who they see as
@@ -99,6 +99,11 @@ export class Loom {
   googleAnswer() { return takeGoogleRedirect(); }
 
   async signInWithGoogle(credential, nonce) { return answer(await this.backend.signInWithGoogleToken(credential, nonce)); }
+
+  /** Signing in by email: a code mailed to the address (the platform's own mail), then the code typed. */
+  async requestCode(email) { return answer(await this.backend.requestCode(email)); }
+
+  async verifyCode(email, code) { return answer(await this.backend.verifyCode(email, code)); }
 
   async signOut() { await this.backend.signOut(); }
 

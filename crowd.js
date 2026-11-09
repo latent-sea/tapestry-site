@@ -8,16 +8,15 @@
 // memory likes it: the count is everyone's, who liked it its writer's alone.
 // A big event's memories come only in part with a load: opened, all of them.
 
-import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=ddc9eb98e29c";
-import { DANGER, LINK } from "./look/look.js?v=ddc9eb98e29c";
-import { few, heading, notice, problem } from "./parts.js?v=ddc9eb98e29c";
-import { headingOf, sayWhen } from "./when.js?v=ddc9eb98e29c";
-import { sortEntries } from "./weave.js?v=ddc9eb98e29c";
+import { Controller, Phrase, Themes } from "./gd_chime/gd_chime.js?v=119663ae9628";
+import { DANGER, LINK } from "./look/look.js?v=119663ae9628";
+import { few, heading, notice, problem } from "./parts.js?v=119663ae9628";
+import { headingOf, sayWhen } from "./when.js?v=119663ae9628";
+import { sortEntries } from "./weave.js?v=119663ae9628";
 
 export const SEARCHES_CROWD = "finds_in_what_it_holds";
 export const ORDERS_CROWD = "orders_what_it_holds";
 export const SHOWS_NEW = "shows_only_what_is_new";
-export const SHOWS_PHOTOS = "shows_its_pictures_together";
 export const SHOWS_MORE_CROWD = "shows_twenty_more";
 export const SHOWS_MORE_PHOTOS = "shows_sixty_more_pictures";
 export const LIKES = "likes_a_memory";
@@ -35,7 +34,6 @@ export const WORDS = {
   [SEARCHES_CROWD]: ["Find in it"],
   [ORDERS_CROWD]: ["Choose the order"],
   [SHOWS_NEW]: ["Only what's new"],
-  [SHOWS_PHOTOS]: ["Pictures"],
   [SHOWS_MORE_CROWD]: ["Show 20 more"],
   [SHOWS_MORE_PHOTOS]: ["Show 60 more"],
   [LIKES]: ["Like"],
@@ -64,7 +62,6 @@ export class Crowd extends Controller {
     this.looked = this.value("");
     this.order = this.value("when");
     this.onlyNew = this.value(false);
-    this.photos = this.value(false);
     this.shown = this.value(PAGE);
     this.photosShown = this.value(PHOTOS);
     this.since = this.value(null); // when the member had last opened it, before now: what came after is new
@@ -103,7 +100,6 @@ export class Crowd extends Controller {
       this.looked.setValue("");
       this.order.setValue("when");
       this.onlyNew.setValue(false);
-      this.photos.setValue(false);
       this.shown.setValue(PAGE);
       this.photosShown.setValue(PHOTOS);
       this.asking.setValue("");
@@ -146,7 +142,6 @@ export class Crowd extends Controller {
     if (action === SEARCHES_CROWD) { this.looked.setValue(payload.line); this.shown.setValue(PAGE); }
     if (action === ORDERS_CROWD) { this.order.setValue(payload.order); this.shown.setValue(PAGE); }
     if (action === SHOWS_NEW) { this.onlyNew.update((only) => !only); this.shown.setValue(PAGE); }
-    if (action === SHOWS_PHOTOS) this.photos.update((shown) => !shown);
     if (action === SHOWS_MORE_CROWD) this.shown.update((n) => n + PAGE);
     if (action === SHOWS_MORE_PHOTOS) this.photosShown.update((n) => n + PHOTOS);
     if (action === LIKES) {
@@ -294,6 +289,21 @@ export class Crowd extends Controller {
  * What an event or period holds, with how to find, order and run it. card(held) draws one entry as the timeline
  * does; opens is the action that opens one (its parameter its key), and item the screen it opens on.
  */
+/**
+ * An event's or period's pictures, every memory's, sixty at a time with more below, each opening its memory: on its page
+ * in place of the first four, once there are more than four (site.js).
+ */
+export function describeCrowdPhotos(ui, crowd, account, opens, item) {
+  const photos = ui.bound(() => { account.weave.read(); crowd.looked.read(); crowd.onlyNew.read(); return crowd.pictures(); });
+  return ui.column([
+    ui.eachAcross(ui.bound(() => photos.read().slice(0, crowd.photosShown.read())), (held) => ui.pressable(opens, held.map((p) => ({ parameter: p?.memory ?? "" })),
+      [ui.image(held.map((p) => (p ? account.address(p.path) : "")), "Thumb CrowdPhoto", held.map((p) => p?.caption || Phrase.of("A picture")))], "PhotoButton").goesTo(item),
+    (p) => p.key, "CrowdPhotos"),
+    ui.when(ui.bound(() => photos.read().length > crowd.photosShown.read()),
+      ui.pressable(SHOWS_MORE_PHOTOS, {}, [ui.text(ui.bound(() => Phrase.with("Show 60 more (%s further)", [String(photos.read().length - crowd.photosShown.read())])), Themes.FACE)], LINK)),
+  ]);
+}
+
 export function describeCrowd(ui, crowd, account, card, opens, item, emptySaid) {
   const weave = account.weave;
   const isEvent = ui.bound(() => crowd.item().kind === "event");
@@ -377,25 +387,16 @@ export function describeCrowd(ui, crowd, account, card, opens, item, emptySaid) 
     ui.row([
       ui.when(newCount.map((n) => n > 0), ui.pressable(SHOWS_NEW, {}, [ui.text(newCount.map((n) => Phrase.counted("New since you last looked: %d", "New since you last looked: %d", n)), Themes.FACE)], "Segment")
         .currentWhile(crowd.onlyNew)),
-      ui.when(photos.map((p) => p.length > 0), ui.pressable(SHOWS_PHOTOS, {}, [ui.text(ui.words(SHOWS_PHOTOS), Themes.FACE)], "Segment").currentWhile(crowd.photos)),
     ], "Segments"),
     problem(ui, crowd.problem),
     notice(ui, crowd.notice),
-    // its pictures together, sixty at a time, each opening its memory
-    ui.when(crowd.photos, ui.column([
-      ui.eachAcross(ui.bound(() => photos.read().slice(0, crowd.photosShown.read())), (held) => ui.pressable(opens, held.map((p) => ({ parameter: p?.memory ?? "" })),
-        [ui.image(held.map((p) => (p ? account.address(p.path) : "")), "Thumb CrowdPhoto", held.map((p) => p?.caption || Phrase.of("A picture")))], "PhotoButton").goesTo(item),
-      (p) => p.key, "CrowdPhotos"),
-      ui.when(ui.bound(() => photos.read().length > crowd.photosShown.read()),
-        ui.pressable(SHOWS_MORE_PHOTOS, {}, [ui.text(ui.bound(() => Phrase.with("Show 60 more (%s further)", [String(photos.read().length - crowd.photosShown.read())])), Themes.FACE)], LINK)),
-    ])),
-    ui.when(ui.bound(() => !crowd.photos.read()), ui.column([
+    ui.column([
       ui.when(total.map((n) => n === 0), ui.text(emptySaid, "Quiet").wraps()),
       ui.each(rows, (held) => ui.when(held.map((row) => !!row?.heading), ui.text(held.map((row) => row?.heading ?? ""), "YearHeading"),
         entry(held.map((row) => row?.entry ?? null))), (row) => row.key, "Timeline"),
       ui.text(ui.bound(() => (total.read() > PAGE ? Phrase.with("Showing %s of %s", [String(shownCount.read()), String(total.read())]) : "")), "Hint").hidesEmpty(),
       ui.when(ui.bound(() => total.read() > shownCount.read()), ui.pressable(SHOWS_MORE_CROWD, {}, [ui.text(ui.words(SHOWS_MORE_CROWD), Themes.FACE)], LINK)),
-    ])),
+    ]),
     // run by its maker and the admins they make: shown to them
     ui.when(runs, ui.column([
       heading(ui, "Who runs it"),

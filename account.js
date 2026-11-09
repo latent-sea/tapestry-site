@@ -6,8 +6,8 @@
 // (loom.visible) into the Weave every screen reads, and loaded again after
 // every change and whenever the page comes back into sight.
 
-import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=ddc9eb98e29c";
-import { Weave } from "./weave.js?v=ddc9eb98e29c";
+import { Controller, Phrase } from "./gd_chime/gd_chime.js?v=119663ae9628";
+import { Weave } from "./weave.js?v=119663ae9628";
 
 export const SIGNS_OUT = "signs_out";
 export const SETS_JOIN_NAME = "sets_the_name_to_join_under";
@@ -17,6 +17,11 @@ export const AGREES = "agrees_to_the_terms";
 export const STOPS_SEEING = "stops_seeing_as_them";
 export const SAYS_AGE = "says_i_am_14_or_over";
 export const LETS_KEEP = "lets_tapestry_keep_what_i_write_about_myself";
+export const SETS_EMAIL = "sets_the_email_to_sign_in_with";
+export const SENDS_CODE = "emails_me_a_code";
+export const SETS_CODE = "sets_the_emailed_code";
+export const SIGNS_IN_WITH_CODE = "signs_in_with_the_code";
+export const OTHER_EMAIL = "uses_another_email";
 
 export const WORDS = {
   [SIGNS_OUT]: ["Sign out"],
@@ -26,6 +31,11 @@ export const WORDS = {
   [AGREES]: ["I agree"],
   [STOPS_SEEING]: ["Stop seeing as them"],
   [SAYS_AGE]: ["I am 14 or over"],
+  [SETS_EMAIL]: ["Your email"],
+  [SENDS_CODE]: ["Email me a code"],
+  [SETS_CODE]: ["The code"],
+  [SIGNS_IN_WITH_CODE]: ["Sign in"],
+  [OTHER_EMAIL]: ["Use another email"],
   [LETS_KEEP]: ["Tapestry may keep what I write about myself - sensitive things, like my health or beliefs, included - to show to whom I choose"],
 };
 
@@ -55,6 +65,10 @@ export class Account extends Controller {
     this.asked = new Set();
     this.wanted = new Set();
     this.joinName = this.value("");
+    // signing in by email: the address, the code it was sent, and whether one was
+    this.email = this.value("");
+    this.code = this.value("");
+    this.codeSentTo = this.value("");
     this.over14 = this.value(false); // said, ticked, before joining or agreeing
     this.letsKeep = this.value(false);
     this.terms = this.value([]); // the terms, read from their own page (terms.html) to be shown before they are agreed to: [{ kind, words }]
@@ -77,6 +91,9 @@ export class Account extends Controller {
     if ((action === AGREES || action === JOINS) && !this.over14.read()) return Phrase.of("First say you are 14 or over: Tapestry isn't for anyone younger");
     if ((action === AGREES || action === JOINS) && !this.letsKeep.read()) return Phrase.of("First say Tapestry may keep what you write about yourself");
     if (action === STOPS_SEEING && !this.loom.seeing) return Phrase.of("Seeing as yourself");
+    if ((action === SENDS_CODE || action === SIGNS_IN_WITH_CODE) && this.busy.read()) return Phrase.of("Just a moment");
+    if (action === SENDS_CODE && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(this.email.read().trim())) return Phrase.of("Type your email address");
+    if (action === SIGNS_IN_WITH_CODE && !/^\d{6,10}$/.test(this.code.read().replace(/\s/g, ""))) return Phrase.of("Type the code from the email");
     if (action === JOINS) {
       if (this.busy.read()) return Phrase.of("Joining");
       if (!this.joinName.read().trim()) return Phrase.of("First say what others should call you");
@@ -93,6 +110,11 @@ export class Account extends Controller {
     if (action === STOPS_SEEING) this.stopSeeing();
     if (action === RELOADS) this.again();
     if (action === SIGNS_OUT) this.signOut();
+    if (action === SETS_EMAIL) this.email.setValue(payload.line);
+    if (action === SETS_CODE) this.code.setValue(payload.line);
+    if (action === SENDS_CODE) this.sendCode();
+    if (action === SIGNS_IN_WITH_CODE) this.signInWithCode();
+    if (action === OTHER_EMAIL) { this.codeSentTo.setValue(""); this.code.setValue(""); this.problem.setValue(""); }
     return null;
   }
 
@@ -101,6 +123,30 @@ export class Account extends Controller {
     this.problem.setValue("");
     const signed = await this.loom.signInWithGoogle(credential, nonce);
     if (!signed.ok) { this.problem.setValue(signed.error); this.state.setValue("out"); return; }
+    await this.signedIn();
+  }
+
+  /** A sign-in code emailed to the address typed: the same account as Google's, where it is the same address. */
+  async sendCode() {
+    const email = this.email.read().trim().toLowerCase();
+    this.problem.setValue("");
+    this.busy.setValue(true);
+    const sent = await this.loom.requestCode(email);
+    this.busy.setValue(false);
+    if (!sent.ok) { this.problem.setValue(sent.error); return; }
+    this.code.setValue("");
+    this.codeSentTo.setValue(email);
+  }
+
+  /** The emailed code typed: signed in. */
+  async signInWithCode() {
+    this.problem.setValue("");
+    this.busy.setValue(true);
+    const signed = await this.loom.verifyCode(this.codeSentTo.read(), this.code.read().replace(/\s/g, ""));
+    this.busy.setValue(false);
+    if (!signed.ok) { this.problem.setValue(/expired|invalid|token/i.test(signed.error ?? "") ? "That code isn't right, or has run out: check the email, or ask for another." : signed.error); return; }
+    this.codeSentTo.setValue("");
+    this.code.setValue("");
     await this.signedIn();
   }
 
