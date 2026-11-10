@@ -12,11 +12,11 @@
 // button with an X to take it out; all of it kept when it is saved. The
 // memory's own page only says what it is part of, each opening it.
 
-import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=119663ae9628";
-import { DANGER, LINK } from "./look/look.js?v=119663ae9628";
-import { few } from "./parts.js?v=119663ae9628";
-import { yearsOf } from "./woven.js?v=119663ae9628";
-import { CLEARS_NEW_EVENT, DROPS_EVENT, DROPS_PERIOD } from "./editor.js?v=119663ae9628";
+import { Controller, Phrase, Themes, Ui } from "./gd_chime/gd_chime.js?v=6373757c9335";
+import { DANGER, LINK } from "./look/look.js?v=6373757c9335";
+import { few } from "./parts.js?v=6373757c9335";
+import { yearsOf } from "./woven.js?v=6373757c9335";
+import { CLEARS_NEW_EVENT, DROPS_EVENT, DROPS_PERIOD } from "./editor.js?v=6373757c9335";
 
 export const OPENS_BIGGER = "opens_part_of_something_bigger";
 export const CHOOSES_WAY = "chooses_how_it_is_part_of_something_bigger";

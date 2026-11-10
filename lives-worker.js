@@ -1,7 +1,7 @@
 // The lives settled (lives.js, layOut) away from the page, so a long tapestry
 // never stops it answering: asked { id, drawn, dims, tuning }, it answers
 // { id, times, at } - at as [life id, places] pairs - once they settle.
-import { layOut } from "./lives.js?v=119663ae9628";
+import { layOut } from "./lives.js?v=6373757c9335";
 
 self.onmessage = ({ data: { id, drawn, dims, tuning } }) => {
   const laid = layOut(drawn, dims, undefined, tuning);
