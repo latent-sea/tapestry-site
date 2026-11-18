@@ -10,9 +10,9 @@
 // standin.js answers the same calls from memory, for the page walked by its
 // probe; a change here is a change there.
 
-import { Backend } from "./backend/backend.js?v=6373757c9335";
-import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=6373757c9335";
-import { shrinkPicture } from "./backend/pictures.js?v=6373757c9335";
+import { Backend } from "./backend/backend.js?v=1b12564e81ef";
+import { drawSignIn, takeGoogleRedirect } from "./backend/google.js?v=1b12564e81ef";
+import { shrinkPicture } from "./backend/pictures.js?v=1b12564e81ef";
 
 // the parts of a place's address, each its own column (backend.sql, "places")
 const ADDRESS = ["street", "street_2", "town", "region", "postcode", "country"];
@@ -22,10 +22,8 @@ export const PLATFORM = "https://api.latent-sea.com";
 export const KEY = "sb_publishable_BqVtSYE4ysOb2sHMuFSwMk_HrTAUgLx";
 // public: the Google client the platform accepts (platform/supabase/platform.yml)
 const GOOGLE_CLIENT = "400837578052-jqnhh565es3a92k58u5r2oggdcf7mrkr.apps.googleusercontent.com";
-// on a phone, Google sends people back only to an address its client lists, and Tapestry's isn't listed
-// yet: it comes back through The Hatch's, on the same site, which hands the answer straight on (web/backend's
-// google.js, relayGoogleAnswer)
-const SIGNS_IN_VIA = { address: "https://latent-sea.github.io/thehatch.tech/", as: "tapestry" };
+// on a phone, Google sends people back only to an address its client lists: Tapestry's own is
+// (The Hatch's, which it came back through before, moved to www.thehatch.tech)
 
 const APP = "tapestry";
 // a picture's small copy, for cards and lists: its longest side at most this
@@ -92,7 +90,7 @@ export class Loom {
   }
 
   drawGoogleButton(element, signedIn) {
-    return drawSignIn(element, GOOGLE_CLIENT, signedIn, { theme: "outline", text: "continue_with" }, "Continue with Google", SIGNS_IN_VIA);
+    return drawSignIn(element, GOOGLE_CLIENT, signedIn, { theme: "outline", text: "continue_with" }, "Continue with Google");
   }
 
   /** Google's answer, if the page has just come back from signing in with it on a phone: { credential, nonce } or { error }, else null. */
